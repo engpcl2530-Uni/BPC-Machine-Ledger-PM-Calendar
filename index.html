@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>Smart Machine Ledger</title>
   
+  <!-- เพิ่มโลโก้สำหรับแท็บด้านบน -->
+  <link rel="icon" type="image/png" href="logo.png">
+  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
@@ -49,6 +52,13 @@
     .btn-back { background: transparent; color: var(--primary); font-weight: 600; border: none; padding: 0; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
     .btn-back:hover { color: var(--secondary); transform: translateX(-5px); }
 
+    /* Image Upload UI */
+    .upload-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 15px; height: 100%; display: flex; flex-direction: column;}
+    .btn-upload { background: white; border: 1px solid var(--border); font-size: 12px; font-weight: 600; padding: 6px; border-radius: 8px; cursor: pointer; transition: 0.2s; color: var(--text-main); display: flex; flex-direction: column; align-items: center; justify-content: center;}
+    .btn-upload:hover { border-color: var(--secondary); color: var(--secondary); background: #f0f7ff; }
+    .btn-upload input[type="file"] { display: none; }
+    .preview-img { width: 100%; height: 100px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); padding: 2px; margin-top: 10px; background: white;}
+
     /* 4-Triangle Grid CSS */
     .week-display-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 4px; }
     .week-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; text-align: center; font-size: 10px; font-weight: bold; color: #64748b; background: white;}
@@ -90,6 +100,11 @@
       .tri-part.active { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
       .ppe-item { border: 1px solid #000; border-radius: 0; padding: 2px 8px; font-size: 11px;}
       .ppe-item.active { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      
+      /* ซ่อนปุ่มอัปโหลดตอนปริ้น ให้โชว์แค่รูปที่เลือกมาแล้ว */
+      .btn-upload-group, .btn-clear-img { display: none !important; }
+      .upload-box { padding: 5px !important; border: 1px solid #000 !important; height: auto !important;}
+      .preview-img { display: block !important; border: none !important; margin-top: 0 !important; }
     }
   </style>
 </head>
@@ -167,7 +182,7 @@
 
         <!-- 3.2 ความปลอดภัย & รูปภาพ -->
         <div class="row g-3 mt-2">
-          <div class="col-lg-6">
+          <div class="col-lg-5">
             <div class="card-std h-100 print-break-inside-avoid">
               <div class="form-check form-switch mb-3 bg-danger bg-opacity-10 p-2 rounded border border-danger d-flex align-items-center">
                 <input class="form-check-input ms-1 me-3 mt-0" type="checkbox" id="f_risk" style="transform: scale(1.3);">
@@ -186,23 +201,44 @@
             </div>
           </div>
 
-          <div class="col-lg-6">
-            <div class="card-std h-100 print-break-inside-avoid text-center">
+          <div class="col-lg-7">
+            <div class="card-std h-100 print-break-inside-avoid text-center p-3">
               <div class="row g-2">
+                <!-- 📷 อัปโหลดรูป Machine -->
                 <div class="col-4">
-                  <div class="upload-box" onclick="document.getElementById('imgMach').click()">รูป Machine</div>
-                  <input type="file" id="imgMach" class="d-none" accept="image/*" onchange="previewImage(this, 'prevMach')">
-                  <img id="prevMach" class="preview-img">
+                  <div class="upload-box">
+                    <div class="form-label text-primary m-0 mb-1">ภาพ Machine</div>
+                    <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
+                      <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgMachCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevMach')"></label>
+                      <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgMachLib" accept="image/*" onchange="previewImageNew(this, 'prevMach')"></label>
+                    </div>
+                    <img id="prevMach" class="preview-img" style="display:none;">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevMach" style="display:none;" onclick="clearImage('prevMach')">ลบรูป</button>
+                  </div>
                 </div>
+                <!-- 📷 อัปโหลดรูป Sub-assembly -->
                 <div class="col-4">
-                  <div class="upload-box" onclick="document.getElementById('imgSub').click()">รูป Sub</div>
-                  <input type="file" id="imgSub" class="d-none" accept="image/*" onchange="previewImage(this, 'prevSub')">
-                  <img id="prevSub" class="preview-img">
+                  <div class="upload-box">
+                    <div class="form-label text-primary m-0 mb-1">ภาพ Sub-assy</div>
+                    <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
+                      <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgSubCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevSub')"></label>
+                      <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgSubLib" accept="image/*" onchange="previewImageNew(this, 'prevSub')"></label>
+                    </div>
+                    <img id="prevSub" class="preview-img" style="display:none;">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevSub" style="display:none;" onclick="clearImage('prevSub')">ลบรูป</button>
+                  </div>
                 </div>
+                <!-- 📷 อัปโหลดรูป Component -->
                 <div class="col-4">
-                  <div class="upload-box" onclick="document.getElementById('imgComp').click()">รูป Component</div>
-                  <input type="file" id="imgComp" class="d-none" accept="image/*" onchange="previewImage(this, 'prevComp')">
-                  <img id="prevComp" class="preview-img">
+                  <div class="upload-box">
+                    <div class="form-label text-primary m-0 mb-1">ภาพ Component</div>
+                    <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
+                      <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgCompCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevComp')"></label>
+                      <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgCompLib" accept="image/*" onchange="previewImageNew(this, 'prevComp')"></label>
+                    </div>
+                    <img id="prevComp" class="preview-img" style="display:none;">
+                    <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevComp" style="display:none;" onclick="clearImage('prevComp')">ลบรูป</button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -247,21 +283,20 @@
     </div>
   </div>
 
-  <!-- ปุ่มเพิ่มฟอร์ม (โผล่ตอนอยู่หน้า Line หรือ Sub) -->
   <button class="fab-main no-print" id="fabAdd" onclick="alert('ปุ่มลัดสำหรับสร้าง Line/Sub ใหม่')"><span class="material-symbols-rounded">add</span></button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script>
-    // 🔴 Web App URL จาก Google Apps Script
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfy.../exec"; 
+    // 🔴 Web App URL จาก Google Apps Script (เปลี่ยนตรงนี้)
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby.../exec"; 
 
-    // ================= MOCK DATA (จำลองฐานข้อมูล) =================
+    // ================= MOCK DATA (จำลองฐานข้อมูลเพื่อโชว์หน้าแรก) =================
     const dbData = {
       "A1 (Packing)": {
         image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=400&q=80",
         machineCount: 5,
         subassemblies: {
-          "Conveyor System Main": {
+          "Conveyor System": {
             image: "https://images.unsplash.com/photo-1563248386-35eb05cc092b?auto=format&fit=crop&w=400&q=80",
             risk: "Medium", components: ["Belt Roll", "Bearing 6006"]
           },
@@ -286,7 +321,7 @@
     let currentLine = null;
     let currentSub = null;
 
-    // ================= ROUTING (อัปเดต URL และเปลี่ยนหน้า) =================
+    // ================= ROUTING =================
     function navigateTo(line = null, sub = null) {
       let url = new URL(window.location);
       if (line) url.searchParams.set('line', line); else url.searchParams.delete('line');
@@ -295,7 +330,6 @@
       handleRouting();
     }
 
-    // อ่าน URL Param และตัดสินใจว่าจะโชว์หน้าไหน
     function handleRouting() {
       let params = new URLSearchParams(window.location.search);
       currentLine = params.get('line');
@@ -305,20 +339,17 @@
       let breadcrumb = "CMMS Dashboard";
 
       if (currentLine && currentSub) {
-        // เข้ามาลึกสุด -> โชว์หน้ากรอก Component
         document.getElementById('lbl-sub-title').innerText = currentSub;
         document.getElementById('view-components').classList.add('active');
-        document.getElementById('fabAdd').style.display = 'none'; // ซ่อนปุ่มบวก
+        document.getElementById('fabAdd').style.display = 'none'; 
         breadcrumb = `${currentLine} > ${currentSub}`;
       } else if (currentLine) {
-        // โชว์หน้า Subassemblies
         document.getElementById('lbl-line-title').innerText = currentLine;
         renderSubs(currentLine);
         document.getElementById('view-subs').classList.add('active');
         document.getElementById('fabAdd').style.display = 'flex';
         breadcrumb = `${currentLine}`;
       } else {
-        // หน้าแรกสุด
         renderLines();
         document.getElementById('view-lines').classList.add('active');
         document.getElementById('fabAdd').style.display = 'flex';
@@ -326,17 +357,14 @@
       document.getElementById('headerBreadcrumb').innerText = breadcrumb;
       window.scrollTo(0,0);
     }
+    window.addEventListener('popstate', handleRouting);
 
-    window.addEventListener('popstate', handleRouting); // เวลากด Back บนเบราว์เซอร์
-
-    // ================= RENDER UI =================
     function renderLines() {
       let grid = document.getElementById('lineGrid');
       grid.innerHTML = '';
       for (let lineName in dbData) {
         let line = dbData[lineName];
         let subNames = Object.keys(line.subassemblies).join(", ");
-        
         grid.innerHTML += `
           <div class="col-md-6 col-lg-4">
             <div class="hover-card" onclick="navigateTo('${lineName}')">
@@ -366,8 +394,6 @@
 
       for (let subName in line.subassemblies) {
         let sub = line.subassemblies[subName];
-        let comps = sub.components.join(", ");
-        
         grid.innerHTML += `
           <div class="col-md-6 col-lg-4">
             <div class="hover-card" onclick="navigateTo('${lineName}', '${subName}')">
@@ -378,10 +404,10 @@
               </div>
               <div class="card-overlay">
                 <h6 class="fw-bold text-warning mb-3">${subName}</h6>
-                <div class="mb-2" style="font-size:13px;"><i class="bi bi-list-check"></i> <b>รายการ:</b> ${comps}</div>
+                <div class="mb-2" style="font-size:13px;"><i class="bi bi-list-check"></i> <b>รายการ:</b> ${sub.components.join(", ")}</div>
                 <div class="mb-2" style="font-size:13px;"><i class="bi bi-exclamation-triangle-fill text-danger"></i> <b>ความเสี่ยง:</b> ${sub.risk}</div>
                 <div class="mt-auto text-center w-100">
-                  <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">กรอกข้อมูล Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span>
+                  <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">เพิ่ม Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span>
                 </div>
               </div>
             </div>
@@ -390,7 +416,7 @@
       }
     }
 
-    // ================= 4-TRIANGLE 52 WEEKS LOGIC =================
+    // ================= 4-TRIANGLE 52 WEEKS =================
     let weeksData = {}; 
     for(let i=1; i<=52; i++) { weeksData["w"+i] = { t: 0, r: 0, b: 0, l: 0 }; }
 
@@ -438,28 +464,38 @@
       bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
     }
 
-    // ================= IMAGE PREVIEW =================
-    function previewImage(input, targetId) {
+    // ================= IMAGE UPLOAD NEW SYSTEM =================
+    function previewImageNew(input, targetImgId) {
       if (input.files && input.files[0]) {
         let reader = new FileReader();
         reader.onload = function(e) {
-          let img = document.getElementById(targetId);
+          let img = document.getElementById(targetImgId);
           img.src = e.target.result;
           img.style.display = 'block';
+          
+          // ซ่อนปุ่มกล้องและอัลบั้ม
           img.previousElementSibling.style.display = 'none'; 
+          // โชว์ปุ่มลบรูปภาพ
+          document.getElementById('clear_' + targetImgId).style.display = 'block';
         }
         reader.readAsDataURL(input.files[0]);
       }
     }
 
-    function getBase64(inputId) {
-      return new Promise((resolve) => {
-        let file = document.getElementById(inputId).files[0];
-        if(!file) { resolve(""); return; }
-        let reader = new FileReader();
-        reader.onload = () => resolve(reader.result);
-        reader.readAsDataURL(file);
-      });
+    function clearImage(targetImgId) {
+      let img = document.getElementById(targetImgId);
+      img.src = '';
+      img.style.display = 'none';
+      
+      // โชว์ปุ่มกล้อง/อัลบั้มกลับมา
+      img.previousElementSibling.style.display = 'flex';
+      // ซ่อนปุ่มลบ
+      document.getElementById('clear_' + targetImgId).style.display = 'none';
+      
+      // ล้างค่า File Input (อ้างอิงจาก ID ของ Img)
+      if(targetImgId === 'prevMach') { document.getElementById('imgMachCam').value = ""; document.getElementById('imgMachLib').value = ""; }
+      if(targetImgId === 'prevSub') { document.getElementById('imgSubCam').value = ""; document.getElementById('imgSubLib').value = ""; }
+      if(targetImgId === 'prevComp') { document.getElementById('imgCompCam').value = ""; document.getElementById('imgCompLib').value = ""; }
     }
 
     // ================= SUBMIT TO GAS API =================
@@ -473,7 +509,7 @@
       document.querySelectorAll('.ppe-item.active').forEach(el => ppeActive.push(el.innerText));
 
       let payload = {
-        machineName: currentLine || "UnknownLine", // ในความจริงคุณอาจให้ User พิมพ์ชื่อเครื่องแยกต่างหาก
+        machineName: currentLine || "UnknownLine", 
         subAssembly: currentSub || "UnknownSub",
         componentName: document.getElementById('f_componentName').value,
         spareClass: document.getElementById('f_class').value,
@@ -483,9 +519,9 @@
         task: document.getElementById('f_task').value,
         riskPermit: document.getElementById('f_risk').checked,
         ppeList: ppeActive.join(', '),
-        imgMachine: await getBase64('imgMach'),
-        imgSub: await getBase64('imgSub'),
-        imgComp: await getBase64('imgComp'),
+        imgMachine: document.getElementById('prevMach').src.startsWith('data:image') ? document.getElementById('prevMach').src : "",
+        imgSub: document.getElementById('prevSub').src.startsWith('data:image') ? document.getElementById('prevSub').src : "",
+        imgComp: document.getElementById('prevComp').src.startsWith('data:image') ? document.getElementById('prevComp').src : "",
         weeks: weeksData 
       };
 
@@ -499,23 +535,22 @@
         
         if(result.success) {
           alert("✅ " + result.message);
-          // ล้างเฉพาะ Component name เพื่อเตรียมกรอกชิ้นต่อไป
           document.getElementById('f_componentName').value = "";
           document.getElementById('f_task').value = "";
+          clearImage('prevComp'); // ล้างเฉพาะรูปชิ้นส่วน
         } else {
           alert("❌ เกิดข้อผิดพลาด: " + result.message);
         }
       } catch (error) {
-        alert("❌ Error: ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้");
+        alert("❌ Error: ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ (ลืมเปลี่ยน GAS API URL หรือเปล่า?)");
       } finally {
         document.getElementById('loadingOverlay').style.display = 'none';
       }
     }
 
-    // Initialize
     window.onload = () => { 
       renderDisplayGrid(); 
-      handleRouting(); // อ่าน URL ตอนเข้าเว็บครั้งแรก
+      handleRouting(); 
     };
   </script>
 </body>
