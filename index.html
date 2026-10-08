@@ -2,188 +2,165 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>Smart Machine Ledger</title>
-  
-  <!-- เพิ่มโลโก้สำหรับแท็บด้านบน -->
   <link rel="icon" type="image/png" href="logo.png">
-  
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
-  
-  <style>
-    :root { 
-      --primary: #001F5B; --secondary: #005EB8; --bg: #F8FAFC; 
-      --text-main: #1E293B; --border: #E2E8F0; --card-bg: #FFFFFF;
-    }
-    body { background-color: var(--bg); font-family: 'Prompt', sans-serif; color: var(--text-main); padding-bottom: 80px; }
-    .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 20px 0; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,94,184,0.15); margin-bottom: 20px;}
-    
-    /* Layout Views */
-    .view-section { display: none; animation: fadeIn 0.3s; }
-    .view-section.active { display: block; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* Hover Cards (Line & Subassembly) */
-    .hover-card {
-      position: relative; border-radius: 12px; overflow: hidden; border: none;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; transition: 0.3s; background: white;
-      height: 250px; border-left: 6px solid var(--secondary);
-    }
-    .hover-card:hover { box-shadow: 0 12px 25px rgba(0,94,184,0.2); border-left-color: #198754; transform: translateY(-5px); }
-    .card-img-top { width: 100%; height: 140px; object-fit: cover; background: #e2e8f0; }
-    
-    /* Overlay ซ่อนด้านล่าง (เลื่อนขึ้นเมื่อ Hover) */
-    .card-overlay {
-      position: absolute; bottom: -100%; left: 0; width: 100%; height: 100%;
-      background: rgba(0, 31, 91, 0.95); color: white; padding: 20px;
-      transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-      display: flex; flex-direction: column; justify-content: center; text-align: left;
-    }
-    .hover-card:hover .card-overlay { bottom: 0; }
-
-    /* Form & Components */
-    .card-std { border: 1px solid var(--border); border-radius: 16px; background: var(--card-bg); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);}
-    .form-label { font-weight: 600; font-size: 13.5px; color: #475569; margin-bottom: 5px; }
-    .form-control, .form-select { border-radius: 10px; padding: 10px; font-size: 14px; background: #F8FAFC; border: 1.5px solid var(--border); }
-    .form-control:focus, .form-select:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(0,94,184,0.1); background: #FFF;}
-    
-    .btn-back { background: transparent; color: var(--primary); font-weight: 600; border: none; padding: 0; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
-    .btn-back:hover { color: var(--secondary); transform: translateX(-5px); }
-
-    /* Image Upload UI */
-    .upload-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 15px; height: 100%; display: flex; flex-direction: column;}
-    .btn-upload { background: white; border: 1px solid var(--border); font-size: 12px; font-weight: 600; padding: 6px; border-radius: 8px; cursor: pointer; transition: 0.2s; color: var(--text-main); display: flex; flex-direction: column; align-items: center; justify-content: center;}
-    .btn-upload:hover { border-color: var(--secondary); color: var(--secondary); background: #f0f7ff; }
-    .btn-upload input[type="file"] { display: none; }
-    .preview-img { width: 100%; height: 100px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); padding: 2px; margin-top: 10px; background: white;}
-
-    /* 4-Triangle Grid CSS */
-    .week-display-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 4px; }
-    .week-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; text-align: center; font-size: 10px; font-weight: bold; color: #64748b; background: white;}
-    .week-svg-container { position: relative; width: 24px; height: 24px; margin: 0 auto; }
-    
-    .week-expanded-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 10px; }
-    @media (max-width: 768px) { .week-expanded-grid { grid-template-columns: repeat(7, 1fr); } }
-    .week-expand-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 5px; text-align: center; font-size: 12px; font-weight: bold; background: white;}
-    .week-expand-box .week-svg-container { width: 45px; height: 45px; margin-top: 8px;}
-
-    .tri-part { stroke: #cbd5e1; stroke-width: 1; cursor: pointer; transition: 0.2s; }
-    .tri-part:hover { stroke: #000; stroke-width: 1.5; }
-    .tri-top.active { fill: #FDE047; stroke: #854D0E; } 
-    .tri-right.active { fill: #4ADE80; stroke: #14532D; } 
-    .tri-bottom.active { fill: #60A5FA; stroke: #1E3A8A; } 
-    .tri-left.active { fill: #F87171; stroke: #7F1D1D; } 
-    .tri-part.inactive { fill: #f8fafc; }
-
-    /* PPE */
-    .ppe-grid { display: flex; flex-wrap: wrap; gap: 8px; }
-    .ppe-item { background: white; border: 1.5px solid var(--border); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; color: #64748b; transition: 0.2s; user-select: none;}
-    .ppe-item.active { background: var(--secondary); color: white; border-color: var(--secondary); box-shadow: 0 4px 10px rgba(0,94,184,0.2);}
-
-    .fab-main { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--secondary); color: white; border: none; box-shadow: 0 10px 25px rgba(0,94,184,0.3); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; z-index: 100;}
-    
-    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,31,91,0.85); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
-
-    /* Print A3 Template */
-    @media print {
-      @page { size: A3 landscape; margin: 10mm; }
-      body { background: white !important; }
-      .no-print { display: none !important; }
-      .card-std { border: 1px solid #000; box-shadow: none !important; margin-bottom: 10px; padding: 15px; border-radius: 0; break-inside: avoid;}
-      .form-control, .form-select { border: 1px solid #000 !important; border-radius: 0 !important; padding: 5px !important; background: transparent !important;}
-      .print-expanded .week-display-grid { display: flex !important; flex-wrap: nowrap !important; width: 100%; gap: 1px;}
-      .print-expanded .week-box { flex: 1; border: 1px solid #000; border-radius: 0; padding: 1px 0; font-size: 8px;}
-      .print-expanded .week-svg-container { width: 16px; height: 16px; }
-      .tri-part { stroke: #000; stroke-width: 0.5;}
-      .tri-part.active { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      .ppe-item { border: 1px solid #000; border-radius: 0; padding: 2px 8px; font-size: 11px;}
-      .ppe-item.active { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      
-      /* ซ่อนปุ่มอัปโหลดตอนปริ้น ให้โชว์แค่รูปที่เลือกมาแล้ว */
-      .btn-upload-group, .btn-clear-img { display: none !important; }
-      .upload-box { padding: 5px !important; border: 1px solid #000 !important; height: auto !important;}
-      .preview-img { display: block !important; border: none !important; margin-top: 0 !important; }
-    }
-  </style>
+  <?!= include('style'); ?>
 </head>
 <body>
 
   <div id="loadingOverlay" style="display:none;">
     <div class="spinner-border text-light" style="width: 3rem; height: 3rem;"></div>
-    <h4 class="text-white mt-3 fw-bold">กำลังโหลดข้อมูล...</h4>
+    <h4 class="text-white mt-3 fw-bold">กำลังประมวลผล...</h4>
+    <p class="text-white">กรุณารอสักครู่ ระบบกำลังสื่อสารกับฐานข้อมูล</p>
   </div>
 
   <div class="header no-print">
     <div class="container d-flex align-items-center">
-      <span class="material-symbols-rounded text-warning me-2" style="font-size: 32px;">calendar_month</span>
+      <span class="material-symbols-rounded text-warning me-2" style="font-size: 36px;">calendar_month</span>
       <div>
         <h4 class="mb-0 fw-bold text-white">Machine Ledger</h4>
-        <div class="text-white opacity-75 small" id="headerBreadcrumb">CMMS Dashboard</div>
+        <div class="text-white opacity-75 small" id="headerBreadcrumb">PM Calendar Dashboard</div>
       </div>
     </div>
   </div>
 
-  <div class="container mt-4 mb-5">
-    
-    <!-- ================= 1. VIEW: LINE CARDS ================= -->
+  <div class="container mt-4 mb-5 pb-5">
+
+    <!-- ================= 1. หน้าแสดงไลน์เครื่องจักร ================= -->
     <div id="view-lines" class="view-section active">
-      <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-building me-2 text-primary"></i> เลือกไลน์การผลิต</h4>
+      <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-building me-2 text-primary"></i> เลือกไลน์เครื่องจักร (Machines)</h4>
       <div class="row g-4" id="lineGrid"></div>
     </div>
 
-    <!-- ================= 2. VIEW: SUBASSEMBLY CARDS ================= -->
+    <!-- ================= 2. หน้าแสดง Subassembly ภายในเครื่องจักร ================= -->
     <div id="view-subs" class="view-section">
-      <button class="btn-back mb-3" onclick="navigateTo()"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไปหน้าเลือกไลน์</button>
-      <div class="d-flex justify-content-between align-items-end mb-4">
-        <div>
-          <h3 class="fw-bold mb-1 text-primary" id="lbl-line-title">Line Name</h3>
-          <p class="text-muted mb-0">เลือกระบบย่อย (Subassembly) เพื่อดูหรือกรอกข้อมูล</p>
-        </div>
+      <button class="btn-back mb-3 no-print" onclick="navigateTo()"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไปหน้าเครื่องจักร</button>
+      <div class="mb-4">
+        <h3 class="fw-bold mb-1 text-primary" id="lbl-line-title">Machine Name</h3>
+        <p class="text-muted mb-0">เลือกระบบย่อย (Subassembly) เพื่อดูชิ้นส่วนประกอบ</p>
       </div>
       <div class="row g-4" id="subGrid"></div>
     </div>
 
-    <!-- ================= 3. VIEW: COMPONENT FORM (LEDGER) ================= -->
+    <!-- ================= 3. หน้าแสดงรายการ Component (ตาราง Ledger A3) ================= -->
     <div id="view-components" class="view-section">
-      <button class="btn-back mb-3" onclick="navigateTo(currentLine)"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไประบบย่อย</button>
-      
-      <div class="d-flex justify-content-between align-items-center mb-3 no-print overflow-auto pb-2 border-bottom">
+      <button class="btn-back mb-3 no-print" onclick="navigateTo(currentLine)"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไประบบย่อย</button>
+      <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
         <div>
           <h3 class="fw-bold mb-1 text-primary" id="lbl-sub-title">Subassembly Name</h3>
-          <p class="text-muted mb-0">รายชื่อ Component และแผนซ่อมบำรุง</p>
+          <p class="text-muted mb-0">รายการ Component และแผนซ่อมบำรุง</p>
         </div>
-        <div class="d-flex gap-2">
-          <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitFormViaAPI()"><span class="material-symbols-rounded align-middle fs-5 me-1">save</span> บันทึกข้อมูล</button>
-          <button class="btn btn-secondary fw-bold shadow-sm" onclick="window.print()"><span class="material-symbols-rounded align-middle fs-5 me-1">print</span> พิมพ์ A3</button>
-        </div>
+        <button class="btn btn-secondary fw-bold shadow-sm no-print" onclick="window.print()"><span class="material-symbols-rounded align-middle fs-5 me-1">print</span> พิมพ์รายงาน A3</button>
+      </div>
+      <div class="table-responsive bg-white rounded shadow-sm border mt-3">
+        <table class="table table-hover table-bordered mb-0 align-middle table-ledger" style="font-size: 13px;">
+          <thead class="table-primary text-center">
+            <tr>
+              <th rowspan="2" style="width: 80px;">Image</th>
+              <th rowspan="2">Component Name</th>
+              <th rowspan="2">Task</th>
+              <th colspan="4">Standards</th>
+              <th rowspan="2">PPE / Safety</th>
+              <th colspan="52">Calendar 52 Weeks (Plan & Exec)</th>
+            </tr>
+            <tr style="font-size: 11px;">
+              <th>Class</th><th>Type</th><th>Status</th><th>Min.</th>
+              <!-- JS จะเพิ่ม W1-W52 ตรงนี้ -->
+              <script>for(let i=1;i<=52;i++) document.write(`<th>W${i}</th>`);</script>
+            </tr>
+          </thead>
+          <tbody id="componentTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ================= 4. หน้าฟอร์มกรอกข้อมูลเพิ่มเครื่องจักร ================= -->
+    <div id="view-form" class="view-section">
+      <button class="btn-back mb-3 no-print" onclick="window.history.back()"><i class="bi bi-arrow-left-circle-fill fs-4"></i> ยกเลิกการเพิ่มข้อมูล</button>
+      <div class="d-flex justify-content-between align-items-center mb-3 no-print border-bottom pb-2">
+        <h3 class="fw-bold mb-0 text-primary" id="form-title">เพิ่มข้อมูลเข้าสู่ระบบ</h3>
+        <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitFormViaAPI()"><span class="material-symbols-rounded align-middle fs-5 me-1">save</span> บันทึกข้อมูล</button>
       </div>
 
       <form id="ledgerForm">
-        <!-- 3.1 ข้อมูลมาตรฐาน (Standards) -->
+        <!-- 4.1 โครงสร้าง -->
         <div class="card-std print-break-inside-avoid">
           <div class="row g-3">
-            <div class="col-md-6">
-              <label class="form-label text-primary">ชื่อ Component <span class="text-danger">*</span></label>
-              <input type="text" id="f_componentName" class="form-control fw-bold" placeholder="ระบุชื่อชิ้นส่วนอะไหล่" required>
+            <div class="col-md-4">
+              <label class="form-label text-primary">เครื่องจักร (Machine Name) <span class="text-danger">*</span></label>
+              <input type="text" id="f_machineName" class="form-control fw-bold" required>
             </div>
-            <div class="col-md-6">
-              <label class="form-label text-primary">รายละเอียดงาน (Task)</label>
-              <input type="text" id="f_task" class="form-control" placeholder="อธิบายขั้นตอนการทำ PM" required>
+            <div class="col-md-4">
+              <label class="form-label text-primary">ระบบย่อย (Subassembly) <span class="text-danger">*</span></label>
+              <input type="text" id="f_subAssembly" class="form-control fw-bold" required>
             </div>
-            
-            <div class="col-md-3 col-6"><label class="form-label">Spare Class</label><select id="f_class" class="form-select"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
-            <div class="col-md-3 col-6"><label class="form-label">PM Standard</label><select id="f_pmStd" class="form-select"><option value="CBM">CBM</option><option value="TBM">TBM</option></select></div>
-            <div class="col-md-3 col-6"><label class="form-label">Status</label><select id="f_status" class="form-select"><option value="Run">Run</option><option value="Stop">Stop</option></select></div>
-            <div class="col-md-3 col-6"><label class="form-label">Std Time (นาที)</label><input type="number" id="f_stdTime" class="form-control" placeholder="นาที" min="1"></div>
+            <div class="col-md-4">
+              <label class="form-label text-primary">ชิ้นส่วน (Component Name) <span class="text-danger">*</span></label>
+              <input type="text" id="f_componentName" class="form-control" required>
+            </div>
           </div>
         </div>
 
-        <!-- 3.2 ความปลอดภัย & รูปภาพ -->
-        <div class="row g-3 mt-2">
-          <div class="col-lg-5">
-            <div class="card-std h-100 print-break-inside-avoid">
+        <!-- 4.2 รูปภาพ (จะเปิด/ปิดตามบริบท) -->
+        <div class="card-std text-center">
+          <div class="form-label text-primary text-start mb-3 border-bottom pb-2"><i class="bi bi-image"></i> ภาพถ่ายอ้างอิง</div>
+          <div class="row g-3 justify-content-center">
+            <div class="col-md-4" id="box_imgMach">
+              <div class="upload-box">
+                <div class="form-label text-primary m-0 mb-1">ภาพรวม Machine</div>
+                <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
+                  <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgMachCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevMach')"></label>
+                  <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgMachLib" accept="image/*" onchange="previewImageNew(this, 'prevMach')"></label>
+                </div>
+                <img id="prevMach" class="preview-img" style="display:none;">
+                <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevMach" style="display:none;" onclick="clearImage('prevMach')">ลบรูป</button>
+              </div>
+            </div>
+            <div class="col-md-4" id="box_imgSub">
+              <div class="upload-box">
+                <div class="form-label text-primary m-0 mb-1">ภาพ Subassembly</div>
+                <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
+                  <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgSubCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevSub')"></label>
+                  <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgSubLib" accept="image/*" onchange="previewImageNew(this, 'prevSub')"></label>
+                </div>
+                <img id="prevSub" class="preview-img" style="display:none;">
+                <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevSub" style="display:none;" onclick="clearImage('prevSub')">ลบรูป</button>
+              </div>
+            </div>
+            <div class="col-md-4" id="box_imgComp">
+              <div class="upload-box">
+                <div class="form-label text-primary m-0 mb-1">ภาพ Component</div>
+                <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
+                  <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgCompCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevComp')"></label>
+                  <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgCompLib" accept="image/*" onchange="previewImageNew(this, 'prevComp')"></label>
+                </div>
+                <img id="prevComp" class="preview-img" style="display:none;">
+                <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevComp" style="display:none;" onclick="clearImage('prevComp')">ลบรูป</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4.3 มาตรฐานและความปลอดภัย -->
+        <div class="row g-3">
+          <div class="col-lg-6">
+            <div class="card-std h-100">
+              <div class="form-label text-primary border-bottom pb-2"><i class="bi bi-list-check"></i> ข้อมูลมาตรฐาน</div>
+              <div class="row g-3">
+                <div class="col-12"><label class="form-label">รายละเอียดงาน (Task) <span class="text-danger">*</span></label><input type="text" id="f_task" class="form-control" required></div>
+                <div class="col-6"><label class="form-label">Spare Class</label><select id="f_class" class="form-select"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
+                <div class="col-6"><label class="form-label">PM Standard</label><select id="f_pmStd" class="form-select"><option value="CBM">CBM</option><option value="TBM">TBM</option><option value="BDM">BDM</option></select></div>
+                <div class="col-6"><label class="form-label">Status</label><select id="f_status" class="form-select"><option value="Run">Run</option><option value="Stop">Stop</option></select></div>
+                <div class="col-6"><label class="form-label">Std Time (นาที)</label><input type="number" id="f_stdTime" class="form-control" min="1"></div>
+              </div>
+            </div>
+          </div>
+          <div class="col-lg-6">
+            <div class="card-std h-100">
+              <div class="form-label text-danger border-bottom pb-2"><i class="bi bi-shield-fill-exclamation"></i> ความปลอดภัย (Safety & PPE)</div>
               <div class="form-check form-switch mb-3 bg-danger bg-opacity-10 p-2 rounded border border-danger d-flex align-items-center">
                 <input class="form-check-input ms-1 me-3 mt-0" type="checkbox" id="f_risk" style="transform: scale(1.3);">
                 <label class="form-check-label fw-bold text-danger mb-0" for="f_risk">ความเสี่ยงสูง (Work Permit Req.)</label>
@@ -200,55 +177,12 @@
               </div>
             </div>
           </div>
-
-          <div class="col-lg-7">
-            <div class="card-std h-100 print-break-inside-avoid text-center p-3">
-              <div class="row g-2">
-                <!-- 📷 อัปโหลดรูป Machine -->
-                <div class="col-4">
-                  <div class="upload-box">
-                    <div class="form-label text-primary m-0 mb-1">ภาพ Machine</div>
-                    <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
-                      <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgMachCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevMach')"></label>
-                      <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgMachLib" accept="image/*" onchange="previewImageNew(this, 'prevMach')"></label>
-                    </div>
-                    <img id="prevMach" class="preview-img" style="display:none;">
-                    <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevMach" style="display:none;" onclick="clearImage('prevMach')">ลบรูป</button>
-                  </div>
-                </div>
-                <!-- 📷 อัปโหลดรูป Sub-assembly -->
-                <div class="col-4">
-                  <div class="upload-box">
-                    <div class="form-label text-primary m-0 mb-1">ภาพ Sub-assy</div>
-                    <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
-                      <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgSubCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevSub')"></label>
-                      <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgSubLib" accept="image/*" onchange="previewImageNew(this, 'prevSub')"></label>
-                    </div>
-                    <img id="prevSub" class="preview-img" style="display:none;">
-                    <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevSub" style="display:none;" onclick="clearImage('prevSub')">ลบรูป</button>
-                  </div>
-                </div>
-                <!-- 📷 อัปโหลดรูป Component -->
-                <div class="col-4">
-                  <div class="upload-box">
-                    <div class="form-label text-primary m-0 mb-1">ภาพ Component</div>
-                    <div class="btn-upload-group d-flex w-100 gap-1 mt-auto">
-                      <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgCompCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevComp')"></label>
-                      <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgCompLib" accept="image/*" onchange="previewImageNew(this, 'prevComp')"></label>
-                    </div>
-                    <img id="prevComp" class="preview-img" style="display:none;">
-                    <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevComp" style="display:none;" onclick="clearImage('prevComp')">ลบรูป</button>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
 
-        <!-- 3.3 ปฏิทิน 52 สัปดาห์ -->
+        <!-- 4.4 ปฏิทิน 52 สัปดาห์ -->
         <div class="card-std mt-4 print-expanded">
           <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="form-label text-success fw-bold m-0"><span class="material-symbols-rounded text-success align-middle me-1">calendar_month</span> ปฏิทิน 52 สัปดาห์</div>
+            <div class="form-label text-success fw-bold m-0"><span class="material-symbols-rounded text-success align-middle me-1">calendar_month</span> แผนบำรุงรักษา 52 สัปดาห์</div>
             <button type="button" class="btn btn-sm btn-outline-success fw-bold no-print" onclick="openWeekModal()"><i class="bi bi-zoom-in"></i> แตะขยายช่อง 4 เหลี่ยม</button>
           </div>
           <div class="week-display-grid" id="weekDisplayContainer"></div>
@@ -258,7 +192,7 @@
 
   </div>
 
-  <!-- Modal ขยาย 52 สัปดาห์ -->
+  <!-- Modal ขยาย 52 สัปดาห์ (ใช้เฉพาะในหน้าฟอร์ม) -->
   <div class="modal fade" id="weekModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
@@ -283,275 +217,10 @@
     </div>
   </div>
 
-  <button class="fab-main no-print" id="fabAdd" onclick="alert('ปุ่มลัดสำหรับสร้าง Line/Sub ใหม่')"><span class="material-symbols-rounded">add</span></button>
+  <!-- ปุ่ม FAB เพิ่มข้อมูล -->
+  <button class="fab-main no-print" id="fabAdd" onclick="openAddForm()"><span class="material-symbols-rounded">add</span></button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script>
-    // 🔴 Web App URL จาก Google Apps Script (เปลี่ยนตรงนี้)
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycby.../exec"; 
-
-    // ================= MOCK DATA (จำลองฐานข้อมูลเพื่อโชว์หน้าแรก) =================
-    const dbData = {
-      "A1 (Packing)": {
-        image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=400&q=80",
-        machineCount: 5,
-        subassemblies: {
-          "Conveyor System": {
-            image: "https://images.unsplash.com/photo-1563248386-35eb05cc092b?auto=format&fit=crop&w=400&q=80",
-            risk: "Medium", components: ["Belt Roll", "Bearing 6006"]
-          },
-          "Hydraulic Unit MB": {
-            image: "https://images.unsplash.com/photo-1537724326059-2ea20251b9c8?auto=format&fit=crop&w=400&q=80",
-            risk: "High (LOTO Req)", components: ["Main Pump", "Oil Filter"]
-          }
-        }
-      },
-      "MIX#1": {
-        image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&w=400&q=80",
-        machineCount: 3,
-        subassemblies: {
-          "Mixing Tank Agitator": {
-            image: "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?auto=format&fit=crop&w=400&q=80",
-            risk: "Confined Space", components: ["Shaft Seal"]
-          }
-        }
-      }
-    };
-
-    let currentLine = null;
-    let currentSub = null;
-
-    // ================= ROUTING =================
-    function navigateTo(line = null, sub = null) {
-      let url = new URL(window.location);
-      if (line) url.searchParams.set('line', line); else url.searchParams.delete('line');
-      if (sub) url.searchParams.set('sub', sub); else url.searchParams.delete('sub');
-      window.history.pushState({}, '', url);
-      handleRouting();
-    }
-
-    function handleRouting() {
-      let params = new URLSearchParams(window.location.search);
-      currentLine = params.get('line');
-      currentSub = params.get('sub');
-
-      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
-      let breadcrumb = "CMMS Dashboard";
-
-      if (currentLine && currentSub) {
-        document.getElementById('lbl-sub-title').innerText = currentSub;
-        document.getElementById('view-components').classList.add('active');
-        document.getElementById('fabAdd').style.display = 'none'; 
-        breadcrumb = `${currentLine} > ${currentSub}`;
-      } else if (currentLine) {
-        document.getElementById('lbl-line-title').innerText = currentLine;
-        renderSubs(currentLine);
-        document.getElementById('view-subs').classList.add('active');
-        document.getElementById('fabAdd').style.display = 'flex';
-        breadcrumb = `${currentLine}`;
-      } else {
-        renderLines();
-        document.getElementById('view-lines').classList.add('active');
-        document.getElementById('fabAdd').style.display = 'flex';
-      }
-      document.getElementById('headerBreadcrumb').innerText = breadcrumb;
-      window.scrollTo(0,0);
-    }
-    window.addEventListener('popstate', handleRouting);
-
-    function renderLines() {
-      let grid = document.getElementById('lineGrid');
-      grid.innerHTML = '';
-      for (let lineName in dbData) {
-        let line = dbData[lineName];
-        let subNames = Object.keys(line.subassemblies).join(", ");
-        grid.innerHTML += `
-          <div class="col-md-6 col-lg-4">
-            <div class="hover-card" onclick="navigateTo('${lineName}')">
-              <img src="${line.image}" class="card-img-top">
-              <div class="p-3">
-                <h5 class="fw-bold text-primary mb-1">${lineName}</h5>
-                <div class="text-muted small"><i class="bi bi-hdd-rack"></i> ${line.machineCount} Machines</div>
-              </div>
-              <div class="card-overlay">
-                <h5 class="fw-bold text-warning mb-3">${lineName}</h5>
-                <div class="mb-2"><i class="bi bi-diagram-3"></i> <b>ระบบย่อย:</b><br><span style="font-size:13px; opacity:0.9;">${subNames}</span></div>
-                <div class="mt-auto text-center w-100">
-                  <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">เข้าสู่ Line นี้ <i class="bi bi-arrow-right-circle-fill ms-1"></i></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    function renderSubs(lineName) {
-      let grid = document.getElementById('subGrid');
-      grid.innerHTML = '';
-      let line = dbData[lineName];
-      if (!line) return;
-
-      for (let subName in line.subassemblies) {
-        let sub = line.subassemblies[subName];
-        grid.innerHTML += `
-          <div class="col-md-6 col-lg-4">
-            <div class="hover-card" onclick="navigateTo('${lineName}', '${subName}')">
-              <img src="${sub.image}" class="card-img-top">
-              <div class="p-3">
-                <h6 class="fw-bold text-dark mb-1">${subName}</h6>
-                <div class="text-muted small"><i class="bi bi-tools"></i> ${sub.components.length} Components</div>
-              </div>
-              <div class="card-overlay">
-                <h6 class="fw-bold text-warning mb-3">${subName}</h6>
-                <div class="mb-2" style="font-size:13px;"><i class="bi bi-list-check"></i> <b>รายการ:</b> ${sub.components.join(", ")}</div>
-                <div class="mb-2" style="font-size:13px;"><i class="bi bi-exclamation-triangle-fill text-danger"></i> <b>ความเสี่ยง:</b> ${sub.risk}</div>
-                <div class="mt-auto text-center w-100">
-                  <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">เพิ่ม Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span>
-                </div>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-    }
-
-    // ================= 4-TRIANGLE 52 WEEKS =================
-    let weeksData = {}; 
-    for(let i=1; i<=52; i++) { weeksData["w"+i] = { t: 0, r: 0, b: 0, l: 0 }; }
-
-    function getTriangleSVG(wId, mode) {
-      let data = weeksData[wId];
-      let clickT = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 't', this)"` : "";
-      let clickR = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'r', this)"` : "";
-      let clickB = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'b', this)"` : "";
-      let clickL = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'l', this)"` : "";
-
-      return `
-        <svg viewBox="0 0 20 20" width="100%" height="100%">
-          <polygon class="tri-part tri-top ${data.t ? 'active' : 'inactive'}" points="0,0 20,0 10,10" ${clickT} />
-          <polygon class="tri-part tri-right ${data.r ? 'active' : 'inactive'}" points="20,0 20,20 10,10" ${clickR} />
-          <polygon class="tri-part tri-bottom ${data.b ? 'active' : 'inactive'}" points="20,20 0,20 10,10" ${clickB} />
-          <polygon class="tri-part tri-left ${data.l ? 'active' : 'inactive'}" points="0,20 0,0 10,10" ${clickL} />
-        </svg>`;
-    }
-
-    function renderDisplayGrid() {
-      let container = document.getElementById('weekDisplayContainer');
-      container.innerHTML = '';
-      for(let i=1; i<=52; i++) {
-        container.innerHTML += `<div class="week-box"><div style="margin-bottom:2px;">${i}</div><div class="week-svg-container">${getTriangleSVG("w"+i, 'display')}</div></div>`;
-      }
-    }
-
-    function openWeekModal() {
-      let container = document.getElementById('expandedWeekGrid');
-      container.innerHTML = '';
-      for(let i=1; i<=52; i++) {
-        container.innerHTML += `<div class="week-expand-box">W${i}<div class="week-svg-container">${getTriangleSVG("w"+i, 'modal')}</div></div>`;
-      }
-      new bootstrap.Modal(document.getElementById('weekModal')).show();
-    }
-
-    function toggleTriangle(wId, side, element) {
-      weeksData[wId][side] = weeksData[wId][side] ? 0 : 1;
-      if (weeksData[wId][side]) { element.classList.replace('inactive', 'active'); } 
-      else { element.classList.replace('active', 'inactive'); }
-    }
-
-    function syncModalToDisplay() {
-      renderDisplayGrid();
-      bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
-    }
-
-    // ================= IMAGE UPLOAD NEW SYSTEM =================
-    function previewImageNew(input, targetImgId) {
-      if (input.files && input.files[0]) {
-        let reader = new FileReader();
-        reader.onload = function(e) {
-          let img = document.getElementById(targetImgId);
-          img.src = e.target.result;
-          img.style.display = 'block';
-          
-          // ซ่อนปุ่มกล้องและอัลบั้ม
-          img.previousElementSibling.style.display = 'none'; 
-          // โชว์ปุ่มลบรูปภาพ
-          document.getElementById('clear_' + targetImgId).style.display = 'block';
-        }
-        reader.readAsDataURL(input.files[0]);
-      }
-    }
-
-    function clearImage(targetImgId) {
-      let img = document.getElementById(targetImgId);
-      img.src = '';
-      img.style.display = 'none';
-      
-      // โชว์ปุ่มกล้อง/อัลบั้มกลับมา
-      img.previousElementSibling.style.display = 'flex';
-      // ซ่อนปุ่มลบ
-      document.getElementById('clear_' + targetImgId).style.display = 'none';
-      
-      // ล้างค่า File Input (อ้างอิงจาก ID ของ Img)
-      if(targetImgId === 'prevMach') { document.getElementById('imgMachCam').value = ""; document.getElementById('imgMachLib').value = ""; }
-      if(targetImgId === 'prevSub') { document.getElementById('imgSubCam').value = ""; document.getElementById('imgSubLib').value = ""; }
-      if(targetImgId === 'prevComp') { document.getElementById('imgCompCam').value = ""; document.getElementById('imgCompLib').value = ""; }
-    }
-
-    // ================= SUBMIT TO GAS API =================
-    async function submitFormViaAPI() {
-      let form = document.getElementById('ledgerForm');
-      if(!form.checkValidity()) { form.reportValidity(); return; }
-
-      document.getElementById('loadingOverlay').style.display = 'flex';
-
-      let ppeActive = [];
-      document.querySelectorAll('.ppe-item.active').forEach(el => ppeActive.push(el.innerText));
-
-      let payload = {
-        machineName: currentLine || "UnknownLine", 
-        subAssembly: currentSub || "UnknownSub",
-        componentName: document.getElementById('f_componentName').value,
-        spareClass: document.getElementById('f_class').value,
-        pmStandard: document.getElementById('f_pmStd').value,
-        machineStatus: document.getElementById('f_status').value,
-        stdTime: document.getElementById('f_stdTime').value,
-        task: document.getElementById('f_task').value,
-        riskPermit: document.getElementById('f_risk').checked,
-        ppeList: ppeActive.join(', '),
-        imgMachine: document.getElementById('prevMach').src.startsWith('data:image') ? document.getElementById('prevMach').src : "",
-        imgSub: document.getElementById('prevSub').src.startsWith('data:image') ? document.getElementById('prevSub').src : "",
-        imgComp: document.getElementById('prevComp').src.startsWith('data:image') ? document.getElementById('prevComp').src : "",
-        weeks: weeksData 
-      };
-
-      try {
-        const response = await fetch(GAS_API_URL, {
-          method: 'POST',
-          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-          body: JSON.stringify(payload)
-        });
-        const result = await response.json();
-        
-        if(result.success) {
-          alert("✅ " + result.message);
-          document.getElementById('f_componentName').value = "";
-          document.getElementById('f_task').value = "";
-          clearImage('prevComp'); // ล้างเฉพาะรูปชิ้นส่วน
-        } else {
-          alert("❌ เกิดข้อผิดพลาด: " + result.message);
-        }
-      } catch (error) {
-        alert("❌ Error: ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้ (ลืมเปลี่ยน GAS API URL หรือเปล่า?)");
-      } finally {
-        document.getElementById('loadingOverlay').style.display = 'none';
-      }
-    }
-
-    window.onload = () => { 
-      renderDisplayGrid(); 
-      handleRouting(); 
-    };
-  </script>
+  <?!= include('script'); ?>
 </body>
 </html>
