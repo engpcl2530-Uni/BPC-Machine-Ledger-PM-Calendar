@@ -1,591 +1,380 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-  <base target="_top">
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Smart Inspection CMMS</title>
-  
-  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <title>PM Calendar</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.5/font/bootstrap-icons.css">
-
+  <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
+  
   <style>
-    :root {
-      --primary: #1d2b64; --secondary: #0d6efd;
-      --accent: #fd7e14; /* สีส้มสำหรับงาน Plan */
-      --bg-color: #f4f7f6;
+    /* สไตล์แบบเต็ม รวม CSS จากเวอร์ชันที่แล้วมาไว้ที่นี่ */
+    :root { 
+      --primary: #001F5B; --secondary: #005EB8; --bg: #F8FAFC; 
+      --text-main: #1E293B; --border: #E2E8F0; --card-bg: #FFFFFF;
     }
-    body { font-family: 'Prompt', sans-serif; background-color: var(--bg-color); color: #333; overflow-x: hidden; padding-bottom: 80px; }
+    body { background-color: var(--bg); font-family: 'Prompt', sans-serif; color: var(--text-main); }
+    .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 20px 0; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,94,184,0.15); margin-bottom: 20px;}
+    .card { border: none; border-radius: 16px; background: var(--card-bg); padding: 25px; margin-bottom: 20px; border: 1px solid rgba(0,0,0,0.05);}
+    .card-title { font-size: 16px; margin-top: 0; }
+    .form-label { font-weight: 600; font-size: 13.5px; color: #475569; margin-bottom: 6px; }
     
-    /* Navbar & Tabs */
-    .navbar { background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%); padding: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-    .nav-pills { background: #fff; border-radius: 12px; padding: 5px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
-    .nav-pills .nav-link { color: #6c757d; font-weight: 600; border-radius: 10px; padding: 10px 15px; }
-    .nav-pills .nav-link.active { background-color: var(--secondary); color: white; }
-    
-    /* Cards & UI */
-    .card { border-radius: 15px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
-    .task-card { cursor: pointer; transition: 0.2s; border-left: 6px solid #adb5bd; }
-    .task-card:active { transform: scale(0.98); }
-    .task-high { border-left-color: #dc3545; }
-    .task-medium { border-left-color: #ffc107; }
-    .task-low { border-left-color: #198754; }
-    
-    /* Calendar */
-    .table-calendar th { text-align: center; font-size: 0.8rem; white-space: nowrap; background: var(--primary); color: white; padding: 12px 5px; }
-    .table-calendar td { text-align: center; vertical-align: middle; padding: 8px 4px; border-color: #e9ecef; }
-    .cal-cell { cursor: pointer; transition: 0.2s; }
-    .cal-cell:hover { background: #f8f9fa; }
-    .badge-plan { color: white; background-color: var(--accent); font-weight: 700; font-size: 0.8rem; display: inline-block; padding: 4px 8px; border-radius: 6px; margin: 2px; box-shadow: 0 2px 4px rgba(253,126,20,0.3); }
-    .badge-bd { background-color: #dc3545; color: white; padding: 4px 8px; border-radius: 6px; font-size: 0.8rem; font-weight: 600; display: inline-block; margin: 2px; box-shadow: 0 2px 4px rgba(220,53,69,0.3); cursor: pointer;}
-    .badge-bd:hover { transform: scale(1.05); }
-    
-    /* FAB (Floating Action Button) */
-    .fab-container { position: fixed; bottom: 25px; right: 25px; z-index: 1040; }
-    .fab-btn { width: 60px; height: 60px; border-radius: 50%; background: linear-gradient(135deg, var(--secondary), #00d2ff); color: white; font-size: 1.8rem; border: none; box-shadow: 0 6px 15px rgba(13,110,253,0.4); display: flex; align-items: center; justify-content: center; transition: 0.3s; }
-    .fab-btn:active { transform: scale(0.9); }
-    
-    /* Auth View */
-    #loginView { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: url('https://www.transparenttextures.com/patterns/cubes.png') #f4f7f6;}
+    .ppe-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ppe-item { background: white; border: 1.5px solid var(--border); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; color: #64748b; transition: 0.2s; user-select: none;}
+    .ppe-item:hover { background: #F0F7FF; border-color: var(--secondary); }
+    .ppe-item.active { background: var(--secondary); color: white; border-color: var(--secondary); box-shadow: 0 4px 10px rgba(0,94,184,0.2);}
 
-    /* Hide scrollbar */
-    .table-responsive::-webkit-scrollbar { height: 6px; }
-    .table-responsive::-webkit-scrollbar-thumb { background-color: #cbd5e1; border-radius: 10px; }
+    .upload-box { border: 2px dashed #cbd5e1; padding: 20px 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #94a3b8; cursor: pointer; transition: 0.2s; background: #f8fafc; height: 100px; display: flex; flex-direction: column; justify-content: center; align-items: center;}
+    .upload-box:hover { border-color: var(--secondary); color: var(--secondary); background: #f0f7ff; }
+    .preview-img { width: 100%; height: 100px; object-fit: contain; border-radius: 12px; display: none; border: 1px solid var(--border); padding: 5px; cursor: pointer;}
 
-    /* Loaders */
-    #loadingOverlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.9); z-index: 9999; align-items: center; justify-content: center; flex-direction: column; backdrop-filter: blur(4px); }
+    .fab-main { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--secondary); color: white; border: none; box-shadow: 0 10px 25px rgba(0,94,184,0.3); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; z-index: 100;}
+    .fab-main:hover { transform: scale(1.1) translateY(-5px); }
+
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,31,91,0.85); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+
+    .week-display-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 4px; }
+    .week-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; text-align: center; font-size: 10px; font-weight: bold; color: #64748b; background: white;}
+    .week-svg-container { position: relative; width: 24px; height: 24px; margin: 0 auto; }
+    
+    .week-expanded-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 10px; }
+    @media (max-width: 768px) { .week-expanded-grid { grid-template-columns: repeat(7, 1fr); } }
+    
+    .week-expand-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 5px; text-align: center; font-size: 12px; font-weight: bold; background: white; box-shadow: 0 2px 5px rgba(0,0,0,0.02);}
+    .week-expand-box .week-svg-container { width: 45px; height: 45px; margin-top: 8px;}
+
+    .tri-part { stroke: #cbd5e1; stroke-width: 1; cursor: pointer; transition: 0.2s; }
+    .tri-part:hover { stroke: #000; stroke-width: 1.5; }
+    .tri-top.active { fill: #FDE047; stroke: #854D0E; } 
+    .tri-right.active { fill: #4ADE80; stroke: #14532D; } 
+    .tri-bottom.active { fill: #60A5FA; stroke: #1E3A8A; } 
+    .tri-left.active { fill: #F87171; stroke: #7F1D1D; } 
+    .tri-part.inactive { fill: #f8fafc; }
+
+    /* CSS สำหรับ A3 Print */
+    @media print {
+      @page { size: A3 landscape; margin: 10mm; }
+      body { background: white !important; padding: 0; }
+      .no-print { display: none !important; }
+      .card { border: 1px solid #000; box-shadow: none !important; margin-bottom: 10px; padding: 15px; border-radius: 0;}
+      .print-break-inside-avoid { break-inside: avoid; }
+      .form-control, .form-select { border: 1px solid #000 !important; background: transparent !important; color: #000 !important; border-radius: 0 !important; padding: 5px !important;}
+      .ppe-item { border: 1px solid #000; border-radius: 0; padding: 2px 8px; font-size: 11px;}
+      .ppe-item.active { background: #000 !important; color: #fff !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      .print-expanded .week-display-grid { display: flex !important; flex-wrap: nowrap !important; width: 100%; gap: 1px;}
+      .print-expanded .week-box { flex: 1; border: 1px solid #000; border-radius: 0; padding: 1px 0; font-size: 8px;}
+      .print-expanded .week-svg-container { width: 16px; height: 16px; }
+      .tri-part { stroke: #000; stroke-width: 0.5;}
+      .tri-part.active { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
   </style>
 </head>
 <body>
 
-  <!-- ================= LOADING OVERLAY ================= -->
-  <div id="loadingOverlay">
-    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-    <h6 class="mt-3 fw-bold text-primary" id="loadingText">กำลังโหลดข้อมูล...</h6>
+  <div id="loadingOverlay" style="display:none;">
+    <div class="spinner-border text-light" style="width: 3rem; height: 3rem;"></div>
+    <h4 class="text-white mt-3 fw-bold">กำลังประมวลผล...</h4>
+    <p class="text-white">ระบบกำลังส่งข้อมูลผ่าน API กรุณารอสักครู่</p>
   </div>
 
-  <!-- ================= LOGIN SCREEN ================= -->
-  <div id="loginView">
-    <div class="card p-4 mx-3 shadow-lg" style="width: 100%; max-width: 400px; border-top: 5px solid var(--secondary);">
-      <div class="text-center mb-4">
-        <i class="bi bi-shield-check text-primary" style="font-size: 4rem;"></i>
-        <h3 class="fw-bold mt-2">Smart Inspection</h3>
-        <p class="text-muted small">กรุณาเข้าสู่ระบบเพื่อปฏิบัติงาน</p>
+  <div class="header no-print">
+    <div class="container d-flex align-items-center">
+      <span class="material-symbols-rounded text-warning me-2" style="font-size: 32px;">calendar_month</span>
+      <div>
+        <h4 class="mb-0 fw-bold text-white">PM Calendar</h4>
+        <div class="text-white opacity-75 small">Smart Machine Ledger System</div>
       </div>
-      <div id="loginAlert" class="alert alert-danger d-none py-2 small fw-bold text-center"></div>
-      <form onsubmit="event.preventDefault(); handleLogin();">
-        <div class="mb-3">
-          <label class="form-label small fw-bold text-muted">รหัสพนักงาน</label>
-          <input type="text" class="form-control form-control-lg bg-light" id="usernameInput" required>
-        </div>
-        <div class="mb-4">
-          <label class="form-label small fw-bold text-muted">รหัสผ่าน</label>
-          <input type="password" class="form-control form-control-lg bg-light" id="passwordInput" required>
-        </div>
-        <button type="submit" class="btn btn-primary btn-lg w-100 fw-bold shadow-sm rounded-pill">เข้าสู่ระบบ</button>
-        <button type="button" class="btn btn-light w-100 fw-bold rounded-pill mt-2 text-muted" onclick="bypassGuest()">ดูกระดานปฏิทิน (Guest)</button>
-      </form>
     </div>
   </div>
 
-  <!-- ================= MAIN APP ================= -->
-  <div id="mainApp" class="d-none">
+  <div class="container mt-4 mb-5 pb-5">
     
-    <nav class="navbar">
-      <div class="container d-flex justify-content-between align-items-center">
-        <div class="text-white d-flex align-items-center gap-2">
-          <i class="bi bi-ui-checks fs-2 text-warning"></i>
-          <div class="lh-sm">
-            <div class="fw-bold fs-5">CMMS Inspector</div>
-            <div class="text-white-50" style="font-size: 0.75rem;" id="navUserName">โหมดเยี่ยมชม</div>
-          </div>
-        </div>
-        <button class="btn btn-outline-light btn-sm rounded-circle d-none" style="width:35px;height:35px;" id="btnLogout" onclick="logout()"><i class="bi bi-power"></i></button>
-      </div>
-    </nav>
-
-    <div class="container mt-3">
-      <!-- TABS -->
-      <ul class="nav nav-pills nav-justified mb-4" id="appTabs">
-        <li class="nav-item">
-          <a class="nav-link active" id="tab-calendar" onclick="switchView('calendarView')"><i class="bi bi-calendar-range-fill"></i> ปฏิทิน</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link" id="tab-tasks" onclick="switchView('tasksView')"><i class="bi bi-list-check"></i> งานของฉัน</a>
-        </li>
-      </ul>
-
-      <!-- 🟢 1. CALENDAR VIEW -->
-      <div id="calendarView" class="view-section">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-calendar-event text-primary"></i> แผนงาน & ประวัติซ่อม</h5>
-          <button class="btn btn-sm btn-outline-primary fw-bold rounded-pill shadow-sm" id="btnToggleCal" onclick="toggleCalendarView()">ดู 4 สัปดาห์</button>
-        </div>
-
-        <div class="card overflow-hidden">
-          <div class="table-responsive">
-            <table class="table table-bordered table-calendar mb-0">
-              <thead>
-                <tr id="calHeader"></tr>
-              </thead>
-              <tbody id="calBody">
-                 <tr><td class="py-4 text-muted">กำลังโหลดข้อมูล...</td></tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-        <div class="mt-3 small text-muted d-flex gap-3 justify-content-center fw-bold bg-white p-2 rounded-pill shadow-sm border">
-          <span><span class="badge-plan">P</span> แผนตรวจสอบ</span>
-          <span><span class="badge-bd">BD</span> ประวัติเครื่องพัง</span>
-        </div>
-      </div>
-
-      <!-- 🟢 2. TASKS EXECUTION VIEW (My Zone) -->
-      <div id="tasksView" class="view-section d-none">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="fw-bold text-dark mb-0"><i class="bi bi-person-badge text-primary"></i> งานตรวจเช็กสัปดาห์นี้</h5>
-          <span class="badge bg-warning text-dark fs-6 shadow-sm border border-dark border-opacity-25" id="currentWeekBadge">W--</span>
-        </div>
-        
-        <div id="tasksContainer" class="d-flex flex-column gap-2">
-            <!-- Tasks Gen by JS -->
-            <div class="text-center py-5 text-muted fw-bold">กรุณาล็อกอินเพื่อดูงานของท่าน</div>
-        </div>
-      </div>
-
-    </div> <!-- End Container -->
-
-    <!-- ================= FAB ================= -->
-    <div class="fab-container d-none" id="fabMenu">
-      <button class="fab-btn" onclick="openSetupModal()" title="เพิ่มแผนตรวจเช็กเครื่องจักร">
-        <i class="bi bi-plus-lg"></i>
-      </button>
+    <div class="d-flex gap-2 mb-4 no-print overflow-auto pb-2">
+      <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitFormViaAPI()"><span class="material-symbols-rounded align-middle fs-5 me-1">save</span> บันทึกข้อมูล</button>
+      <button class="btn btn-secondary fw-bold shadow-sm" onclick="window.print()"><span class="material-symbols-rounded align-middle fs-5 me-1">print</span> พิมพ์ A3</button>
+      <button class="btn btn-outline-danger fw-bold bg-white"><span class="material-symbols-rounded align-middle fs-5">delete</span></button>
     </div>
+
+    <form id="ledgerForm">
+      
+      <div class="card shadow-sm print-break-inside-avoid">
+        <div class="card-title text-primary fw-bold mb-3 border-bottom pb-2"><span class="material-symbols-rounded text-primary align-middle me-1">precision_manufacturing</span> โครงสร้างและชื่อ (Hierarchy)</div>
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">เครื่องจักร (Machine Name) <span class="text-danger">*</span></label>
+            <input type="text" id="f_machineName" class="form-control fw-bold" placeholder="เช่น FILLER-01" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">ระบบย่อย (Sub-assembly) <span class="text-danger">*</span></label>
+            <input type="text" id="f_subAssembly" class="form-control" placeholder="ระบุระบบย่อย (จะเป็นชื่อ Tab Sheet)" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">ชิ้นส่วนอะไหล่ (Component Name) <span class="text-danger">*</span></label>
+            <input type="text" id="f_componentName" class="form-control" placeholder="ระบุชื่อชิ้นส่วน" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4 print-break-inside-avoid">
+        <div class="card-title text-primary fw-bold mb-3 border-bottom pb-2"><span class="material-symbols-rounded text-primary align-middle me-1">rule</span> มาตรฐานเครื่องจักร (Standards)</div>
+        <div class="row g-3">
+          <div class="col-md-3 col-6">
+            <label class="form-label">Spare Class</label>
+            <select id="f_class" class="form-select bg-light">
+              <option value="AA">AA</option><option value="A">A</option><option value="B">B</option><option value="C">C</option>
+            </select>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label">PM Standard</label>
+            <select id="f_pmStd" class="form-select bg-light">
+              <option value="TBM">TBM</option><option value="CBM">CBM</option><option value="BDM">BDM</option>
+            </select>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label">Machine Status</label>
+            <select id="f_status" class="form-select bg-light">
+              <option value="Run">Run</option><option value="Stop">Stop</option>
+            </select>
+          </div>
+          <div class="col-md-3 col-6">
+            <label class="form-label">Std Time (นาที)</label>
+            <input type="number" id="f_stdTime" class="form-control bg-light" placeholder="นาที" min="1">
+          </div>
+          <div class="col-12 mt-3">
+            <label class="form-label">รายละเอียดงาน (Task)</label>
+            <input type="text" id="f_task" class="form-control bg-light" placeholder="อธิบายขั้นตอนการทำ PM" required>
+          </div>
+        </div>
+      </div>
+
+      <div class="row g-3 mt-2">
+        <div class="col-lg-6">
+          <div class="card shadow-sm h-100 print-break-inside-avoid">
+            <div class="card-title text-danger fw-bold mb-3 border-bottom pb-2"><span class="material-symbols-rounded text-danger align-middle me-1">health_and_safety</span> ความปลอดภัย (Safety & PPE)</div>
+            <div class="form-check form-switch mb-3 bg-danger bg-opacity-10 p-2 rounded border border-danger">
+              <input class="form-check-input ms-1" type="checkbox" id="f_risk" style="transform: scale(1.3); margin-right: 15px;">
+              <label class="form-check-label fw-bold text-danger" for="f_risk">ความเสี่ยงสูง (Need Work Permit?)</label>
+            </div>
+            <label class="form-label text-muted small">อุปกรณ์ PPE ที่ต้องใช้งาน (คลิกเพื่อเลือก)</label>
+            <div class="ppe-grid mt-2">
+              <div class="ppe-item" onclick="this.classList.toggle('active')">ถุงมือ</div>
+              <div class="ppe-item" onclick="this.classList.toggle('active')">หมวกนิรภัย</div>
+              <div class="ppe-item" onclick="this.classList.toggle('active')">แว่นตา</div>
+              <div class="ppe-item" onclick="this.classList.toggle('active')">หน้ากาก</div>
+              <div class="ppe-item" onclick="this.classList.toggle('active')">ที่อุดหู</div>
+              <div class="ppe-item" onclick="this.classList.toggle('active')">รองเท้าเซฟตี้</div>
+              <div class="ppe-item" onclick="this.classList.toggle('active')">เข็มขัดกันตก</div>
+              <div class="ppe-item" onclick="this.classList.toggle('active')">เสื้อสะท้อนแสง</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card shadow-sm h-100 print-break-inside-avoid">
+            <div class="card-title text-primary fw-bold mb-3 border-bottom pb-2"><span class="material-symbols-rounded text-primary align-middle me-1">image</span> ภาพถ่าย (Images)</div>
+            <div class="row g-2 text-center">
+              <div class="col-4">
+                <div class="upload-box" onclick="document.getElementById('imgMach').click()"><span class="material-symbols-rounded d-block text-muted">camera_alt</span>ภาพ Machine</div>
+                <input type="file" id="imgMach" class="d-none" accept="image/*" onchange="previewImage(this, 'prevMach')">
+                <img id="prevMach" class="preview-img">
+              </div>
+              <div class="col-4">
+                <div class="upload-box" onclick="document.getElementById('imgSub').click()"><span class="material-symbols-rounded d-block text-muted">camera_alt</span>ภาพ Sub</div>
+                <input type="file" id="imgSub" class="d-none" accept="image/*" onchange="previewImage(this, 'prevSub')">
+                <img id="prevSub" class="preview-img">
+              </div>
+              <div class="col-4">
+                <div class="upload-box" onclick="document.getElementById('imgComp').click()"><span class="material-symbols-rounded d-block text-muted">camera_alt</span>ภาพ Component</div>
+                <input type="file" id="imgComp" class="d-none" accept="image/*" onchange="previewImage(this, 'prevComp')">
+                <img id="prevComp" class="preview-img">
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4 print-expanded">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+          <div class="card-title text-success fw-bold m-0"><span class="material-symbols-rounded text-success align-middle me-1">calendar_month</span> แผนบำรุงรักษา 52 สัปดาห์ (Calendar)</div>
+          <button type="button" class="btn btn-sm btn-outline-success fw-bold no-print" onclick="openWeekModal()"><i class="bi bi-zoom-in"></i> แตะเพื่อขยาย/แก้ไข</button>
+        </div>
+        <div class="week-display-grid" id="weekDisplayContainer"></div>
+      </div>
+
+    </form>
   </div>
 
-  <!-- ================= MODALS ================= -->
-
-  <!-- 1. Modal: Setup Master Task -->
-  <div class="modal fade" id="setupModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content border-0 border-top border-5 border-success">
-        <div class="modal-header bg-white border-0 pb-0">
-          <h5 class="modal-title fw-bold text-success"><i class="bi bi-tools"></i> กำหนดจุดตรวจเช็กใหม่</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+  <!-- Modal ขยาย 52 สัปดาห์ -->
+  <div class="modal fade" id="weekModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+      <div class="modal-content border-0 shadow-lg">
+        <div class="modal-header bg-success text-white">
+          <h5 class="modal-title fw-bold"><i class="bi bi-calendar-range"></i> กำหนดแผนงานรายสัปดาห์</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
-        <div class="modal-body p-4 bg-light mt-3">
-          <form onsubmit="event.preventDefault(); submitMasterTask();">
-            <div class="row g-3 mb-3">
-              <div class="col-12 col-md-6">
-                <label class="form-label small fw-bold text-muted">ไลน์การผลิต (Line) *</label>
-                <select class="form-select fw-bold border-success" id="setupLine" onchange="updateMachineDropdown()" required>
-                  <option value="">กำลังโหลด...</option>
-                </select>
-              </div>
-              <div class="col-12 col-md-6">
-                <label class="form-label small fw-bold text-muted">เครื่องจักร (Machine) *</label>
-                <div class="input-group">
-                  <select class="form-select fw-bold border-success" id="setupMachineSel" required disabled><option value="">- เลือกไลน์ก่อน -</option></select>
-                  <input type="text" class="form-control fw-bold border-success d-none" id="setupMachineTxt" placeholder="พิมพ์ชื่อเครื่องใหม่...">
-                  <button class="btn btn-outline-success" type="button" onclick="toggleNewMachine()"><i class="bi bi-plus"></i></button>
-                </div>
-              </div>
-            </div>
-            <div class="mb-3">
-              <label class="form-label small fw-bold text-muted">จุดตรวจเช็ก / วิธีการ (Task) *</label>
-              <textarea class="form-control border-primary bg-white" id="setupTaskDetail" rows="2" placeholder="เช่น เช็กความตึงสายพาน, อัดจาระบี" required></textarea>
-            </div>
-            <div class="row g-3 mb-4">
-              <div class="col-6">
-                <label class="form-label small fw-bold text-muted">ความถี่ *</label>
-                <select class="form-select fw-bold" id="setupFreq" required>
-                  <option value="1W">1 สัปดาห์</option>
-                  <option value="2W">2 สัปดาห์</option>
-                  <option value="1M">1 เดือน</option>
-                  <option value="3M">3 เดือน</option>
-                  <option value="6M">6 เดือน</option>
-                </select>
-              </div>
-              <div class="col-6">
-                <label class="form-label small fw-bold text-danger">ระดับราคาอะไหล่</label>
-                <select class="form-select fw-bold text-danger" id="setupCost" required>
-                  <option value="High">ราคาสูง (High)</option>
-                  <option value="Medium">ปานกลาง</option>
-                  <option value="Low" selected>ทั่วไป (Low)</option>
-                </select>
-              </div>
-            </div>
-            <button type="submit" class="btn btn-success w-100 py-3 fw-bold shadow-sm rounded-pill"><i class="bi bi-save"></i> บันทึกเข้าระบบ</button>
-          </form>
+        <div class="modal-body bg-light">
+          <div class="d-flex gap-3 mb-3 justify-content-center text-muted small fw-bold flex-wrap">
+            <span style="color:#EAB308;"><i class="bi bi-triangle-fill"></i> บน=Plan</span>
+            <span style="color:#22C55E;"><i class="bi bi-triangle-fill" style="transform: rotate(90deg);"></i> ขวา=Exec</span>
+            <span style="color:#3B82F6;"><i class="bi bi-triangle-fill" style="transform: rotate(180deg);"></i> ล่าง=Check</span>
+            <span style="color:#EF4444;"><i class="bi bi-triangle-fill" style="transform: rotate(-90deg);"></i> ซ้าย=Action</span>
+          </div>
+          <div class="week-expanded-grid" id="expandedWeekGrid"></div>
         </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 2. Modal: Abnormal Report (Defect to WO) -->
-  <div class="modal fade" id="abnormalModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable">
-      <div class="modal-content border-0 border-top border-5 border-danger">
-        <div class="modal-header bg-white border-0 pb-0">
-          <h5 class="fw-bold text-danger mb-0"><i class="bi bi-exclamation-triangle-fill"></i> แจ้งซ่อม / พบความผิดปกติ</h5>
-          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-        </div>
-        <div class="modal-body p-4 bg-light mt-2">
-          <div class="alert alert-danger py-2 fw-bold small shadow-sm">📍 จุดที่พบปัญหา: <span id="abnPointName" class="text-dark">--</span></div>
-          <input type="hidden" id="abnTaskId"><input type="hidden" id="abnLine"><input type="hidden" id="abnMachine">
-          
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-muted">อาการที่พบ (Breakdown Detail) *</label>
-            <textarea class="form-control border-danger" id="abnBreakdown" rows="2" placeholder="อธิบายอาการ..." required></textarea>
-          </div>
-          <div class="mb-3">
-            <label class="form-label small fw-bold text-muted">สาเหตุ (Cause)</label>
-            <input type="text" class="form-control" id="abnCause" placeholder="เช่น อะไหล่เสื่อมสภาพ">
-          </div>
-          <div class="mb-4">
-            <label class="form-label small fw-bold text-muted">การแก้ไข (Action Taken) *</label>
-            <input type="text" class="form-control border-danger" id="abnAction" placeholder="เช่น เปลี่ยนอะไหล่, ซ่อมชั่วคราว" required>
-          </div>
-
-          <div class="row g-2">
-            <div class="col-6">
-              <div class="upload-box bg-white" onclick="alert('📸 ฟีเจอร์กล้องจะเปิดใช้งานในเฟสต่อไปครับ')">
-                <i class="bi bi-camera-fill fs-3 d-block mb-1 text-muted"></i> <small class="fw-bold">รูปก่อนซ่อม</small>
-              </div>
-            </div>
-            <div class="col-6">
-              <div class="upload-box bg-white border-success" onclick="alert('📸 ฟีเจอร์กล้องจะเปิดใช้งานในเฟสต่อไปครับ')">
-                <i class="bi bi-image fs-3 d-block mb-1 text-success"></i> <small class="fw-bold text-success">รูปรวมเสร็จ</small>
-              </div>
-            </div>
-          </div>
-        </div>
-        <div class="modal-footer border-0 bg-white">
-          <button type="button" class="btn btn-danger w-100 py-3 fw-bold shadow-sm rounded-pill" onclick="submitAbnormalReport()">
-            <i class="bi bi-send-fill"></i> สร้างใบแจ้งซ่อม & ปิดงาน
-          </button>
+        <div class="modal-footer bg-white border-0">
+          <button type="button" class="btn btn-light fw-bold" data-bs-dismiss="modal">ปิด</button>
+          <button type="button" class="btn btn-success fw-bold px-4" onclick="syncModalToDisplay()"><span class="material-symbols-rounded align-middle fs-5 me-1">check</span> ยืนยันข้อมูล</button>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- 3. Modal: BD Detail (จากปฏิทิน) -->
-  <div class="modal fade" id="bdDetailModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content border-0 border-top border-5 border-danger">
-        <div class="modal-body p-4 text-center">
-          <div class="text-danger fs-1 mb-2"><i class="bi bi-file-earmark-break-fill"></i></div>
-          <h5 class="fw-bold mb-3">ประวัติเครื่องพัง (Breakdown)</h5>
-          <div class="text-start bg-light p-3 rounded-3 mb-3 border">
-            <div class="fw-bold text-dark mb-1" id="detMachine">Machine</div>
-            <div class="text-danger small fw-bold mb-2">อาการ: <span id="detBreakdown">--</span></div>
-            <div class="small"><b>การแก้ไข:</b> <span id="detAction">--</span></div>
-            <div class="small text-muted mt-2 border-top pt-2"><i class="bi bi-person"></i> <span id="detTech">--</span> | <span id="detDate">--</span> (W<span id="detWeek">--</span>)</div>
-          </div>
-          <button class="btn btn-light fw-bold w-100 border rounded-pill shadow-sm" data-bs-dismiss="modal">ปิดหน้าต่าง</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <button class="fab-main no-print" onclick="window.scrollTo(0,0)"><span class="material-symbols-rounded">keyboard_arrow_up</span></button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  
   <script>
-    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzlNI_mRXj1-2yuwiOWY71iIR_nfcO_P1zcAlqcVZpahkT3loe8SMp07v1IgFrUCYIFcg/exec"; // ถ้า URL เปลี่ยนให้แก้ตรงนี้ครับ
-    
-    function apiCall(action, params = {}) {
-      return fetch(GAS_API_URL, { method: 'POST', body: JSON.stringify({ action: action, ...params }) }).then(res => res.json());
-    }
-    function showLoading(text="กำลังโหลด...") { document.getElementById('loadingText').innerText=text; document.getElementById('loadingOverlay').style.display='flex'; }
-    function hideLoading() { document.getElementById('loadingOverlay').style.display='none'; }
+    // 🔴 นำ Web App URL ของคุณมาใส่ตรงนี้
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec
 
-    let linesDataMap = {};
-    let isFullYearCalendar = true;
-    let globalCalData = null;
+    // 1. จัดการข้อมูล 52 สัปดาห์
+    let weeksData = {}; 
+    for(let i=1; i<=52; i++) { weeksData["w"+i] = { t: 0, r: 0, b: 0, l: 0 }; }
 
-    // ----------------------------------------------------
-    // Auth & Navigation
-    // ----------------------------------------------------
-    function handleLogin() {
-      const u = document.getElementById('usernameInput').value;
-      const p = document.getElementById('passwordInput').value;
-      if(!u || !p) return;
-      showLoading("กำลังเข้าสู่ระบบ...");
-      apiCall('verifyLogin', {username: u, password: p}).then(res => {
-        hideLoading();
-        if(res.success) {
-          localStorage.setItem('cmms_inspector_session', JSON.stringify({token: res.token, name: res.fullName, role: res.role}));
-          initApp(res.fullName, res.role);
-        } else {
-          document.getElementById('loginAlert').innerText = res.message;
-          document.getElementById('loginAlert').classList.remove('d-none');
-        }
-      }).catch(err => { hideLoading(); alert(err); });
-    }
-
-    function bypassGuest() {
-      document.getElementById('loginView').style.display = 'none';
-      document.getElementById('mainApp').classList.remove('d-none');
-      document.getElementById('navUserName').innerText = "โหมดเยี่ยมชม (Guest)";
-      switchView('calendarView');
-      loadCalendarData();
-    }
-
-    function logout() {
-      localStorage.removeItem('cmms_inspector_session');
-      location.reload();
-    }
-
-    function initApp(name, role) {
-      document.getElementById('loginView').style.display = 'none';
-      document.getElementById('mainApp').classList.remove('d-none');
-      document.getElementById('navUserName').innerText = name;
-      document.getElementById('btnLogout').classList.remove('d-none');
-      document.getElementById('fabMenu').classList.remove('d-none');
+    function getTriangleSVG(wId, mode) {
+      let data = weeksData[wId];
+      let cT = data.t ? 'active' : 'inactive';
+      let cR = data.r ? 'active' : 'inactive';
+      let cB = data.b ? 'active' : 'inactive';
+      let cL = data.l ? 'active' : 'inactive';
       
-      switchView('tasksView'); // Login ปุ๊บวิ่งไปหน้างานตัวเอง
-      loadMyTasks();
-      loadLinesAndMachines();
-      loadCalendarData();
+      let clickTop = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 't', this)"` : "";
+      let clickRight = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'r', this)"` : "";
+      let clickBottom = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'b', this)"` : "";
+      let clickLeft = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'l', this)"` : "";
+
+      return `
+        <svg viewBox="0 0 20 20" width="100%" height="100%">
+          <polygon class="tri-part tri-top ${cT}" points="0,0 20,0 10,10" ${clickTop} />
+          <polygon class="tri-part tri-right ${cR}" points="20,0 20,20 10,10" ${clickRight} />
+          <polygon class="tri-part tri-bottom ${cB}" points="20,20 0,20 10,10" ${clickBottom} />
+          <polygon class="tri-part tri-left ${cL}" points="0,20 0,0 10,10" ${clickLeft} />
+        </svg>`;
     }
 
-    window.addEventListener('DOMContentLoaded', () => {
-      let sessionStr = localStorage.getItem('cmms_inspector_session');
-      if(sessionStr) {
-        let s = JSON.parse(sessionStr);
-        initApp(s.name, s.role);
+    function renderDisplayGrid() {
+      let container = document.getElementById('weekDisplayContainer');
+      container.innerHTML = '';
+      for(let i=1; i<=52; i++) {
+        container.innerHTML += `<div class="week-box"><div style="margin-bottom:2px;">${i}</div><div class="week-svg-container">${getTriangleSVG("w"+i, 'display')}</div></div>`;
       }
-    });
-
-    function switchView(viewId) {
-      document.querySelectorAll('.view-section').forEach(el => el.classList.add('d-none'));
-      document.getElementById(viewId).classList.remove('d-none');
-      document.querySelectorAll('.nav-pills .nav-link').forEach(el => el.classList.remove('active'));
-      const activeTabId = viewId.replace('View', '');
-      if(document.getElementById('tab-' + activeTabId)) document.getElementById('tab-' + activeTabId).classList.add('active');
     }
 
-    // ----------------------------------------------------
-    // Tasks Execution (My Zone)
-    // ----------------------------------------------------
-    function loadMyTasks() {
-      let s = JSON.parse(localStorage.getItem('cmms_inspector_session'));
-      if(!s) return;
-      document.getElementById('tasksContainer').innerHTML = `<div class="text-center py-5 text-muted fw-bold"><div class="spinner-border spinner-border-sm me-2"></div> ดึงข้อมูลงาน...</div>`;
-      
-      apiCall('getMyWeeklyTasks', {token: s.token}).then(res => {
-        if(res.success) {
-          document.getElementById('currentWeekBadge').innerText = "W" + res.currentWeek;
-          let html = "";
-          if(res.data.length === 0) {
-             document.getElementById('tasksContainer').innerHTML = `<div class="text-center py-5"><i class="bi bi-emoji-sunglasses fs-1 text-success mb-2 d-block"></i><h6 class="fw-bold text-success">เคลียร์งานหมดแล้ว!</h6></div>`;
-             return;
-          }
-          res.data.forEach(t => {
-             let colorClass = t.costLevel === 'High' ? 'task-high' : (t.costLevel === 'Medium' ? 'task-medium' : 'task-low');
-             let badgeColor = t.costLevel === 'High' ? 'bg-danger' : (t.costLevel === 'Medium' ? 'bg-warning text-dark' : 'bg-success');
-             
-             html += `
-             <div class="card task-card shadow-sm ${colorClass}" id="task_${t.taskId}">
-               <div class="card-body p-3">
-                 <div class="d-flex justify-content-between align-items-center mb-2">
-                   <span class="badge bg-light text-primary border border-primary">${t.line} : ${t.machine}</span>
-                   <span class="badge ${badgeColor} shadow-sm">${t.costLevel}</span>
-                 </div>
-                 <h6 class="fw-bold text-dark mb-1">${t.taskDetail}</h6>
-                 <div class="text-muted small mb-3"><i class="bi bi-arrow-repeat"></i> ความถี่: ${t.frequency}</div>
-                 
-                 <div class="d-flex gap-2">
-                   <button class="btn btn-success fw-bold flex-grow-1 shadow-sm" onclick="markTaskNormal('${t.taskId}', '${t.line}')"><i class="bi bi-check-lg"></i> ปกติ</button>
-                   <button class="btn btn-outline-danger fw-bold flex-grow-1" onclick="openAbnormalModal('${t.taskId}', '${t.line}', '${t.machine}', '${t.taskDetail}')"><i class="bi bi-x-lg"></i> พัง/ซ่อม</button>
-                 </div>
-               </div>
-             </div>`;
-          });
-          document.getElementById('tasksContainer').innerHTML = html;
-        }
-      });
-    }
-
-    function markTaskNormal(taskId, line) {
-      let s = JSON.parse(localStorage.getItem('cmms_inspector_session'));
-      let card = document.getElementById('task_' + taskId);
-      card.style.opacity = '0.5'; card.style.pointerEvents = 'none';
-      
-      apiCall('submitTaskExecution', {payload: {taskId: taskId, line: line, status: "Pass"}, token: s.token}).then(res => {
-         if(res.success) {
-           card.style.transform = 'translateX(100%)';
-           setTimeout(() => { card.remove(); loadCalendarData(); }, 300);
-         } else { card.style.opacity = '1'; card.style.pointerEvents = 'auto'; alert(res.message); }
-      });
-    }
-
-    function openAbnormalModal(taskId, line, machine, detail) {
-      document.getElementById('abnTaskId').value = taskId;
-      document.getElementById('abnLine').value = line;
-      document.getElementById('abnMachine').value = machine;
-      document.getElementById('abnPointName').innerText = detail;
-      document.getElementById('abnBreakdown').value = ""; document.getElementById('abnCause').value = ""; document.getElementById('abnAction').value = "";
-      new bootstrap.Modal(document.getElementById('abnormalModal')).show();
-    }
-
-    function submitAbnormalReport() {
-      let s = JSON.parse(localStorage.getItem('cmms_inspector_session'));
-      let payload = {
-         taskId: document.getElementById('abnTaskId').value,
-         line: document.getElementById('abnLine').value,
-         machine: document.getElementById('abnMachine').value,
-         breakdown: document.getElementById('abnBreakdown').value,
-         cause: document.getElementById('abnCause').value,
-         action: document.getElementById('abnAction').value,
-         remark: "สร้างจากระบบ Smart Inspection"
-      };
-      if(!payload.breakdown || !payload.action) { alert("กรุณากรอกอาการและการแก้ไขให้ครบถ้วน"); return; }
-      
-      showLoading("กำลังสร้างใบแจ้งซ่อม...");
-      apiCall('submitAbnormalReport', {payload: payload, token: s.token}).then(res => {
-        hideLoading();
-        if(res.success) {
-          bootstrap.Modal.getInstance(document.getElementById('abnormalModal')).hide();
-          document.getElementById('task_' + payload.taskId).remove();
-          loadCalendarData(); // Refresh ปฏิทินโชว์กล่องแดง
-          alert(res.message);
-        } else { alert(res.message); }
-      });
-    }
-
-    // ----------------------------------------------------
-    // Smart Calendar
-    // ----------------------------------------------------
-    function toggleCalendarView() {
-      isFullYearCalendar = !isFullYearCalendar;
-      document.getElementById('btnToggleCal').innerText = isFullYearCalendar ? "ดู 4 สัปดาห์" : "ดู 52 สัปดาห์";
-      if(globalCalData) buildCalendarUI(globalCalData.currentWeek, globalCalData.data);
-    }
-
-    function loadCalendarData() {
-      apiCall('getCalendarData').then(res => {
-        if(res.success) {
-          globalCalData = res;
-          buildCalendarUI(res.currentWeek, res.data);
-        }
-      });
-    }
-
-    function buildCalendarUI(currentWeek, dataMap) {
-      const header = document.getElementById('calHeader');
-      const body = document.getElementById('calBody');
-      header.innerHTML = '<th style="min-width: 100px; text-align: left; padding-left: 10px;">Line</th>';
-      body.innerHTML = '';
-
-      let startW = isFullYearCalendar ? 1 : Math.max(1, currentWeek - 1);
-      let endW = isFullYearCalendar ? 52 : Math.min(52, currentWeek + 2);
-
-      for(let w = startW; w <= endW; w++) {
-        let bgClass = (w === currentWeek) ? 'bg-warning text-dark fs-6' : '';
-        header.innerHTML += `<th class="${bgClass}">W${w}</th>`;
+    function openWeekModal() {
+      let container = document.getElementById('expandedWeekGrid');
+      container.innerHTML = '';
+      for(let i=1; i<=52; i++) {
+        container.innerHTML += `<div class="week-expand-box">W${i}<div class="week-svg-container">${getTriangleSVG("w"+i, 'modal')}</div></div>`;
       }
-
-      Object.keys(dataMap).sort().forEach(line => {
-        let tr = `<tr><td class="fw-bold bg-light text-start ps-2">${line}</td>`;
-        let planArr = dataMap[line].plan;
-        let bdArr = dataMap[line].bd;
-
-        for(let w = startW; w <= endW; w++) {
-          let cellHtml = '';
-          let cellClass = (w === currentWeek) ? 'bg-warning bg-opacity-10 border-warning' : '';
-          
-          if(planArr.includes(w)) cellHtml += `<span class="badge-plan">P</span>`;
-          
-          let bdsInWeek = bdArr.filter(b => b.week === w);
-          if(bdsInWeek.length > 0) {
-            bdsInWeek.forEach(bd => {
-               // ซ่อนข้อมูลใน Data Attribute เพื่อให้กดดูได้
-               let bdJson = encodeURIComponent(JSON.stringify(bd));
-               cellHtml += `<span class="badge-bd" onclick="showBdDetail('${bdJson}')">BD</span>`;
-            });
-          }
-          
-          if(cellHtml === '') cellHtml = `<span class="text-muted opacity-25">-</span>`;
-          tr += `<td class="cal-cell ${cellClass}">${cellHtml}</td>`;
-        }
-        tr += `</tr>`;
-        body.innerHTML += tr;
-      });
-      if(Object.keys(dataMap).length === 0) body.innerHTML = `<tr><td colspan="55" class="py-4 text-muted text-center">ไม่มีข้อมูลในระบบ</td></tr>`;
+      new bootstrap.Modal(document.getElementById('weekModal')).show();
     }
 
-    function showBdDetail(encodedJson) {
-      let bd = JSON.parse(decodeURIComponent(encodedJson));
-      document.getElementById('detMachine').innerText = bd.machine;
-      document.getElementById('detBreakdown').innerText = bd.detail;
-      document.getElementById('detAction').innerText = bd.action;
-      document.getElementById('detTech').innerText = bd.tech;
-      document.getElementById('detDate').innerText = bd.date;
-      document.getElementById('detWeek').innerText = bd.week;
-      new bootstrap.Modal(document.getElementById('bdDetailModal')).show();
-    }
-
-    // ----------------------------------------------------
-    // Master Setup
-    // ----------------------------------------------------
-    function openSetupModal() {
-      new bootstrap.Modal(document.getElementById('setupModal')).show();
-    }
-
-    function loadLinesAndMachines() {
-      apiCall('getExistingLinesAndMachines').then(res => {
-        if(res.success) {
-          linesDataMap = res.data;
-          let lineSelect = document.getElementById('setupLine');
-          lineSelect.innerHTML = '<option value="">- เลือกไลน์ -</option>';
-          Object.keys(linesDataMap).sort().forEach(line => { lineSelect.innerHTML += `<option value="${line}">${line}</option>`; });
-        }
-      });
-    }
-
-    function updateMachineDropdown() {
-      let selectedLine = document.getElementById('setupLine').value;
-      let machineSelect = document.getElementById('setupMachineSel');
-      machineSelect.innerHTML = '<option value="">- เลือกเครื่องจักร -</option>';
-      if(selectedLine && linesDataMap[selectedLine]) {
-        machineSelect.disabled = false;
-        linesDataMap[selectedLine].sort().forEach(m => { machineSelect.innerHTML += `<option value="${m}">${m}</option>`; });
-      } else { machineSelect.disabled = true; }
-    }
-
-    function toggleNewMachine() {
-      let selectEl = document.getElementById('setupMachineSel');
-      let textEl = document.getElementById('setupMachineTxt');
-      if(selectEl.classList.contains('d-none')) {
-        selectEl.classList.remove('d-none'); textEl.classList.add('d-none'); selectEl.required = true; textEl.required = false;
+    function toggleTriangle(wId, side, element) {
+      weeksData[wId][side] = weeksData[wId][side] ? 0 : 1;
+      if (weeksData[wId][side]) {
+        element.classList.remove('inactive'); element.classList.add('active');
       } else {
-        selectEl.classList.add('d-none'); textEl.classList.remove('d-none'); selectEl.required = false; textEl.required = true; textEl.focus();
+        element.classList.remove('active'); element.classList.add('inactive');
       }
     }
 
-    function submitMasterTask() {
-      let s = JSON.parse(localStorage.getItem('cmms_inspector_session'));
-      let mName = document.getElementById('setupMachineSel').classList.contains('d-none') ? document.getElementById('setupMachineTxt').value : document.getElementById('setupMachineSel').value;
-      
-      let payload = {
-        line: document.getElementById('setupLine').value,
-        machine: mName,
-        taskDetail: document.getElementById('setupTaskDetail').value,
-        frequency: document.getElementById('setupFreq').value,
-        costLevel: document.getElementById('setupCost').value
-      };
+    function syncModalToDisplay() {
+      renderDisplayGrid();
+      bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
+    }
 
-      showLoading("กำลังบันทึกข้อมูล...");
-      apiCall('saveMasterTask', {payload: payload, token: s.token}).then(res => {
-        hideLoading();
-        if(res.success) {
-          document.getElementById('setupTaskDetail').value = ""; // เคลียร์เฉพาะ Task เพื่อให้คีย์ต่อไวๆ
-          alert(res.messageTh);
-          loadCalendarData(); // Refresh ปฏิทินเผื่อมีแผน P งอกขึ้นมาใหม่
-        } else { alert(res.messageTh); }
+    function previewImage(input, targetId) {
+      if (input.files && input.files[0]) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+          let img = document.getElementById(targetId);
+          img.src = e.target.result;
+          img.style.display = 'block';
+          img.previousElementSibling.style.display = 'none'; 
+        }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function getBase64(inputId) {
+      return new Promise((resolve) => {
+        let file = document.getElementById(inputId).files[0];
+        if(!file) { resolve(""); return; }
+        let reader = new FileReader();
+        reader.onload = () => resolve(reader.result);
+        reader.readAsDataURL(file);
       });
     }
+
+    // 🔴 เปลี่ยนจากการเรียก google.script.run มาใช้ fetch() API แทน
+    async function submitFormViaAPI() {
+      let form = document.getElementById('ledgerForm');
+      if(!form.checkValidity()) { form.reportValidity(); return; }
+
+      document.getElementById('loadingOverlay').style.display = 'flex';
+
+      let ppeActive = [];
+      document.querySelectorAll('.ppe-item.active').forEach(el => ppeActive.push(el.innerText));
+
+      let bMach = await getBase64('imgMach');
+      let bSub = await getBase64('imgSub');
+      let bComp = await getBase64('imgComp');
+
+      let payload = {
+        machineName: document.getElementById('f_machineName').value,
+        subAssembly: document.getElementById('f_subAssembly').value,
+        componentName: document.getElementById('f_componentName').value,
+        spareClass: document.getElementById('f_class').value,
+        pmStandard: document.getElementById('f_pmStd').value,
+        machineStatus: document.getElementById('f_status').value,
+        stdTime: document.getElementById('f_stdTime').value,
+        task: document.getElementById('f_task').value,
+        riskPermit: document.getElementById('f_risk').checked,
+        ppeList: ppeActive.join(', '),
+        imgMachine: bMach,
+        imgSub: bSub,
+        imgComp: bComp,
+        weeks: weeksData 
+      };
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // ใช้ text/plain เลี่ยงปัญหา CORS Preflight ใน Github
+          body: JSON.stringify(payload)
+        });
+        
+        const result = await response.json();
+        document.getElementById('loadingOverlay').style.display = 'none';
+
+        if(result.success) {
+          alert("✅ " + result.message);
+          // ล้างฟอร์มภาพ Component และชื่อ Component เพื่อเตรียมกรอกชิ้นต่อไป
+          document.getElementById('f_componentName').value = "";
+          document.getElementById('f_task').value = "";
+          document.getElementById('imgComp').value = "";
+          document.getElementById('prevComp').style.display = "none";
+          document.getElementById('prevComp').previousElementSibling.style.display = "flex";
+        } else {
+          alert("❌ เกิดข้อผิดพลาด: " + result.message);
+        }
+      } catch (error) {
+        document.getElementById('loadingOverlay').style.display = 'none';
+        alert("❌ Error: ไม่สามารถเชื่อมต่อกับฐานข้อมูลได้");
+      }
+    }
+
+    window.onload = () => { renderDisplayGrid(); };
   </script>
 </body>
 </html>
