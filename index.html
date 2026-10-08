@@ -7,7 +7,84 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
-  <?!= include('style'); ?>
+  
+  <style>
+    /* ================= CSS ================= */
+    :root { --primary: #001F5B; --secondary: #005EB8; --bg: #F8FAFC; --text-main: #1E293B; --border: #E2E8F0; --card-bg: #FFFFFF; }
+    body { background-color: var(--bg); font-family: 'Prompt', sans-serif; color: var(--text-main); }
+    .header { background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 20px 0; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,94,184,0.15); margin-bottom: 20px;}
+    
+    .view-section { display: none; animation: fadeIn 0.3s; }
+    .view-section.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    .hover-card { position: relative; border-radius: 12px; overflow: hidden; border: none; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; transition: 0.3s; height: 250px; border-left: 6px solid var(--secondary); }
+    .hover-card:hover { box-shadow: 0 12px 25px rgba(0,94,184,0.2); border-left-color: #198754; transform: translateY(-5px); }
+    .card-img-top { width: 100%; height: 140px; object-fit: cover; background: #e2e8f0; }
+    .card-overlay { position: absolute; bottom: -100%; left: 0; width: 100%; height: 100%; background: rgba(0, 31, 91, 0.95); color: white; padding: 20px; transition: bottom 0.3s; display: flex; flex-direction: column; justify-content: center; }
+    .hover-card:hover .card-overlay { bottom: 0; }
+
+    .card-std { border: 1px solid var(--border); border-radius: 16px; background: var(--card-bg); padding: 25px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.02);}
+    .form-label { font-weight: 600; font-size: 13.5px; color: #475569; margin-bottom: 5px; }
+    .form-control, .form-select { border-radius: 10px; padding: 10px; font-size: 14px; background: #F8FAFC; border: 1.5px solid var(--border); }
+    .form-control:focus, .form-select:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(0,94,184,0.1); background: #FFF;}
+    .form-control:disabled, .form-control[readonly] { background-color: #e2e8f0; opacity: 0.8; }
+    .btn-back { background: transparent; color: var(--primary); font-weight: 600; border: none; padding: 0; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
+
+    .ppe-grid { display: flex; flex-wrap: wrap; gap: 8px; }
+    .ppe-item { background: white; border: 1.5px solid var(--border); padding: 6px 14px; border-radius: 20px; cursor: pointer; font-size: 13px; font-weight: 500; color: #64748b; transition: 0.2s; user-select: none;}
+    .ppe-item.active { background: var(--secondary); color: white; border-color: var(--secondary); box-shadow: 0 4px 10px rgba(0,94,184,0.2);}
+
+    .upload-box { background: #f8fafc; border: 1px solid var(--border); border-radius: 12px; padding: 15px; height: 100%; display: flex; flex-direction: column;}
+    .btn-upload { background: white; border: 1px solid var(--border); font-size: 12px; font-weight: 600; padding: 6px; border-radius: 8px; cursor: pointer; transition: 0.2s; color: var(--text-main); display: flex; flex-direction: column; align-items: center;}
+    .btn-upload input[type="file"] { display: none; }
+    .preview-img { width: 100%; height: 100px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); padding: 2px; margin-top: 10px; background: white; display: none;}
+
+    .week-display-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(28px, 1fr)); gap: 4px; }
+    .week-box { border: 1px solid #cbd5e1; border-radius: 4px; padding: 2px; text-align: center; font-size: 10px; font-weight: bold; color: #64748b; background: white;}
+    .week-svg-container { position: relative; width: 24px; height: 24px; margin: 0 auto; }
+    .week-expanded-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 10px; }
+    @media (max-width: 768px) { .week-expanded-grid { grid-template-columns: repeat(7, 1fr); } }
+    .week-expand-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 5px; text-align: center; font-size: 12px; font-weight: bold; background: white;}
+    .week-expand-box .week-svg-container { width: 45px; height: 45px; margin-top: 8px;}
+
+    .tri-part { stroke: #cbd5e1; stroke-width: 1; cursor: pointer; transition: 0.2s; }
+    .tri-part:hover { stroke: #000; stroke-width: 1.5; }
+    .tri-top.active { fill: #FDE047; stroke: #854D0E; } 
+    .tri-right.active { fill: #4ADE80; stroke: #14532D; } 
+    .tri-bottom.active { fill: #60A5FA; stroke: #1E3A8A; } 
+    .tri-left.active { fill: #F87171; stroke: #7F1D1D; } 
+    .tri-part.inactive { fill: #f8fafc; }
+
+    .fab-main { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--secondary); color: white; border: none; box-shadow: 0 10px 25px rgba(0,94,184,0.3); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; z-index: 100;}
+    #loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,31,91,0.85); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+
+    /* ================= A3 Print Template ================= */
+    @media print {
+      @page { size: A3 landscape; margin: 5mm; }
+      body { background: white !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
+      .no-print { display: none !important; }
+      .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
+      
+      .table-ledger { width: 100%; border: 1px solid #000; font-size: 9px; }
+      .table-ledger th, .table-ledger td { border: 1px solid #000 !important; padding: 4px !important; }
+      
+      .card-std { border: 1px solid #000; box-shadow: none !important; margin-bottom: 5px; padding: 10px; border-radius: 0; break-inside: avoid;}
+      .print-break-inside-avoid { break-inside: avoid; }
+      .form-control, .form-select { border: 1px solid #000 !important; border-radius: 0 !important; padding: 2px 5px !important; background: transparent !important;}
+      .ppe-item { border: 1px solid #000; border-radius: 0; padding: 2px 8px; font-size: 9px;}
+      .ppe-item.active { background: #000 !important; color: #fff !important; }
+      
+      .btn-upload-group, .btn-clear-img { display: none !important; }
+      .upload-box { padding: 2px !important; border: 1px solid #000 !important; height: auto !important;}
+      .preview-img { display: block !important; border: none !important; margin-top: 0 !important; height: 80px;}
+
+      .print-expanded .week-display-grid { display: flex !important; flex-wrap: nowrap !important; width: 100%; gap: 1px;}
+      .print-expanded .week-box { flex: 1; border: 1px solid #000; border-radius: 0; padding: 1px 0; font-size: 8px;}
+      .tri-part { stroke: #000; stroke-width: 0.5; }
+      .tri-part.active { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+  </style>
 </head>
 <body>
 
@@ -29,13 +106,13 @@
 
   <div class="container mt-4 mb-5 pb-5">
 
-    <!-- ================= 1. หน้าแสดงไลน์เครื่องจักร ================= -->
+    <!-- 1. View Lines -->
     <div id="view-lines" class="view-section active">
       <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-building me-2 text-primary"></i> เลือกไลน์เครื่องจักร (Machines)</h4>
       <div class="row g-4" id="lineGrid"></div>
     </div>
 
-    <!-- ================= 2. หน้าแสดง Subassembly ภายในเครื่องจักร ================= -->
+    <!-- 2. View Subassemblies -->
     <div id="view-subs" class="view-section">
       <button class="btn-back mb-3 no-print" onclick="navigateTo()"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไปหน้าเครื่องจักร</button>
       <div class="mb-4">
@@ -45,7 +122,7 @@
       <div class="row g-4" id="subGrid"></div>
     </div>
 
-    <!-- ================= 3. หน้าแสดงรายการ Component (ตาราง Ledger A3) ================= -->
+    <!-- 3. View Components (Table) -->
     <div id="view-components" class="view-section">
       <button class="btn-back mb-3 no-print" onclick="navigateTo(currentLine)"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไประบบย่อย</button>
       <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
@@ -58,26 +135,15 @@
       <div class="table-responsive bg-white rounded shadow-sm border mt-3">
         <table class="table table-hover table-bordered mb-0 align-middle table-ledger" style="font-size: 13px;">
           <thead class="table-primary text-center">
-            <tr>
-              <th rowspan="2" style="width: 80px;">Image</th>
-              <th rowspan="2">Component Name</th>
-              <th rowspan="2">Task</th>
-              <th colspan="4">Standards</th>
-              <th rowspan="2">PPE / Safety</th>
-              <th colspan="52">Calendar 52 Weeks (Plan & Exec)</th>
-            </tr>
-            <tr style="font-size: 11px;">
-              <th>Class</th><th>Type</th><th>Status</th><th>Min.</th>
-              <!-- JS จะเพิ่ม W1-W52 ตรงนี้ -->
-              <script>for(let i=1;i<=52;i++) document.write(`<th>W${i}</th>`);</script>
-            </tr>
+            <tr><th rowspan="2" style="width: 80px;">Image</th><th rowspan="2">Component Name</th><th rowspan="2">Task</th><th colspan="4">Standards</th><th rowspan="2">PPE / Safety</th><th colspan="52">Calendar 52 Weeks (Plan & Exec)</th></tr>
+            <tr style="font-size: 11px;"><th>Class</th><th>Type</th><th>Status</th><th>Min.</th><script>for(let i=1;i<=52;i++) document.write(`<th>W${i}</th>`);</script></tr>
           </thead>
           <tbody id="componentTableBody"></tbody>
         </table>
       </div>
     </div>
 
-    <!-- ================= 4. หน้าฟอร์มกรอกข้อมูลเพิ่มเครื่องจักร ================= -->
+    <!-- 4. View Form -->
     <div id="view-form" class="view-section">
       <button class="btn-back mb-3 no-print" onclick="window.history.back()"><i class="bi bi-arrow-left-circle-fill fs-4"></i> ยกเลิกการเพิ่มข้อมูล</button>
       <div class="d-flex justify-content-between align-items-center mb-3 no-print border-bottom pb-2">
@@ -86,25 +152,16 @@
       </div>
 
       <form id="ledgerForm">
-        <!-- 4.1 โครงสร้าง -->
+        <!-- 4.1 ข้อมูลโครงสร้าง (Hierarchy) -->
         <div class="card-std print-break-inside-avoid">
           <div class="row g-3">
-            <div class="col-md-4">
-              <label class="form-label text-primary">เครื่องจักร (Machine Name) <span class="text-danger">*</span></label>
-              <input type="text" id="f_machineName" class="form-control fw-bold" required>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-primary">ระบบย่อย (Subassembly) <span class="text-danger">*</span></label>
-              <input type="text" id="f_subAssembly" class="form-control fw-bold" required>
-            </div>
-            <div class="col-md-4">
-              <label class="form-label text-primary">ชิ้นส่วน (Component Name) <span class="text-danger">*</span></label>
-              <input type="text" id="f_componentName" class="form-control" required>
-            </div>
+            <div class="col-md-4"><label class="form-label text-primary">เครื่องจักร (Machine) <span class="text-danger">*</span></label><input type="text" id="f_machineName" class="form-control fw-bold" required></div>
+            <div class="col-md-4"><label class="form-label text-primary">ระบบย่อย (Subassembly) <span class="text-danger">*</span></label><input type="text" id="f_subAssembly" class="form-control fw-bold" required></div>
+            <div class="col-md-4"><label class="form-label text-primary">ชิ้นส่วน (Component) <span class="text-danger">*</span></label><input type="text" id="f_componentName" class="form-control" required></div>
           </div>
         </div>
 
-        <!-- 4.2 รูปภาพ (จะเปิด/ปิดตามบริบท) -->
+        <!-- 4.2 รูปถ่าย -->
         <div class="card-std text-center">
           <div class="form-label text-primary text-start mb-3 border-bottom pb-2"><i class="bi bi-image"></i> ภาพถ่ายอ้างอิง</div>
           <div class="row g-3 justify-content-center">
@@ -115,7 +172,7 @@
                   <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgMachCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevMach')"></label>
                   <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgMachLib" accept="image/*" onchange="previewImageNew(this, 'prevMach')"></label>
                 </div>
-                <img id="prevMach" class="preview-img" style="display:none;">
+                <img id="prevMach" class="preview-img">
                 <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevMach" style="display:none;" onclick="clearImage('prevMach')">ลบรูป</button>
               </div>
             </div>
@@ -126,7 +183,7 @@
                   <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgSubCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevSub')"></label>
                   <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgSubLib" accept="image/*" onchange="previewImageNew(this, 'prevSub')"></label>
                 </div>
-                <img id="prevSub" class="preview-img" style="display:none;">
+                <img id="prevSub" class="preview-img">
                 <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevSub" style="display:none;" onclick="clearImage('prevSub')">ลบรูป</button>
               </div>
             </div>
@@ -137,7 +194,7 @@
                   <label class="btn-upload flex-fill"><i class="bi bi-camera-fill fs-5 mb-1"></i>กล้อง<input type="file" id="imgCompCam" accept="image/*" capture="environment" onchange="previewImageNew(this, 'prevComp')"></label>
                   <label class="btn-upload flex-fill"><i class="bi bi-images fs-5 mb-1"></i>แฟ้ม<input type="file" id="imgCompLib" accept="image/*" onchange="previewImageNew(this, 'prevComp')"></label>
                 </div>
-                <img id="prevComp" class="preview-img" style="display:none;">
+                <img id="prevComp" class="preview-img">
                 <button type="button" class="btn btn-sm btn-outline-danger w-100 mt-2 btn-clear-img" id="clear_prevComp" style="display:none;" onclick="clearImage('prevComp')">ลบรูป</button>
               </div>
             </div>
@@ -179,33 +236,29 @@
           </div>
         </div>
 
-        <!-- 4.4 ปฏิทิน 52 สัปดาห์ -->
+        <!-- 4.4 ปฏิทิน -->
         <div class="card-std mt-4 print-expanded">
-          <div class="d-flex justify-content-between align-items-center mb-3">
-            <div class="form-label text-success fw-bold m-0"><span class="material-symbols-rounded text-success align-middle me-1">calendar_month</span> แผนบำรุงรักษา 52 สัปดาห์</div>
+          <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+            <div class="form-label text-success fw-bold m-0"><span class="material-symbols-rounded text-success align-middle me-1">calendar_month</span> แผน 52 สัปดาห์</div>
             <button type="button" class="btn btn-sm btn-outline-success fw-bold no-print" onclick="openWeekModal()"><i class="bi bi-zoom-in"></i> แตะขยายช่อง 4 เหลี่ยม</button>
           </div>
           <div class="week-display-grid" id="weekDisplayContainer"></div>
         </div>
       </form>
     </div>
-
   </div>
 
-  <!-- Modal ขยาย 52 สัปดาห์ (ใช้เฉพาะในหน้าฟอร์ม) -->
+  <!-- Modal ขยาย 52 สัปดาห์ -->
   <div class="modal fade" id="weekModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
       <div class="modal-content border-0 shadow-lg">
         <div class="modal-header bg-success text-white">
-          <h5 class="modal-title fw-bold">กำหนดแผนงานรายสัปดาห์ (คลิกเลือกด้าน)</h5>
+          <h5 class="modal-title fw-bold">กำหนดแผนงานรายสัปดาห์ (คลิกเพื่อสลับสถานะ)</h5>
           <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
         </div>
         <div class="modal-body bg-light">
           <div class="d-flex gap-3 mb-3 justify-content-center text-muted small fw-bold flex-wrap">
-            <span style="color:#EAB308;">■ บน=Plan</span>
-            <span style="color:#22C55E;">■ ขวา=Exec</span>
-            <span style="color:#3B82F6;">■ ล่าง=Check</span>
-            <span style="color:#EF4444;">■ ซ้าย=Action</span>
+            <span style="color:#EAB308;">■ บน=Plan</span><span style="color:#22C55E;">■ ขวา=Exec</span><span style="color:#3B82F6;">■ ล่าง=Check</span><span style="color:#EF4444;">■ ซ้าย=Action</span>
           </div>
           <div class="week-expanded-grid" id="expandedWeekGrid"></div>
         </div>
@@ -217,10 +270,292 @@
     </div>
   </div>
 
-  <!-- ปุ่ม FAB เพิ่มข้อมูล -->
   <button class="fab-main no-print" id="fabAdd" onclick="openAddForm()"><span class="material-symbols-rounded">add</span></button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <?!= include('script'); ?>
+
+  <script>
+    // ==========================================
+    // JS Logic: GitHub Frontend
+    // ==========================================
+    
+    // 🔴 นำ Web App URL ของ Google Apps Script ของคุณมาใส่ตรงนี้
+    const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec"; 
+
+    // ข้อมูล Mockup สำหรับทดสอบ UI
+    let dbData = {
+      "Line A1 (Packing)": {
+        image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&w=400&q=80",
+        machineCount: 5,
+        subassemblies: {
+          "Conveyor System": { image: "https://images.unsplash.com/photo-1563248386-35eb05cc092b?auto=format&fit=crop&w=400&q=80", components: [{name:"Belt Roll", time:30}] },
+          "Hydraulic Unit": { image: "https://images.unsplash.com/photo-1537724326059-2ea20251b9c8?auto=format&fit=crop&w=400&q=80", components: [{name:"Main Pump", time:45}] }
+        }
+      }
+    };
+
+    let currentLine = null;
+    let currentSub = null;
+    let weeksData = {}; 
+
+    // 1. Routing
+    function navigateTo(line = null, sub = null) {
+      let url = new URL(window.location);
+      if (line) url.searchParams.set('line', line); else url.searchParams.delete('line');
+      if (sub) url.searchParams.set('sub', sub); else url.searchParams.delete('sub');
+      window.history.pushState({}, '', url);
+      handleRouting();
+    }
+
+    function handleRouting() {
+      let params = new URLSearchParams(window.location.search);
+      currentLine = params.get('line');
+      currentSub = params.get('sub');
+
+      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+      let breadcrumb = "Dashboard";
+
+      if (currentLine && currentSub) {
+        document.getElementById('lbl-sub-title').innerText = currentSub;
+        renderComponentTable();
+        document.getElementById('view-components').classList.add('active');
+        document.getElementById('fabAdd').style.display = 'flex'; 
+        breadcrumb = `${currentLine} > ${currentSub}`;
+      } else if (currentLine) {
+        document.getElementById('lbl-line-title').innerText = currentLine;
+        renderSubs(currentLine);
+        document.getElementById('view-subs').classList.add('active');
+        document.getElementById('fabAdd').style.display = 'flex';
+        breadcrumb = `${currentLine}`;
+      } else {
+        renderLines();
+        document.getElementById('view-lines').classList.add('active');
+        document.getElementById('fabAdd').style.display = 'flex';
+      }
+      document.getElementById('headerBreadcrumb').innerText = breadcrumb;
+      window.scrollTo(0,0);
+    }
+    window.addEventListener('popstate', handleRouting);
+
+    // 2. Rendering UI
+    function renderLines() {
+      let grid = document.getElementById('lineGrid');
+      grid.innerHTML = '';
+      for (let lineName in dbData) {
+        let line = dbData[lineName];
+        let subNames = Object.keys(line.subassemblies).join(", ");
+        grid.innerHTML += `
+          <div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')">
+            <img src="${line.image}" class="card-img-top">
+            <div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5><div class="text-muted small"><i class="bi bi-hdd-rack"></i> ${line.machineCount} เครื่องจักร</div></div>
+            <div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mb-2"><i class="bi bi-diagram-3"></i> <b>ระบบย่อย:</b><br><span style="font-size:13px; opacity:0.9;">${subNames}</span></div><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">เข้าสู่ Line นี้ <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div>
+          </div></div>`;
+      }
+    }
+
+    function renderSubs(lineName) {
+      let grid = document.getElementById('subGrid');
+      grid.innerHTML = '';
+      let line = dbData[lineName];
+      if (!line) return;
+      for (let subName in line.subassemblies) {
+        let sub = line.subassemblies[subName];
+        let comps = sub.components.map(c => c.name).join(", ");
+        grid.innerHTML += `
+          <div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${subName}')">
+            <img src="${sub.image}" class="card-img-top">
+            <div class="p-3"><h6 class="fw-bold text-dark mb-1">${subName}</h6><div class="text-muted small"><i class="bi bi-tools"></i> ${sub.components.length} Components</div></div>
+            <div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${subName}</h6><div class="mb-2" style="font-size:13px;"><i class="bi bi-list-check"></i> <b>รายการ:</b> ${comps}</div><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูตาราง Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div>
+          </div></div>`;
+      }
+    }
+
+    function renderComponentTable() {
+      let tbody = document.getElementById('componentTableBody');
+      tbody.innerHTML = '';
+      let comps = dbData[currentLine].subassemblies[currentSub].components;
+      
+      comps.forEach(c => {
+        let weeksHtml = "";
+        for(let w=1; w<=52; w++) {
+          let isPlan = w%4===0; let wData = {t:isPlan?1:0, r:0, b:0, l:0};
+          weeksHtml += `<td class="text-center p-1"><div class="week-svg-container">${getTriangleSVGOnly(wData)}</div></td>`;
+        }
+        tbody.innerHTML += `
+          <tr>
+            <td class="text-center"><div style="width:50px; height:50px; background:#f1f5f9; border-radius:6px; margin:auto;"><i class="bi bi-image text-muted" style="line-height:50px;"></i></div></td>
+            <td class="fw-bold text-primary">${c.name}</td>
+            <td class="text-muted" style="font-size:11px;">Inspect condition</td>
+            <td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center"><span class="badge bg-success">Run</span></td><td class="text-center fw-bold text-danger">${c.time}</td>
+            <td class="text-center" style="font-size:10px;">ถุงมือ, แว่นตา</td>${weeksHtml}
+          </tr>`;
+      });
+    }
+
+    // 3. ฟอร์มเพิ่มข้อมูล และล็อก Context
+    function openAddForm() {
+      document.getElementById('ledgerForm').reset();
+      resetFormImages();
+      resetWeekData();
+      renderDisplayGrid();
+
+      // การล็อกข้อมูลเมื่อกดมาจากหน้าต่างๆ
+      if (currentLine && currentSub) {
+        // อยู่หน้าลึกสุด -> ล็อก Line, Sub
+        document.getElementById('f_machineName').value = currentLine;
+        document.getElementById('f_machineName').readOnly = true;
+        document.getElementById('f_subAssembly').value = currentSub;
+        document.getElementById('f_subAssembly').readOnly = true;
+        
+        document.getElementById('box_imgMach').style.display = 'none'; 
+        document.getElementById('box_imgSub').style.display = 'none'; 
+        document.getElementById('box_imgComp').style.display = 'block';
+      } else if (currentLine) {
+        // อยู่หน้า Sub -> ล็อกแค่ Line
+        document.getElementById('f_machineName').value = currentLine;
+        document.getElementById('f_machineName').readOnly = true;
+        document.getElementById('f_subAssembly').readOnly = false;
+
+        document.getElementById('box_imgMach').style.display = 'none';
+        document.getElementById('box_imgSub').style.display = 'block';
+        document.getElementById('box_imgComp').style.display = 'block';
+      } else {
+        // อยู่หน้าแรกสุด -> กรอกเองทั้งหมด
+        document.getElementById('f_machineName').readOnly = false;
+        document.getElementById('f_subAssembly').readOnly = false;
+        
+        document.getElementById('box_imgMach').style.display = 'block';
+        document.getElementById('box_imgSub').style.display = 'block';
+        document.getElementById('box_imgComp').style.display = 'block';
+      }
+
+      document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
+      document.getElementById('view-form').classList.add('active');
+      document.getElementById('fabAdd').style.display = 'none';
+      window.scrollTo(0,0);
+    }
+
+    // 4. Triangle 52 Weeks
+    function resetWeekData() { for(let i=1; i<=52; i++) weeksData["w"+i] = { t: 0, r: 0, b: 0, l: 0 }; }
+    function getTriangleSVGOnly(data) {
+      return `<svg viewBox="0 0 20 20" width="100%" height="100%"><polygon class="tri-part tri-top ${data.t?'active':'inactive'}" points="0,0 20,0 10,10"/><polygon class="tri-part tri-right ${data.r?'active':'inactive'}" points="20,0 20,20 10,10"/><polygon class="tri-part tri-bottom ${data.b?'active':'inactive'}" points="20,20 0,20 10,10"/><polygon class="tri-part tri-left ${data.l?'active':'inactive'}" points="0,20 0,0 10,10"/></svg>`;
+    }
+
+    function getTriangleSVG(wId, mode) {
+      let data = weeksData[wId];
+      let clickT = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 't', this)"` : "";
+      let clickR = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'r', this)"` : "";
+      let clickB = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'b', this)"` : "";
+      let clickL = mode === 'modal' ? `onclick="toggleTriangle('${wId}', 'l', this)"` : "";
+      return `<svg viewBox="0 0 20 20" width="100%" height="100%"><polygon class="tri-part tri-top ${data.t?'active':'inactive'}" points="0,0 20,0 10,10" ${clickT}/><polygon class="tri-part tri-right ${data.r?'active':'inactive'}" points="20,0 20,20 10,10" ${clickR}/><polygon class="tri-part tri-bottom ${data.b?'active':'inactive'}" points="20,20 0,20 10,10" ${clickB}/><polygon class="tri-part tri-left ${data.l?'active':'inactive'}" points="0,20 0,0 10,10" ${clickL}/></svg>`;
+    }
+
+    function renderDisplayGrid() {
+      let container = document.getElementById('weekDisplayContainer');
+      container.innerHTML = '';
+      for(let i=1; i<=52; i++) { container.innerHTML += `<div class="week-box"><div style="margin-bottom:2px;">${i}</div><div class="week-svg-container">${getTriangleSVG("w"+i, 'display')}</div></div>`; }
+    }
+
+    function openWeekModal() {
+      let container = document.getElementById('expandedWeekGrid');
+      container.innerHTML = '';
+      for(let i=1; i<=52; i++) { container.innerHTML += `<div class="week-expand-box">W${i}<div class="week-svg-container">${getTriangleSVG("w"+i, 'modal')}</div></div>`; }
+      new bootstrap.Modal(document.getElementById('weekModal')).show();
+    }
+
+    function toggleTriangle(wId, side, element) {
+      weeksData[wId][side] = weeksData[wId][side] ? 0 : 1;
+      if (weeksData[wId][side]) { element.classList.replace('inactive', 'active'); } else { element.classList.replace('active', 'inactive'); }
+    }
+
+    function syncModalToDisplay() {
+      renderDisplayGrid();
+      bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
+    }
+
+    // 5. Image Management
+    function previewImageNew(input, targetImgId) {
+      if (input.files && input.files[0]) {
+        let reader = new FileReader();
+        reader.onload = function(e) {
+          let img = document.getElementById(targetImgId);
+          img.src = e.target.result; img.style.display = 'block';
+          img.previousElementSibling.style.display = 'none'; 
+          document.getElementById('clear_' + targetImgId).style.display = 'block';
+        }
+        reader.readAsDataURL(input.files[0]);
+      }
+    }
+
+    function clearImage(targetImgId) {
+      let img = document.getElementById(targetImgId);
+      img.src = ''; img.style.display = 'none';
+      img.previousElementSibling.style.display = 'flex';
+      document.getElementById('clear_' + targetImgId).style.display = 'none';
+      if(targetImgId === 'prevMach') { document.getElementById('imgMachCam').value = ""; document.getElementById('imgMachLib').value = ""; }
+      if(targetImgId === 'prevSub') { document.getElementById('imgSubCam').value = ""; document.getElementById('imgSubLib').value = ""; }
+      if(targetImgId === 'prevComp') { document.getElementById('imgCompCam').value = ""; document.getElementById('imgCompLib').value = ""; }
+    }
+
+    function resetFormImages() {
+      clearImage('prevMach'); clearImage('prevSub'); clearImage('prevComp');
+      document.querySelectorAll('.ppe-item').forEach(el => el.classList.remove('active'));
+    }
+
+    function getBase64(inputId) {
+      let img = document.getElementById(inputId);
+      if(img && img.src && img.src.startsWith('data:image')) { return img.src; }
+      return "";
+    }
+
+    // 6. Submit Data using Fetch (CORS Enabled)
+    async function submitFormViaAPI() {
+      let form = document.getElementById('ledgerForm');
+      if(!form.checkValidity()) { form.reportValidity(); return; }
+
+      document.getElementById('loadingOverlay').style.display = 'flex';
+      let ppeActive = []; document.querySelectorAll('.ppe-item.active').forEach(el => ppeActive.push(el.innerText));
+
+      let payload = {
+        machineName: document.getElementById('f_machineName').value,
+        subAssembly: document.getElementById('f_subAssembly').value,
+        componentName: document.getElementById('f_componentName').value,
+        spareClass: document.getElementById('f_class').value,
+        pmStandard: document.getElementById('f_pmStd').value,
+        machineStatus: document.getElementById('f_status').value,
+        stdTime: document.getElementById('f_stdTime').value,
+        task: document.getElementById('f_task').value,
+        riskPermit: document.getElementById('f_risk').checked,
+        ppeList: ppeActive.join(', '),
+        imgMachine: getBase64('prevMach'),
+        imgSub: getBase64('prevSub'),
+        imgComp: getBase64('prevComp'),
+        weeks: weeksData 
+      };
+
+      try {
+        const response = await fetch(GAS_API_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // กัน Preflight CORS error ของ GAS
+          body: JSON.stringify(payload)
+        });
+        const result = await response.json();
+        
+        if(result.success) {
+          alert("✅ " + result.message);
+          window.history.back();
+        } else {
+          alert("❌ เกิดข้อผิดพลาด: " + result.message);
+        }
+      } catch (error) {
+        alert("❌ Error: การเชื่อมต่อ API ขัดข้อง");
+      } finally {
+        document.getElementById('loadingOverlay').style.display = 'none';
+      }
+    }
+
+    // Init
+    window.onload = () => { handleRouting(); resetWeekData(); };
+  </script>
 </body>
 </html>
