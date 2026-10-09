@@ -1,22 +1,33 @@
 // 🔴 นำ Web App URL ของ Google Apps Script ของคุณมาใส่ตรงนี้
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec"; 
 
-
+// Mock Data แบบ 4 ระดับ (Line -> Machine -> Subassembly -> Component)
 let dbData = {
-  "Machine A1": {
-    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80", machineCount: 1,
-    subassemblies: {
-      "Conveyor": { image: "https://images.unsplash.com/photo-1563248386-35eb05cc092b?w=400&q=80", components: [{name:"Belt Roll", time:30}] }
+  "Line A1 (Packing)": {
+    image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80",
+    machines: {
+      "FILLER-01": {
+        image: "https://images.unsplash.com/photo-1537724326059-2ea20251b9c8?w=400&q=80",
+        subassemblies: {
+          "Conveyor System": { 
+            image: "https://images.unsplash.com/photo-1563248386-35eb05cc092b?w=400&q=80", 
+            components: [{name:"Belt Roll", time:30}] 
+          }
+        }
+      }
     }
   }
 };
 
 let currentLine = null;
+let currentMach = null;
 let currentSub = null;
 
-function navigateTo(line = null, sub = null) {
+// ================= 1. Routing & Render =================
+function navigateTo(line = null, mach = null, sub = null) {
   let url = new URL(window.location);
   if (line) url.searchParams.set('line', line); else url.searchParams.delete('line');
+  if (mach) url.searchParams.set('mach', mach); else url.searchParams.delete('mach');
   if (sub) url.searchParams.set('sub', sub); else url.searchParams.delete('sub');
   window.history.pushState({}, '', url);
   handleRouting();
@@ -25,25 +36,32 @@ function navigateTo(line = null, sub = null) {
 function handleRouting() {
   let params = new URLSearchParams(window.location.search);
   currentLine = params.get('line');
+  currentMach = params.get('mach');
   currentSub = params.get('sub');
 
   document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
   let breadcrumb = "Dashboard";
 
-  if (currentLine && currentSub) {
+  if (currentLine && currentMach && currentSub) {
     document.getElementById('lbl-sub-title').innerText = currentSub;
     renderComponentTable();
     document.getElementById('view-components').classList.add('active');
-    breadcrumb = `${currentLine} > ${currentSub}`;
+    breadcrumb = `${currentLine} > ${currentMach} > ${currentSub}`;
+  } else if (currentLine && currentMach) {
+    document.getElementById('lbl-mach-title').innerText = currentMach;
+    renderSubs(currentLine, currentMach);
+    document.getElementById('view-subs').classList.add('active');
+    breadcrumb = `${currentLine} > ${currentMach}`;
   } else if (currentLine) {
     document.getElementById('lbl-line-title').innerText = currentLine;
-    renderSubs(currentLine);
-    document.getElementById('view-subs').classList.add('active');
+    renderMachs(currentLine);
+    document.getElementById('view-machs').classList.add('active');
     breadcrumb = `${currentLine}`;
   } else {
     renderLines();
     document.getElementById('view-lines').classList.add('active');
   }
+  
   document.getElementById('headerBreadcrumb').innerText = breadcrumb;
   window.scrollTo(0,0);
 }
@@ -53,33 +71,42 @@ function renderLines() {
   let grid = document.getElementById('lineGrid');
   grid.innerHTML = '';
   for (let lineName in dbData) {
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">เข้าสู่ Machine นี้ <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">เข้าสู่ Line นี้ <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
-function renderSubs(lineName) {
-  let grid = document.getElementById('subGrid');
+function renderMachs(lineName) {
+  let grid = document.getElementById('machGrid');
   grid.innerHTML = '';
   let line = dbData[lineName];
   if (!line) return;
-  for (let subName in line.subassemblies) {
-    let sub = line.subassemblies[subName];
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${subName}')"><img src="${sub.image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${subName}</h6></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${subName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดู Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+  for (let machName in line.machines) {
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${machName}</h5></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${machName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูระบบย่อย <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+  }
+}
+
+function renderSubs(lineName, machName) {
+  let grid = document.getElementById('subGrid');
+  grid.innerHTML = '';
+  let mach = dbData[lineName].machines[machName];
+  if (!mach) return;
+  for (let subName in mach.subassemblies) {
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}', '${subName}')"><img src="${mach.subassemblies[subName].image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${subName}</h6></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${subName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดู Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
 function renderComponentTable() {
   let tbody = document.getElementById('componentTableBody');
   tbody.innerHTML = '';
-  let comps = dbData[currentLine].subassemblies[currentSub].components;
+  let comps = dbData[currentLine].machines[currentMach].subassemblies[currentSub].components;
   comps.forEach(c => {
     let weeksHtml = "";
     for(let w=1; w<=52; w++) { weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly({t:w%4===0?1:0, r:0, b:0, l:0})}</td>`; }
-    // 🔴 คอลัมน์ EWO จะอยู่ต่อท้าย ${weeksHtml} 
-    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">Gloves</td>${weeksHtml}<td class="text-muted" style="font-size:11px;">E-123</td></tr>`;
+    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">ถุงมือ</td>${weeksHtml}<td class="text-muted" style="font-size:11px;">E-123</td></tr>`;
   });
 }
 
+// ================= 2. Context Aware Form (ฟอร์มอัจฉริยะ) =================
 function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
     let reader = new FileReader();
@@ -110,41 +137,71 @@ function addComponentCard(btn) {
   container.appendChild(clone);
 }
 
+// ล็อกฟอร์มขึ้นอยู่กับว่ากดมาจากหน้าไหน
 function openAddFormContext() {
   document.getElementById('ledgerForm').reset();
   document.getElementById('subSystemsContainer').innerHTML = ''; 
   
+  let lInput = document.getElementById('f_lineName');
   let mInput = document.getElementById('f_machineName');
+  
+  let boxLine = document.getElementById('box_f_lineName');
+  let boxMach = document.getElementById('box_f_machineName');
+  let boxImgMach = document.getElementById('box_imgMach');
+  
   let cardStructure = document.getElementById('cardStructure');
   let btnAddSub = document.getElementById('btnAddSub');
+  
   let contextBanner = document.getElementById('formContextBanner');
   let contextText = document.getElementById('formContextText');
 
-  if (currentLine && currentSub) {
-    mInput.value = currentLine;
+  // ค่าเริ่มต้น -> โชว์ทุกช่อง (สำหรับกดจากหน้า Dashboard หน้าแรก)
+  cardStructure.style.display = 'block';
+  boxLine.style.display = 'block'; lInput.readOnly = false;
+  boxMach.style.display = 'block'; mInput.readOnly = false;
+  boxImgMach.style.display = 'block';
+  btnAddSub.style.display = 'block';
+  contextBanner.classList.add('d-none');
+
+  if (currentLine && currentMach && currentSub) {
+    // 🔴 1. อยู่หน้าลึกสุด (Component) -> ให้เติมแค่ Component (ล็อก 3 ชั้น)
     cardStructure.style.display = 'none'; 
     btnAddSub.style.display = 'none';
+    
     contextBanner.classList.remove('d-none');
-    contextText.innerText = `${currentLine} > ${currentSub}`;
+    contextText.innerText = `${currentLine} > ${currentMach} > ${currentSub}`;
+    
+    lInput.value = currentLine;
+    mInput.value = currentMach;
     
     addSubsystemCard();
     let subCard = document.querySelector('.sub-system-card');
     subCard.querySelector('.input-subname').value = currentSub;
-    subCard.querySelector('#subHeaderRow').style.display = 'none'; 
+    subCard.querySelector('#subHeaderRow').style.display = 'none'; // ซ่อนช่องชื่อ Sub
     subCard.querySelector('.btn-remove-sub').style.display = 'none';
 
-  } else if (currentLine) {
-    mInput.value = currentLine;
+  } else if (currentLine && currentMach) {
+    // 🔴 2. อยู่หน้า Subassembly -> ให้เติม Subassembly + Component (ล็อก 2 ชั้น)
     cardStructure.style.display = 'none'; 
-    btnAddSub.style.display = 'block';
+    
     contextBanner.classList.remove('d-none');
-    contextText.innerText = `${currentLine}`;
+    contextText.innerText = `${currentLine} > ${currentMach}`;
+    
+    lInput.value = currentLine;
+    mInput.value = currentMach;
     addSubsystemCard();
+
+  } else if (currentLine) {
+    // 🔴 3. อยู่หน้า Machine -> ให้เติม Machine + Sub + Comp (ล็อก 1 ชั้น)
+    boxLine.style.display = 'none';
+    lInput.value = currentLine;
+    
+    contextBanner.classList.remove('d-none');
+    contextText.innerText = `ไลน์ผลิต: ${currentLine}`;
+    addSubsystemCard();
+    
   } else {
-    cardStructure.style.display = 'block';
-    mInput.readOnly = false;
-    btnAddSub.style.display = 'block';
-    contextBanner.classList.add('d-none');
+    // 🔴 4. อยู่หน้าแรก -> เติมทุกอย่าง
     addSubsystemCard();
   }
 
@@ -153,6 +210,7 @@ function openAddFormContext() {
   window.scrollTo(0,0);
 }
 
+// ================= 3. 4-Triangle Calendar =================
 let currentCompactGrid = null; 
 let tempWeekData = [];
 
@@ -191,6 +249,7 @@ function syncModalToCompact() {
   bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
 }
 
+// ================= 4. Submit to Google Apps Script =================
 function getBase64(imgElement) {
   if(imgElement && imgElement.src && imgElement.src.startsWith('data:image')) return imgElement.src;
   return "";
@@ -204,7 +263,8 @@ async function submitFormViaAPI() {
   let payload = {
     action: 'save_ledger', 
     data: {
-      machineName: document.getElementById('f_machineName').value || currentLine,
+      lineName: document.getElementById('f_lineName').value,
+      machineName: document.getElementById('f_machineName').value,
       imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std')?.querySelector('.preview-img')),
       subSystems: []
     }
@@ -218,6 +278,7 @@ async function submitFormViaAPI() {
     };
 
     subCard.querySelectorAll('.part-item').forEach(pCard => {
+      // 🔴 ดึงเฉพาะ PPE ที่ไม่ได้โดนกากบาท (ไม่มีคลาส not-used)
       let ppeActive = []; 
       pCard.querySelectorAll('.icon-checkbox:not(.not-used) .label').forEach(el => ppeActive.push(el.innerText));
       
@@ -228,7 +289,7 @@ async function submitFormViaAPI() {
         pmStd: pCard.querySelector('.input-pmstd').value,
         status: pCard.querySelector('.input-status').value,
         stdTime: pCard.querySelector('.input-time').value,
-        remarkEwo: pCard.querySelector('.input-remark').value, // 🔴 ดึงค่า EWO ที่ย้ายมาหลัง 52 Weeks ไปบันทึก
+        remarkEwo: pCard.querySelector('.input-remark').value, 
         risk: pCard.querySelector('.input-risk').checked,
         ppe: ppeActive.join(', '),
         imgComp: getBase64(pCard.querySelector('.box_imgComp .preview-img')),
