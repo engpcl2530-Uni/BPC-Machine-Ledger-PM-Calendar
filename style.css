@@ -9,6 +9,10 @@ body { background-color: var(--bg); font-family: 'Prompt', sans-serif; color: va
 .view-section.active { display: block; }
 @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
+/* ปุ่มย้อนกลับที่ชัดเจนแบบ SMP */
+.btn-back-prominent { background: #E2E8F0; color: var(--primary); border: 1px solid #CBD5E0; padding: 8px 16px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
+.btn-back-prominent:hover { background: #CBD5E0; transform: translateX(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1);}
+
 /* Hover Cards */
 .hover-card { position: relative; border-radius: 12px; overflow: hidden; border: none; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; transition: 0.3s; height: 250px; border-left: 6px solid var(--secondary); }
 .hover-card:hover { box-shadow: 0 12px 25px rgba(0,94,184,0.2); border-left-color: #198754; transform: translateY(-5px); }
@@ -21,17 +25,22 @@ body { background-color: var(--bg); font-family: 'Prompt', sans-serif; color: va
 .form-control, .form-select { border-radius: 10px; padding: 10px; font-size: 14px; background: #F8FAFC; border: 1.5px solid var(--border); }
 .form-control:focus, .form-select:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(0,94,184,0.1); background: #FFF;}
 .form-control:disabled, .form-control[readonly] { background-color: #e2e8f0; opacity: 0.8; }
-.btn-back { background: transparent; color: var(--primary); font-weight: 600; border: none; padding: 0; display: flex; align-items: center; gap: 5px; transition: 0.2s;}
 
-/* Upload Image Style (CMMS Style) */
+/* Image Upload UI */
 .upload-box { border: 2px dashed #cbd5e1; padding: 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #94a3b8; cursor: pointer; transition: 0.2s; background: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100px; text-align: center;}
 .upload-box:hover { border-color: var(--secondary); color: var(--secondary); background: #f0f7ff; }
-.preview-img { width: 100%; height: 100px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); padding: 2px; background: white; display: none; cursor: pointer;}
+.preview-img { width: 100%; height: 100px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); padding: 2px; background: white; display: none; cursor: pointer;}
 
-/* PPE */
-.ppe-grid { display: flex; flex-wrap: wrap; gap: 6px; }
-.ppe-item { background: white; border: 1.5px solid var(--border); padding: 4px 10px; border-radius: 20px; cursor: pointer; font-size: 12px; font-weight: 500; color: #64748b; transition: 0.2s; user-select: none;}
-.ppe-item.active { background: var(--secondary); color: white; border-color: var(--secondary); box-shadow: 0 4px 10px rgba(0,94,184,0.2);}
+/* ================= PPE แบบ SMP (มีกากบาท) ================= */
+.ppe-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start;}
+.icon-checkbox { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 75px; height: 85px; cursor: pointer; position: relative; background: #F8FAFC; border: 2px solid transparent; border-radius: 12px; transition: 0.2s; padding: 5px; border: 1px solid var(--border);}
+.icon-checkbox:hover { background: #E2E8F0; }
+.custom-icon-img { width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px; transition: 0.2s; }
+.icon-checkbox span.label { font-size: 11px; color: #333; font-weight: 600; text-align: center; line-height: 1.1; }
+/* สถานะเมื่อไม่ได้ใช้งาน (มีกากบาท) */
+.icon-checkbox.not-used { background: white; border: 2px dashed #cbd5e1; opacity: 0.85; }
+.icon-checkbox.not-used .custom-icon-img { filter: grayscale(100%); opacity: 0.3; }
+.icon-checkbox.not-used::after { content: 'close'; font-family: 'Material Symbols Rounded'; color: #E53E3E; font-size: 45px; position: absolute; font-weight: 700; top: 10px; text-shadow: 0 0 5px white; }
 
 /* 4-Triangle Grid */
 .week-compact-grid svg { width: 16px; height: 16px; }
