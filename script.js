@@ -295,6 +295,7 @@ async function submitFormViaAPI() {
     data: {
       lineName: document.getElementById('f_lineName').value,
       machineName: document.getElementById('f_machineName').value,
+      updatedBy: document.getElementById('f_updatedBy').value, // 🔴 เพิ่มบรรทัดนี้เพื่อส่งชื่อคนทำ
       imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std')?.querySelector('.preview-img')),
       subSystems: []
     }
