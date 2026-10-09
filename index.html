@@ -142,49 +142,147 @@
   </div>
 
   <!-- Template: Subassembly Card (🔴 เพิ่มช่องประเมินความเสี่ยง) -->
+  <!-- ========================================== -->
+  <!-- TEMPLATES (ดีไซน์ CMMS ออริจินัล) -->
+  <!-- ========================================== -->
+
+  <!-- Template: Subassembly Card -->
   <template id="subSystemTemplate">
-  <div class="card sub-system-card mb-4 border-success drag-item" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragend="handleDragEnd(event)">
-    <div class="card-header bg-success text-white d-flex justify-content-between align-items-center" id="subHeaderRow">
-      <div>
-        <i class="bi bi-grip-vertical me-2 fs-5" style="cursor: grab;" onmousedown="makeDraggable(this)" onmouseup="makeUndraggable(this)" onmouseleave="makeUndraggable(this)"></i>
-        <i class="bi bi-diagram-3 me-2"></i>ระบบย่อย (Subassembly)
-      </div>
-      <div>
-        <button type="button" class="btn btn-sm btn-light text-success me-2 fw-bold shadow-sm" onclick="duplicateItem(this)"><i class="bi bi-copy me-1"></i>คัดลอกชุดนี้</button>
-        <button type="button" class="btn btn-sm btn-danger btn-remove-sub shadow-sm" onclick="this.closest('.sub-system-card').remove()"><i class="bi bi-trash"></i> ลบ</button>
-      </div>
-    </div>
-    <div class="card-body bg-success bg-opacity-10">
-      <div class="row g-3 mb-3">
-        <div class="col-md-8">
-          <label class="form-label text-success">ชื่อระบบย่อย (Subassembly Name) <span class="text-danger">*</span></label>
-          <input type="text" class="form-control input-subname border-success" placeholder="เช่น Main Conveyor, Hydraulic Unit" required>
+    <div class="card sub-system-card mb-5 border-0 shadow-sm drag-item">
+      <!-- สีหัวการ์ดตามสไตล์ CMMS -->
+      <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center" id="subHeaderRow">
+        <h5 class="fw-bold text-success mb-0">
+          <i class="bi bi-diagram-3 me-2"></i>ระบบย่อย (Subassembly)
+        </h5>
+        <div>
+          <button type="button" class="btn btn-sm btn-outline-danger shadow-sm rounded-pill px-3" onclick="this.closest('.sub-system-card').remove()"><i class="bi bi-trash me-1"></i> ลบระบบย่อย</button>
         </div>
-        <div class="col-md-4 text-center box_imgSub">
-          <label class="form-label text-success">รูปภาพระบบย่อย</label>
-          <div class="border rounded bg-white p-2 position-relative" style="min-height: 100px;">
-            <i class="bi bi-camera fs-3 text-muted" style="line-height: 80px;"></i>
-            <input type="file" accept="image/*" class="form-control position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;" onchange="previewDynamicFile(this)">
-            <img src="" class="preview-img w-100 rounded" style="display:none; max-height: 150px; object-fit: contain;">
+      </div>
+      
+      <div class="card-body">
+        <div class="row g-4 mb-4">
+          <div class="col-md-8">
+            <label class="form-label fw-bold text-dark" style="font-size: 14px;">ชื่อระบบย่อย (Subassembly Name) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control input-subname" placeholder="เช่น Main Conveyor, Hydraulic Unit" style="border-radius: 8px;" required>
+          </div>
+          <div class="col-md-4 text-center box_imgSub">
+            <label class="form-label fw-bold text-dark w-100 text-start" style="font-size: 14px;">รูปภาพระบบย่อย</label>
+            <div class="border rounded bg-light p-2 position-relative" style="min-height: 80px; border-style: dashed !important; border-width: 2px !important; cursor: pointer;">
+              <i class="bi bi-camera fs-4 text-muted" style="line-height: 60px;"></i>
+              <input type="file" accept="image/*" class="form-control position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;" onchange="previewDynamicFile(this)">
+              <img src="" class="preview-img w-100 rounded" style="display:none; max-height: 120px; object-fit: contain;">
+            </div>
           </div>
         </div>
+        
+        <!-- 🔴 ประเมินความเสี่ยง (ดีไซน์ออริจินัล) -->
+        <h6 class="text-danger fw-bold mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i> ประเมินความเสี่ยงและผลกระทบ (Risk & Impact)</h6>
+        <div class="risk-grid mb-5 bg-white">
+          <label class="icon-checkbox"><input type="checkbox" checked><div class="content"><i class="bi bi-gear-wide-connected"></i><span class="label">เครื่องจักร<br>หยุดชะงัก</span></div></label>
+          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-shield-x"></i><span class="label">กระทบ<br>คุณภาพสินค้า</span></div></label>
+          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-exclamation-octagon"></i><span class="label">อันตราย<br>ต่อผู้ปฏิบัติงาน</span></div></label>
+          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-thermometer-high"></i><span class="label">ความร้อนสูง /<br>สารเคมี</span></div></label>
+        </div>
+        
+        <!-- 🟢 รายการชิ้นส่วน (ดีไซน์ออริจินัล) -->
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 mt-4">
+          <h6 class="text-success fw-bold mb-0"><i class="bi bi-list-check me-2"></i>รายการชิ้นส่วน (Components)</h6>
+        </div>
+        
+        <div class="parts-container bg-white"></div>
+        
+        <button type="button" class="btn btn-light text-success w-100 fw-bold py-2 mt-2 border border-success border-opacity-25" style="border-radius: 8px;" onclick="addComponentCard(this)">
+          <i class="bi bi-plus-lg me-1"></i> เพิ่ม Component
+        </button>
       </div>
-      <label class="form-label text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>ประเมินความเสี่ยงและผลกระทบ (Risk & Impact)</label>
-      <div class="risk-grid mb-4">
-        <label class="icon-checkbox"><input type="checkbox" checked><div class="content"><i class="bi bi-gear-wide-connected"></i><span class="label">เครื่องจักรหยุดชะงัก</span></div></label>
-        <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-shield-x"></i><span class="label">กระทบคุณภาพสินค้า</span></div></label>
-        <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-exclamation-octagon"></i><span class="label">อันตรายต่อผู้ปฏิบัติงาน</span></div></label>
-        <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-thermometer-high"></i><span class="label">ความร้อนสูง / สารเคมี</span></div></label>
-      </div>
-      <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
-        <h6 class="text-success fw-bold mb-0"><i class="bi bi-list-check me-2"></i>รายการชิ้นส่วน (Components)</h6>
-        <button type="button" class="btn btn-sm btn-success" onclick="addComponentCard(this)"><i class="bi bi-plus"></i> เพิ่ม Component</button>
-      </div>
-      <div class="parts-container"></div>
     </div>
-  </div>
-</template>
+  </template>
 
+  <!-- Template: Component Card (ดีไซน์ CMMS ออริจินัล) -->
+  <template id="componentTemplate">
+    <div class="part-item bg-white mb-4 position-relative border-bottom pb-4">
+      <!-- ป้าย Badge ชิ้นส่วนแบบเดิม -->
+      <div class="mb-3 d-flex justify-content-between align-items-center">
+        <span class="badge bg-secondary px-3 py-2" style="font-size: 14px; border-radius: 6px;"><i class="bi bi-grip-vertical me-1 text-white-50" style="cursor: grab;" onmousedown="makeDraggable(this)" onmouseup="makeUndraggable(this)" onmouseleave="makeUndraggable(this)"></i>ชิ้นส่วน</span>
+        
+        <div>
+          <!-- ปุ่ม Copy ซ่อนไว้แบบเนียนๆ ไม่ให้กวนตา -->
+          <button type="button" class="btn btn-sm btn-light text-primary me-2 shadow-sm" onclick="duplicateItem(this)" title="คัดลอก"><i class="bi bi-copy"></i></button>
+          <button type="button" class="btn btn-sm btn-light text-danger shadow-sm" onclick="this.closest('.part-item').remove()" title="ลบ"><i class="bi bi-trash"></i></button>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <!-- แถวที่ 1 -->
+        <div class="col-md-4">
+          <label class="form-label fw-bold text-dark" style="font-size: 13px;">ชื่อชิ้นส่วน (Component) <span class="text-danger">*</span></label>
+          <input type="text" class="form-control" placeholder="เช่น Drive Motor" style="border-radius: 6px;" required>
+        </div>
+        <div class="col-md-5">
+          <label class="form-label fw-bold text-dark" style="font-size: 13px;">ลักษณะงาน (Task)</label>
+          <input type="text" class="form-control" placeholder="เช่น ตรวจสอบความร้อน" style="border-radius: 6px;">
+        </div>
+        <div class="col-md-3">
+          <label class="form-label fw-bold text-dark" style="font-size: 13px;">ความสำคัญ</label>
+          <select class="form-select" style="border-radius: 6px;"><option>A</option><option>B</option><option>C</option></select>
+        </div>
+
+        <!-- แถวที่ 2 (แถว Permit แบบมีกรอบเทาตามรูป) -->
+        <div class="col-md-3 mt-3">
+          <label class="form-label fw-bold text-dark" style="font-size: 13px;">เวลามาตรฐาน (นาที)</label>
+          <input type="number" class="form-control input-time" placeholder="เช่น 30" style="border-radius: 6px;" required>
+          
+          <div class="mt-3">
+            <label class="form-label fw-bold text-dark" style="font-size: 13px;">มาตรฐาน PM & สถานะ</label>
+            <div class="d-flex gap-2">
+              <select class="form-select form-select-sm input-pmstd"><option>CBM</option><option>TBM</option></select>
+              <select class="form-select form-select-sm input-status"><option>Run</option><option>Stop</option></select>
+            </div>
+          </div>
+        </div>
+
+        <!-- กล่องสวิตช์ พื้นที่เสี่ยงสูง -->
+        <div class="col-md-3 mt-3">
+          <div class="bg-light border rounded p-3 h-100 d-flex flex-column justify-content-center align-items-center" style="border-radius: 8px !important;">
+            <label class="form-label fw-bold text-dark mb-3" style="font-size: 13px;">พื้นที่เสี่ยงสูง (Permit)</label>
+            <div class="form-check form-switch m-0 p-0 d-flex justify-content-center">
+              <input class="form-check-input input-risk m-0" type="checkbox" role="switch" style="width: 45px; height: 22px; cursor: pointer;">
+            </div>
+          </div>
+        </div>
+
+        <!-- อุปกรณ์ป้องกัน PPE -->
+        <div class="col-md-6 mt-3">
+          <label class="form-label fw-bold text-dark" style="font-size: 13px;">อุปกรณ์ป้องกัน (PPE) ที่จำเป็น</label>
+          <div class="ppe-grid">
+            <label class="icon-checkbox"><input type="checkbox" checked><div class="content"><i class="bi bi-eyeglasses"></i><span class="label">แว่นตา</span></div></label>
+            <label class="icon-checkbox"><input type="checkbox" checked><div class="content"><i class="bi bi-hand-index-thumb"></i><span class="label">ถุงมือ</span></div></label>
+            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-ear-fill"></i><span class="label">ปลั๊กอุดหู</span></div></label>
+          </div>
+        </div>
+
+        <!-- แถวที่ 3 (ภาพ และ ปฏิทิน) -->
+        <div class="col-md-3 mt-3 box_imgComp">
+          <label class="form-label fw-bold text-dark w-100" style="font-size: 13px;">ภาพชิ้นส่วน</label>
+          <div class="border rounded bg-light position-relative" style="height: 60px; border-style: dashed !important; border-width: 2px !important;">
+            <i class="bi bi-image text-muted text-center w-100 d-block" style="line-height: 60px;"></i>
+            <input type="file" accept="image/*" class="form-control position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;" onchange="previewDynamicFile(this)">
+            <img src="" class="preview-img w-100 h-100 rounded" style="display:none; object-fit: cover;">
+          </div>
+        </div>
+        
+        <div class="col-md-9 mt-3">
+           <label class="form-label fw-bold text-dark" style="font-size: 13px;">ปฏิทินแผนซ่อมบำรุง 52 สัปดาห์ (คลิกเพื่อแก้ไข)</label>
+           <div class="week-compact-grid border rounded bg-white p-1" onclick="openWeekModal(this)" style="cursor: pointer; min-height: 35px; display: flex; flex-wrap: wrap;"></div>
+           <input type="hidden" class="week-data-input">
+        </div>
+        
+        <div class="col-md-12 mt-2">
+          <input type="text" class="form-control input-remark text-muted" placeholder="Remarks / EWO Reference (รายละเอียดเพิ่มเติม หรือเลขอ้างอิง EWO)" style="font-size: 13px; border-radius: 6px; background-color: #f8f9fa;">
+        </div>
+      </div>
+    </div>
+  </template>
   <!-- Template: Component Card -->
   <template id="componentTemplate">
   <div class="card p-3 mb-3 part-item bg-light drag-item shadow-sm border-0" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragend="handleDragEnd(event)">
