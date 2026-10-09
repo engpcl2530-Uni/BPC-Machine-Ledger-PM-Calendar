@@ -1,5 +1,5 @@
 // 🔴 นำ Web App URL ของ Google Apps Script ของคุณมาใส่ตรงนี้
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec"; 
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbwyeWdcN2Jpqzni5H-p0O7V8ZykGYh2KrfysrZ28nDB7__InNl-o6LW1HKjnoVNNOR0Kw/exec"; 
 
 // =========================================================
 // โครงสร้างฐานข้อมูลจำลอง (Line -> Machine -> Subassembly -> Component)
