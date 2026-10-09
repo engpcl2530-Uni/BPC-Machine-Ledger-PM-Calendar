@@ -1,5 +1,5 @@
 // 🔴 นำ Web App URL ของ Google Apps Script มาใส่ตรงนี้
-const GAS_API_URL = https://script.google.com/macros/s/AKfycbxRj_dahQfwuT4X8iTFF2-ds_9vo-GHVbvLDgxvOdW-r8UfYQ3F4uXtvN-MOuhHOu0Ngg/exec; 
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxRj_dahQfwuT4X8iTFF2-ds_9vo-GHVbvLDgxvOdW-r8UfYQ3F4uXtvN-MOuhHOu0Ngg/exec"; 
 
 let dbData = {}; 
 let currentLine = null;
@@ -40,7 +40,7 @@ function handleRouting() {
 
   document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
   let breadcrumb = "Dashboard";
-  toggleFabMode(false); // ค่าเริ่มต้น: เป็นโหมดปุ่ม "เพิ่ม (+)"
+  toggleFabMode(false); 
 
   if (Object.keys(dbData).length === 0) {
     document.getElementById('view-lines').classList.add('active');
@@ -109,25 +109,23 @@ function renderComponentTable() {
 }
 
 
-// ================= 3. 🔴 ระบบอัจฉริยะ (FAB / Copy / Drag & Drop / Import) =================
+// ================= 3. ระบบอัจฉริยะ (FAB / Copy / Drag & Drop / Import) =================
 
-// สลับโหมดปุ่ม FAB
 function toggleFabMode(isFormMode) {
   let fabBtn = document.getElementById('mainFabBtn');
   let fabIcon = document.getElementById('mainFabIcon');
   if(!fabBtn) return;
   if(isFormMode) {
     fabBtn.classList.remove('btn-primary'); fabBtn.classList.add('btn-success');
-    fabIcon.className = "bi bi-floppy-fill fs-4"; // เปลี่ยนเป็นไอคอน Save
+    fabIcon.className = "bi bi-floppy-fill fs-4"; 
     fabBtn.onclick = submitFormViaAPI;
   } else {
     fabBtn.classList.add('btn-primary'); fabBtn.classList.remove('btn-success');
-    fabIcon.className = "bi bi-plus-lg fs-4"; // เปลี่ยนเป็นไอคอน Plus
+    fabIcon.className = "bi bi-plus-lg fs-4"; 
     fabBtn.onclick = openAddFormContext;
   }
 }
 
-// สร้าง Dropdown สำหรับ Import Template
 function populateImportDropdown() {
   let select = document.getElementById('importDbSelect');
   select.innerHTML = '<option value="">-- เลือกเครื่องจักรจากระบบเพื่อคัดลอก (Template) --</option>';
@@ -138,7 +136,6 @@ function populateImportDropdown() {
   }
 }
 
-// รันดึงข้อมูลมาลงฟอร์ม
 function executeImportData() {
   let val = document.getElementById('importDbSelect').value;
   if(!val) { alert("กรุณาเลือกเครื่องจักรที่ต้องการคัดลอกครับ"); return; }
@@ -147,19 +144,25 @@ function executeImportData() {
   let machData = dbData[lineName].machines[machName];
   if(!machData) return;
 
-  // เอาชื่อเครื่องจักรมาใส่ฟอร์ม แต่เว้นชื่อ Line ไว้เผื่ออยากก๊อปไปไลน์อื่น
   document.getElementById('f_machineName').value = machName + " (Copy)";
-  document.getElementById('subSystemsContainer').innerHTML = ''; // ล้างของเก่าทิ้ง
+  document.getElementById('subSystemsContainer').innerHTML = ''; 
   
   for(let subName in machData.subassemblies) {
     let subInfo = machData.subassemblies[subName];
     addSubsystemCard();
     let subCard = document.getElementById('subSystemsContainer').lastElementChild;
     subCard.querySelector('.input-subname').value = subName;
-    subCard.querySelector('.parts-container').innerHTML = ''; // ล้าง component ตั้งต้นทิ้ง
+    subCard.querySelector('.parts-container').innerHTML = ''; 
+    
+    // 🔴 แก้ไข: ดึงการติ๊กความเสี่ยง (Risk) ให้ตรงกับของเดิม
+    let importedRisks = subInfo.risks || "";
+    subCard.querySelectorAll('.risk-grid input[type="checkbox"]').forEach(chk => {
+       let lbl = chk.closest('.icon-checkbox').querySelector('.label').innerText;
+       chk.checked = importedRisks.includes(lbl);
+    });
     
     subInfo.components.forEach(comp => {
-      addComponentCard(subCard.querySelector('.btn-remove-sub')); // Add เปล่าๆเข้าไปก่อน
+      addComponentCard(subCard.querySelector('.btn-remove-sub')); 
       let compCard = subCard.querySelector('.parts-container').lastElementChild;
       
       compCard.querySelector('.input-compname').value = comp.name || '';
@@ -171,7 +174,13 @@ function executeImportData() {
       compCard.querySelector('.input-risk').checked = comp.risk;
       compCard.querySelector('.input-remark').value = comp.remarkEwo || '';
       
-      // ปฏิทิน
+      // 🔴 แก้ไข: ดึงการติ๊ก PPE ให้ตรงกับของเดิม
+      let importedPPE = comp.ppe || "";
+      compCard.querySelectorAll('.ppe-grid input[type="checkbox"]').forEach(chk => {
+         let lbl = chk.closest('.icon-checkbox').querySelector('.label').innerText;
+         chk.checked = importedPPE.includes(lbl);
+      });
+      
       compCard.querySelector('.week-data-input').value = JSON.stringify(comp.weeks);
       renderCompactGrid(compCard.querySelector('.week-compact-grid'), comp.weeks);
     });
@@ -179,12 +188,10 @@ function executeImportData() {
   alert(`ดึงข้อมูลโครงสร้างของเครื่อง ${machName} สำเร็จ!`);
 }
 
-// ฟังก์ชันคัดลอก Component และ Subassembly
 function duplicateItem(btn) {
   let original = btn.closest('.drag-item');
   let clone = original.cloneNode(true);
   
-  // ซิงค์ข้อมูล Input ทุกช่อง (เพราะ cloneNode จะไม่ก๊อปปี้ค่าที่เพิ่งพิมพ์)
   let originalInputs = original.querySelectorAll('input, select, textarea');
   let cloneInputs = clone.querySelectorAll('input, select, textarea');
   originalInputs.forEach((input, index) => {
@@ -195,14 +202,12 @@ function duplicateItem(btn) {
     }
   });
 
-  // ล้างรูปภาพที่ติดมา เพื่อให้ใส่รูปใหม่
   clone.querySelectorAll('.preview-img').forEach(img => img.style.display = 'none');
   clone.querySelectorAll('.bi-camera, .bi-image').forEach(i => i.style.display = 'block');
 
   original.parentNode.insertBefore(clone, original.nextSibling);
 }
 
-// --- Drag & Drop ลอจิก ---
 let draggedElement = null;
 function makeDraggable(el) { el.closest('.drag-item').setAttribute('draggable', 'true'); }
 function makeUndraggable(el) { el.closest('.drag-item').setAttribute('draggable', 'false'); }
@@ -224,7 +229,6 @@ function handleDragOver(e) {
 function handleDragEnd(e) {
   if(draggedElement) draggedElement.classList.remove('opacity-50');
   draggedElement = null;
-  // รีเซ็ตให้พิมพ์ได้ปกติ
   document.querySelectorAll('.drag-item').forEach(el => el.setAttribute('draggable', 'false'));
 }
 
@@ -262,8 +266,8 @@ function addComponentCard(btn) {
 function openAddFormContext() {
   document.getElementById('ledgerForm').reset();
   document.getElementById('subSystemsContainer').innerHTML = ''; 
-  populateImportDropdown(); // เตรียมตัวเลือกสำหรับดึงข้อมูล
-  toggleFabMode(true); // 🔴 แปลงร่าง FAB เป็นปุ่ม Save
+  populateImportDropdown(); 
+  toggleFabMode(true); 
   
   let lInput = document.getElementById('f_lineName');
   let mInput = document.getElementById('f_machineName');
@@ -345,8 +349,11 @@ async function submitFormViaAPI() {
 
   document.querySelectorAll('.sub-system-card').forEach(subCard => {
     let riskActive = []; 
-    let riskCheckboxes = subCard.querySelectorAll('.risk-grid .icon-checkbox:not(.not-used) .label');
-    if (riskCheckboxes) { riskCheckboxes.forEach(el => riskActive.push(el.innerText)); }
+    // 🔴 แก้ไข: ดึงเฉพาะที่ "ถูกติ๊กถูก" ไปบันทึก
+    subCard.querySelectorAll('.risk-grid input[type="checkbox"]:checked').forEach(chk => {
+       let labelNode = chk.closest('.icon-checkbox').querySelector('.label');
+       if(labelNode) riskActive.push(labelNode.innerText);
+    });
 
     let subData = {
       subName: subCard.querySelector('.input-subname').value,
@@ -356,7 +363,12 @@ async function submitFormViaAPI() {
 
     subCard.querySelectorAll('.part-item').forEach(pCard => {
       let ppeActive = []; 
-      pCard.querySelectorAll('.ppe-grid .icon-checkbox:not(.not-used) .label').forEach(el => ppeActive.push(el.innerText));
+      // 🔴 แก้ไข: ดึงเฉพาะที่ "ถูกติ๊กถูก" ไปบันทึก
+      pCard.querySelectorAll('.ppe-grid input[type="checkbox"]:checked').forEach(chk => {
+         let labelNode = chk.closest('.icon-checkbox').querySelector('.label');
+         if(labelNode) ppeActive.push(labelNode.innerText);
+      });
+
       subData.components.push({
         compName: pCard.querySelector('.input-compname').value, task: pCard.querySelector('.input-task').value,
         spareClass: pCard.querySelector('.input-class').value, pmStd: pCard.querySelector('.input-pmstd').value,
