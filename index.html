@@ -29,22 +29,29 @@
 
   <div class="container mt-3 mb-5 pb-5">
     
-    <!-- View 1: Machine Lines -->
+    <!-- View 1: Lines -->
     <div id="view-lines" class="view-section active">
-      <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-building me-2 text-primary"></i> เลือกเครื่องจักร (Machines)</h4>
+      <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-building me-2 text-primary"></i> เลือกไลน์ผลิต (Lines)</h4>
       <div class="row g-4" id="lineGrid"></div>
     </div>
 
-    <!-- View 2: Subassemblies -->
+    <!-- View 2: Machines -->
+    <div id="view-machs" class="view-section">
+      <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo()"><span class="material-symbols-rounded fs-5">arrow_back</span> กลับหน้าไลน์ผลิต</button>
+      <h3 class="fw-bold mb-4 text-primary" id="lbl-line-title">Line Name</h3>
+      <div class="row g-4" id="machGrid"></div>
+    </div>
+
+    <!-- View 3: Subassemblies -->
     <div id="view-subs" class="view-section">
-      <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo()"><span class="material-symbols-rounded fs-5">arrow_back</span> กลับหน้าแรก</button>
-      <h3 class="fw-bold mb-4 text-primary" id="lbl-line-title">Machine Name</h3>
+      <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo(currentLine)"><span class="material-symbols-rounded fs-5">arrow_back</span> กลับหน้าเครื่องจักร</button>
+      <h3 class="fw-bold mb-4 text-primary" id="lbl-mach-title">Machine Name</h3>
       <div class="row g-4" id="subGrid"></div>
     </div>
 
-    <!-- View 3: Components Table -->
+    <!-- View 4: Components Table -->
     <div id="view-components" class="view-section">
-      <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo(currentLine)"><span class="material-symbols-rounded fs-5">arrow_back</span> กลับไประบบย่อย</button>
+      <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo(currentLine, currentMach)"><span class="material-symbols-rounded fs-5">arrow_back</span> กลับหน้าระบบย่อย</button>
       <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
         <div>
           <h3 class="fw-bold mb-1 text-primary" id="lbl-sub-title">Subassembly Name</h3>
@@ -58,7 +65,7 @@
             <tr>
               <th rowspan="2">Image</th><th rowspan="2">Component Name</th><th rowspan="2">Task</th>
               <th colspan="4">Standards</th><th rowspan="2">Safety/PPE</th><th colspan="52">Calendar 52 Weeks</th>
-              <th rowspan="2">EWO / Remark</th> <!-- 🔴 ย้าย EWO มาหลัง 52 Weeks -->
+              <th rowspan="2">EWO / Remark</th>
             </tr>
             <tr style="font-size: 11px;">
               <th>Class</th><th>Type</th><th>Status</th><th>Min</th>
@@ -70,11 +77,11 @@
       </div>
     </div>
 
-    <!-- View 4: Form Add Data -->
+    <!-- View 5: Form Add Data -->
     <div id="view-form" class="view-section">
       <button class="btn-back-prominent mb-3 no-print" onclick="window.history.back()"><span class="material-symbols-rounded fs-5">close</span> ยกเลิกการกรอกข้อมูล</button>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print border-bottom pb-2">
-        <h3 class="fw-bold mb-0 text-primary"><span class="material-symbols-rounded align-middle fs-4 text-warning">edit_document</span> ฟอร์มบันทึกเครื่องจักร</h3>
+        <h3 class="fw-bold mb-0 text-primary"><span class="material-symbols-rounded align-middle fs-4 text-warning">edit_document</span> ฟอร์มบันทึกข้อมูล</h3>
         <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitFormViaAPI()"><span class="material-symbols-rounded align-middle fs-5 me-1">save</span> บันทึกข้อมูล</button>
       </div>
 
@@ -88,12 +95,16 @@
           <div class="card-header-custom text-white bg-primary rounded-top p-3 d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0 fw-bold"><i class="bi bi-hdd-rack"></i> ข้อมูลเครื่องจักรหลัก</h6>
           </div>
-          <div class="row g-3">
-            <div class="col-md-8">
+          <div class="row g-3 align-items-center">
+            <div class="col-md-4" id="box_f_lineName">
+              <label class="form-label">ไลน์ผลิต (Line Name) <span class="text-danger">*</span></label>
+              <input type="text" id="f_lineName" class="form-control fw-bold" placeholder="ระบุไลน์ผลิต" required>
+            </div>
+            <div class="col-md-4" id="box_f_machineName">
               <label class="form-label">ชื่อเครื่องจักร (Machine Name) <span class="text-danger">*</span></label>
               <input type="text" id="f_machineName" class="form-control fw-bold" placeholder="ระบุชื่อเครื่องจักร" required>
             </div>
-            <div class="col-md-4" id="box_imgMach">
+            <div class="col-md-4 text-center" id="box_imgMach">
               <div class="upload-box" onclick="this.nextElementSibling.click()"><i class="bi bi-camera fs-3 d-block text-muted"></i> ภาพรวมเครื่องจักร</div>
               <input type="file" class="d-none file-img" accept="image/*" onchange="previewDynamicFile(this)">
               <img class="preview-img" onclick="this.previousElementSibling.click()">
@@ -158,12 +169,17 @@
             <div class="col-md-3 col-6"><label class="form-label">Std</label><select class="form-select input-pmstd"><option value="TBM">TBM</option><option value="CBM">CBM</option><option value="BDM">BDM</option></select></div>
             <div class="col-md-3 col-6"><label class="form-label">Status</label><select class="form-select input-status"><option value="Run">Run</option><option value="Stop">Stop</option></select></div>
             <div class="col-md-3 col-6"><label class="form-label">เวลา(นาที)</label><input type="number" class="form-control input-time" min="1"></div>
+            
+            <div class="col-md-12 mt-2">
+              <label class="form-label text-secondary fw-bold">หมายเหตุ / รหัส EWO (ถ้ามี)</label>
+              <input type="text" class="form-control input-remark bg-light" placeholder="เช่น ซ่อมฉุกเฉิน, รอเปลี่ยนอะไหล่สัปดาห์หน้า, E-00123">
+            </div>
 
-            <!-- PPE & Safety Module -->
+            <!-- PPE & Safety -->
             <div class="col-md-12 mt-3 p-3 bg-light border rounded">
               <div class="form-check form-switch mb-3 d-flex align-items-center">
                 <input class="form-check-input input-risk" type="checkbox" style="transform: scale(1.3); margin-top:0;">
-                <label class="form-check-label ms-3 text-danger fw-bold">เสี่ยงสูง (Work Permit)</label>
+                <label class="form-check-label ms-3 text-danger fw-bold">เสี่ยงสูง (Work Permit Req.)</label>
               </div>
               <label class="form-label text-muted small fw-bold">เลือกอุปกรณ์ PPE (แตะเพื่อใช้งาน)</label>
               <div class="ppe-grid">
@@ -185,13 +201,6 @@
               <div class="week-compact-grid p-2 bg-light border rounded d-flex flex-wrap gap-1" style="cursor:pointer;" onclick="openWeekModal(this)"></div>
               <input type="hidden" class="week-data-input" value="[]">
             </div>
-
-            <!-- 🔴 ฟิลด์ EWO / หมายเหตุ (ย้ายมาไว้หลัง 52 สัปดาห์) -->
-            <div class="col-md-12 mt-3 border-top pt-2">
-              <label class="form-label text-secondary fw-bold">หมายเหตุ / รหัส EWO (ถ้ามี)</label>
-              <input type="text" class="form-control input-remark bg-light" placeholder="เช่น ซ่อมฉุกเฉิน, รอเปลี่ยนอะไหล่สัปดาห์หน้า, E-00123">
-            </div>
-
           </div>
         </div>
       </div>
