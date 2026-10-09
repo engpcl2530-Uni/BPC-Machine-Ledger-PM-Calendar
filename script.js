@@ -1,7 +1,7 @@
 // 🔴 นำ Web App URL ของ Google Apps Script ของคุณมาใส่ตรงนี้
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec"; 
 
-// Mock Data แบบ 4 ระดับ (Line -> Machine -> Subassembly -> Component)
+// Mock Data
 let dbData = {
   "Line A1 (Packing)": {
     image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80",
@@ -71,7 +71,7 @@ function renderLines() {
   let grid = document.getElementById('lineGrid');
   grid.innerHTML = '';
   for (let lineName in dbData) {
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">เข้าสู่ Line นี้ <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูเครื่องจักร <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
@@ -106,7 +106,14 @@ function renderComponentTable() {
   });
 }
 
-// ================= 2. Context Aware Form (ฟอร์มอัจฉริยะ) =================
+// 🔴 ระบบแก้ไขข้อมูล
+function editSubassembly() {
+  alert("เข้าสู่โหมดแก้ไขข้อมูลระบบย่อย: " + currentSub);
+  openAddFormContext(); 
+  // ในความจริงต้อง Fetch ข้อมูลจาก Sheet มายัดใส่ Input ด้วย (ละไว้เพื่อความกระชับ)
+}
+
+// ================= 2. Context Aware Form =================
 function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
     let reader = new FileReader();
@@ -155,7 +162,6 @@ function openAddFormContext() {
   let contextBanner = document.getElementById('formContextBanner');
   let contextText = document.getElementById('formContextText');
 
-  // ค่าเริ่มต้น -> โชว์ทุกช่อง (สำหรับกดจากหน้า Dashboard หน้าแรก)
   cardStructure.style.display = 'block';
   boxLine.style.display = 'block'; lInput.readOnly = false;
   boxMach.style.display = 'block'; mInput.readOnly = false;
@@ -164,12 +170,12 @@ function openAddFormContext() {
   contextBanner.classList.add('d-none');
 
   if (currentLine && currentMach && currentSub) {
-    // 🔴 1. อยู่หน้าลึกสุด (Component) -> ให้เติมแค่ Component (ล็อก 3 ชั้น)
+    // อยู่หน้าลึกสุด -> แก้ไข Component
     cardStructure.style.display = 'none'; 
     btnAddSub.style.display = 'none';
     
     contextBanner.classList.remove('d-none');
-    contextText.innerText = `${currentLine} > ${currentMach} > ${currentSub}`;
+    contextText.innerText = `แก้ไข: ${currentLine} > ${currentMach} > ${currentSub}`;
     
     lInput.value = currentLine;
     mInput.value = currentMach;
@@ -177,31 +183,31 @@ function openAddFormContext() {
     addSubsystemCard();
     let subCard = document.querySelector('.sub-system-card');
     subCard.querySelector('.input-subname').value = currentSub;
-    subCard.querySelector('#subHeaderRow').style.display = 'none'; // ซ่อนช่องชื่อ Sub
+    subCard.querySelector('#subHeaderRow').style.display = 'none'; 
     subCard.querySelector('.btn-remove-sub').style.display = 'none';
 
   } else if (currentLine && currentMach) {
-    // 🔴 2. อยู่หน้า Subassembly -> ให้เติม Subassembly + Component (ล็อก 2 ชั้น)
+    // อยู่หน้า Sub -> ล็อก Machine ให้เติม Sub + Component
     cardStructure.style.display = 'none'; 
     
     contextBanner.classList.remove('d-none');
-    contextText.innerText = `${currentLine} > ${currentMach}`;
+    contextText.innerText = `เพิ่มระบบย่อยใน: ${currentLine} > ${currentMach}`;
     
     lInput.value = currentLine;
     mInput.value = currentMach;
     addSubsystemCard();
 
   } else if (currentLine) {
-    // 🔴 3. อยู่หน้า Machine -> ให้เติม Machine + Sub + Comp (ล็อก 1 ชั้น)
+    // อยู่หน้า Machine -> ล็อกแค่ Line
     boxLine.style.display = 'none';
     lInput.value = currentLine;
     
     contextBanner.classList.remove('d-none');
-    contextText.innerText = `ไลน์ผลิต: ${currentLine}`;
+    contextText.innerText = `เพิ่มเครื่องจักรใน: ${currentLine}`;
     addSubsystemCard();
     
   } else {
-    // 🔴 4. อยู่หน้าแรก -> เติมทุกอย่าง
+    // หน้าแรกสุด
     addSubsystemCard();
   }
 
@@ -249,7 +255,7 @@ function syncModalToCompact() {
   bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
 }
 
-// ================= 4. Submit to Google Apps Script =================
+// ================= 4. Submit API =================
 function getBase64(imgElement) {
   if(imgElement && imgElement.src && imgElement.src.startsWith('data:image')) return imgElement.src;
   return "";
@@ -271,16 +277,21 @@ async function submitFormViaAPI() {
   };
 
   document.querySelectorAll('.sub-system-card').forEach(subCard => {
+    
+    // 🔴 ดึง Risk จากระดับ Subassembly
+    let riskActive = []; 
+    subCard.querySelectorAll('.risk-grid .icon-checkbox:not(.not-used) .label').forEach(el => riskActive.push(el.innerText));
+
     let subData = {
       subName: subCard.querySelector('.input-subname').value,
       imgSub: getBase64(subCard.querySelector('.box_imgSub .preview-img')),
+      risks: riskActive.join(', '), 
       components: []
     };
 
     subCard.querySelectorAll('.part-item').forEach(pCard => {
-      // 🔴 ดึงเฉพาะ PPE ที่ไม่ได้โดนกากบาท (ไม่มีคลาส not-used)
       let ppeActive = []; 
-      pCard.querySelectorAll('.icon-checkbox:not(.not-used) .label').forEach(el => ppeActive.push(el.innerText));
+      pCard.querySelectorAll('.ppe-grid .icon-checkbox:not(.not-used) .label').forEach(el => ppeActive.push(el.innerText));
       
       subData.components.push({
         compName: pCard.querySelector('.input-compname').value,
