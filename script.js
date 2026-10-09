@@ -154,15 +154,15 @@ function executeImportData() {
     subCard.querySelector('.input-subname').value = subName;
     subCard.querySelector('.parts-container').innerHTML = ''; 
     
-    // 🔴 แก้ไข: ดึงการติ๊กความเสี่ยง (Risk) ให้ตรงกับของเดิม
     let importedRisks = subInfo.risks || "";
     subCard.querySelectorAll('.risk-grid input[type="checkbox"]').forEach(chk => {
-       let lbl = chk.closest('.icon-checkbox').querySelector('.label').innerText;
+       let lbl = chk.closest('.icon-checkbox').querySelector('.label').innerText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
        chk.checked = importedRisks.includes(lbl);
     });
     
     subInfo.components.forEach(comp => {
-      addComponentCard(subCard.querySelector('.btn-remove-sub')); 
+      // 🔴 แก้ไข: อ้างอิงจุดที่ชัวร์ว่ามีแน่นอน
+      addComponentCard(subCard.querySelector('.parts-container')); 
       let compCard = subCard.querySelector('.parts-container').lastElementChild;
       
       compCard.querySelector('.input-compname').value = comp.name || '';
@@ -174,10 +174,9 @@ function executeImportData() {
       compCard.querySelector('.input-risk').checked = comp.risk;
       compCard.querySelector('.input-remark').value = comp.remarkEwo || '';
       
-      // 🔴 แก้ไข: ดึงการติ๊ก PPE ให้ตรงกับของเดิม
       let importedPPE = comp.ppe || "";
       compCard.querySelectorAll('.ppe-grid input[type="checkbox"]').forEach(chk => {
-         let lbl = chk.closest('.icon-checkbox').querySelector('.label').innerText;
+         let lbl = chk.closest('.icon-checkbox').querySelector('.label').innerText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
          chk.checked = importedPPE.includes(lbl);
       });
       
@@ -250,11 +249,12 @@ function addSubsystemCard() {
   const container = document.getElementById('subSystemsContainer');
   const clone = document.getElementById('subSystemTemplate').content.cloneNode(true);
   container.appendChild(clone);
-  addComponentCard(container.lastElementChild.querySelector('.btn-success')); 
+  // 🔴 แก้ไข: อ้างอิงจุดที่ชัวร์ว่ามีแน่นอน (parts-container) ไม่ผูกกับคลาสของปุ่ม
+  addComponentCard(container.lastElementChild.querySelector('.parts-container')); 
 }
 
-function addComponentCard(btn) {
-  const container = btn.closest('.sub-system-card').querySelector('.parts-container');
+function addComponentCard(elementInsideCard) {
+  const container = elementInsideCard.closest('.sub-system-card').querySelector('.parts-container');
   const clone = document.getElementById('componentTemplate').content.cloneNode(true);
   let defaultData = [];
   for(let i=0; i<52; i++) defaultData.push({t:0, r:0, b:0, l:0});
@@ -349,10 +349,9 @@ async function submitFormViaAPI() {
 
   document.querySelectorAll('.sub-system-card').forEach(subCard => {
     let riskActive = []; 
-    // 🔴 แก้ไข: ดึงเฉพาะที่ "ถูกติ๊กถูก" ไปบันทึก
     subCard.querySelectorAll('.risk-grid input[type="checkbox"]:checked').forEach(chk => {
        let labelNode = chk.closest('.icon-checkbox').querySelector('.label');
-       if(labelNode) riskActive.push(labelNode.innerText);
+       if(labelNode) riskActive.push(labelNode.innerText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim());
     });
 
     let subData = {
@@ -363,10 +362,9 @@ async function submitFormViaAPI() {
 
     subCard.querySelectorAll('.part-item').forEach(pCard => {
       let ppeActive = []; 
-      // 🔴 แก้ไข: ดึงเฉพาะที่ "ถูกติ๊กถูก" ไปบันทึก
       pCard.querySelectorAll('.ppe-grid input[type="checkbox"]:checked').forEach(chk => {
          let labelNode = chk.closest('.icon-checkbox').querySelector('.label');
-         if(labelNode) ppeActive.push(labelNode.innerText);
+         if(labelNode) ppeActive.push(labelNode.innerText.replace(/\n/g, ' ').replace(/\s+/g, ' ').trim());
       });
 
       subData.components.push({
