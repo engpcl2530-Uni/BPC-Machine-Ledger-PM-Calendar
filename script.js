@@ -1,40 +1,28 @@
 // 🔴 นำ Web App URL ของ Google Apps Script มาใส่ตรงนี้
-const GAS_API_URL = "https://script.google.com/macros/s/AKfycbxRj_dahQfwuT4X8iTFF2-ds_9vo-GHVbvLDgxvOdW-r8UfYQ3F4uXtvN-MOuhHOu0Ngg/exec"; 
+const GAS_API_URL = https://script.google.com/macros/s/AKfycbxRj_dahQfwuT4X8iTFF2-ds_9vo-GHVbvLDgxvOdW-r8UfYQ3F4uXtvN-MOuhHOu0Ngg/exec; 
 
-// เปลี่ยนเป็น Object ว่างเปล่า เพื่อรอรับข้อมูลจริงจาก Google Sheets
 let dbData = {}; 
-
 let currentLine = null;
 let currentMach = null;
 let currentSub = null;
 
-// ================= 1. ดึงข้อมูลจากฐานข้อมูล (Fetch API) =================
+// ================= 1. ดึงข้อมูลจากฐานข้อมูล =================
 async function loadDataFromDatabase() {
   document.getElementById('loadingOverlay').style.display = 'flex';
   try {
     const res = await fetch(GAS_API_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
       body: JSON.stringify({ action: 'get_all_data' })
     });
     const result = await res.json();
-    
     if(result.success) {
-       dbData = result.data; // นำข้อมูลจริงมายัดใส่ตัวแปร
-       handleRouting(); // สั่งให้หน้าจอวาดใหม่
-    } else {
-       console.error("Fetch Error:", result.message);
+       dbData = result.data; 
+       handleRouting(); 
     }
-  } catch (err) {
-    console.error("API Error:", err);
-  } finally {
-    document.getElementById('loadingOverlay').style.display = 'none';
-  }
+  } catch (err) { console.error("API Error:", err); } 
+  finally { document.getElementById('loadingOverlay').style.display = 'none'; }
 }
-
-// สั่งโหลดข้อมูลทันทีที่เปิดหน้าเว็บขึ้นมา
 window.onload = () => { loadDataFromDatabase(); };
-
 
 // ================= 2. Routing & Render =================
 function navigateTo(line = null, mach = null, sub = null) {
@@ -48,14 +36,12 @@ function navigateTo(line = null, mach = null, sub = null) {
 
 function handleRouting() {
   let params = new URLSearchParams(window.location.search);
-  currentLine = params.get('line');
-  currentMach = params.get('mach');
-  currentSub = params.get('sub');
+  currentLine = params.get('line'); currentMach = params.get('mach'); currentSub = params.get('sub');
 
   document.querySelectorAll('.view-section').forEach(v => v.classList.remove('active'));
   let breadcrumb = "Dashboard";
+  toggleFabMode(false); // ค่าเริ่มต้น: เป็นโหมดปุ่ม "เพิ่ม (+)"
 
-  // ถ้ายังไม่มีข้อมูลในระบบเลย
   if (Object.keys(dbData).length === 0) {
     document.getElementById('view-lines').classList.add('active');
     document.getElementById('lineGrid').innerHTML = `<div class="col-12 text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-3"></i>ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ</div>`;
@@ -88,72 +74,168 @@ function handleRouting() {
 window.addEventListener('popstate', handleRouting);
 
 function renderLines() {
-  let grid = document.getElementById('lineGrid');
-  grid.innerHTML = '';
+  let grid = document.getElementById('lineGrid'); grid.innerHTML = '';
   for (let lineName in dbData) {
     let mCount = Object.keys(dbData[lineName].machines).length;
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5><div class="text-muted small"><i class="bi bi-hdd-rack"></i> มี ${mCount} เครื่องจักร</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูเครื่องจักรในไลน์นี้ <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5><div class="text-muted small"><i class="bi bi-hdd-rack"></i> มี ${mCount} เครื่องจักร</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูเครื่องจักร <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
 function renderMachs(lineName) {
-  let grid = document.getElementById('machGrid');
-  grid.innerHTML = '';
-  let line = dbData[lineName];
-  if (!line) return;
+  let grid = document.getElementById('machGrid'); grid.innerHTML = '';
+  let line = dbData[lineName]; if (!line) return;
   for (let machName in line.machines) {
     let sCount = Object.keys(line.machines[machName].subassemblies).length;
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${machName}</h5><div class="text-muted small"><i class="bi bi-diagram-3"></i> มี ${sCount} ระบบย่อย</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${machName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูระบบย่อย (Subassembly) <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${machName}</h5><div class="text-muted small"><i class="bi bi-diagram-3"></i> มี ${sCount} ระบบย่อย</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${machName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูระบบย่อย <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
 function renderSubs(lineName, machName) {
-  let grid = document.getElementById('subGrid');
-  grid.innerHTML = '';
-  let mach = dbData[lineName].machines[machName];
-  if (!mach) return;
+  let grid = document.getElementById('subGrid'); grid.innerHTML = '';
+  let mach = dbData[lineName].machines[machName]; if (!mach) return;
   for (let subName in mach.subassemblies) {
     let cCount = mach.subassemblies[subName].components.length;
     grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}', '${subName}')"><img src="${mach.subassemblies[subName].image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${subName}</h6><div class="text-muted small"><i class="bi bi-tools"></i> มี ${cCount} ชิ้นส่วน</div></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${subName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูตาราง Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
-// 🔴 อัปเดตตาราง Component ให้ดึงข้อมูลจริงมาแสดง
 function renderComponentTable() {
-  let tbody = document.getElementById('componentTableBody');
-  tbody.innerHTML = '';
+  let tbody = document.getElementById('componentTableBody'); tbody.innerHTML = '';
   let comps = dbData[currentLine].machines[currentMach].subassemblies[currentSub].components;
-  
   comps.forEach(c => {
-    let weeksHtml = "";
-    // วาดกราฟฟิก 4-Triangle ตามค่าที่เซฟไว้จริง
-    c.weeks.forEach(w => {
-       weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`;
-    });
-    
-    tbody.innerHTML += `<tr>
-      <td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td>
-      <td class="fw-bold text-primary">${c.name}</td>
-      <td>${c.task || '-'}</td>
-      <td class="text-center">${c.class || '-'}</td>
-      <td class="text-center">${c.std || '-'}</td>
-      <td class="text-center"><span class="badge bg-success">${c.stat || 'Run'}</span></td>
-      <td class="text-center fw-bold text-danger">${c.time || '-'}</td>
-      <td class="text-center" style="font-size:10px;">${c.ppe || '-'}</td>
-      ${weeksHtml}
-      <td class="text-muted fw-bold" style="font-size:11px; color:#E53E3E !important;">${c.remarkEwo || '-'}</td>
-    </tr>`;
+    let weeksHtml = ""; c.weeks.forEach(w => { weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`; });
+    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>${c.task || '-'}</td><td class="text-center">${c.class || '-'}</td><td class="text-center">${c.std || '-'}</td><td class="text-center"><span class="badge bg-success">${c.stat || 'Run'}</span></td><td class="text-center fw-bold text-danger">${c.time || '-'}</td><td class="text-center" style="font-size:10px;">${c.ppe || '-'}</td>${weeksHtml}<td class="text-muted fw-bold" style="font-size:11px; color:#E53E3E !important;">${c.remarkEwo || '-'}</td></tr>`;
   });
 }
 
-// ================= 3. Context Aware Form (ฟอร์มอัจฉริยะ) =================
+
+// ================= 3. 🔴 ระบบอัจฉริยะ (FAB / Copy / Drag & Drop / Import) =================
+
+// สลับโหมดปุ่ม FAB
+function toggleFabMode(isFormMode) {
+  let fabBtn = document.getElementById('mainFabBtn');
+  let fabIcon = document.getElementById('mainFabIcon');
+  if(!fabBtn) return;
+  if(isFormMode) {
+    fabBtn.classList.remove('btn-primary'); fabBtn.classList.add('btn-success');
+    fabIcon.className = "bi bi-floppy-fill fs-4"; // เปลี่ยนเป็นไอคอน Save
+    fabBtn.onclick = submitFormViaAPI;
+  } else {
+    fabBtn.classList.add('btn-primary'); fabBtn.classList.remove('btn-success');
+    fabIcon.className = "bi bi-plus-lg fs-4"; // เปลี่ยนเป็นไอคอน Plus
+    fabBtn.onclick = openAddFormContext;
+  }
+}
+
+// สร้าง Dropdown สำหรับ Import Template
+function populateImportDropdown() {
+  let select = document.getElementById('importDbSelect');
+  select.innerHTML = '<option value="">-- เลือกเครื่องจักรจากระบบเพื่อคัดลอก (Template) --</option>';
+  for (let lineName in dbData) {
+    for (let machName in dbData[lineName].machines) {
+       select.innerHTML += `<option value="${lineName}|${machName}">[${lineName}] - ${machName}</option>`;
+    }
+  }
+}
+
+// รันดึงข้อมูลมาลงฟอร์ม
+function executeImportData() {
+  let val = document.getElementById('importDbSelect').value;
+  if(!val) { alert("กรุณาเลือกเครื่องจักรที่ต้องการคัดลอกครับ"); return; }
+  
+  let [lineName, machName] = val.split("|");
+  let machData = dbData[lineName].machines[machName];
+  if(!machData) return;
+
+  // เอาชื่อเครื่องจักรมาใส่ฟอร์ม แต่เว้นชื่อ Line ไว้เผื่ออยากก๊อปไปไลน์อื่น
+  document.getElementById('f_machineName').value = machName + " (Copy)";
+  document.getElementById('subSystemsContainer').innerHTML = ''; // ล้างของเก่าทิ้ง
+  
+  for(let subName in machData.subassemblies) {
+    let subInfo = machData.subassemblies[subName];
+    addSubsystemCard();
+    let subCard = document.getElementById('subSystemsContainer').lastElementChild;
+    subCard.querySelector('.input-subname').value = subName;
+    subCard.querySelector('.parts-container').innerHTML = ''; // ล้าง component ตั้งต้นทิ้ง
+    
+    subInfo.components.forEach(comp => {
+      addComponentCard(subCard.querySelector('.btn-remove-sub')); // Add เปล่าๆเข้าไปก่อน
+      let compCard = subCard.querySelector('.parts-container').lastElementChild;
+      
+      compCard.querySelector('.input-compname').value = comp.name || '';
+      compCard.querySelector('.input-task').value = comp.task || '';
+      compCard.querySelector('.input-class').value = comp.class || 'A';
+      compCard.querySelector('.input-pmstd').value = comp.std || 'CBM';
+      compCard.querySelector('.input-status').value = comp.stat || 'Run';
+      compCard.querySelector('.input-time').value = comp.time || '';
+      compCard.querySelector('.input-risk').checked = comp.risk;
+      compCard.querySelector('.input-remark').value = comp.remarkEwo || '';
+      
+      // ปฏิทิน
+      compCard.querySelector('.week-data-input').value = JSON.stringify(comp.weeks);
+      renderCompactGrid(compCard.querySelector('.week-compact-grid'), comp.weeks);
+    });
+  }
+  alert(`ดึงข้อมูลโครงสร้างของเครื่อง ${machName} สำเร็จ!`);
+}
+
+// ฟังก์ชันคัดลอก Component และ Subassembly
+function duplicateItem(btn) {
+  let original = btn.closest('.drag-item');
+  let clone = original.cloneNode(true);
+  
+  // ซิงค์ข้อมูล Input ทุกช่อง (เพราะ cloneNode จะไม่ก๊อปปี้ค่าที่เพิ่งพิมพ์)
+  let originalInputs = original.querySelectorAll('input, select, textarea');
+  let cloneInputs = clone.querySelectorAll('input, select, textarea');
+  originalInputs.forEach((input, index) => {
+    if(input.type === 'checkbox' || input.type === 'radio') {
+      cloneInputs[index].checked = input.checked;
+    } else {
+      cloneInputs[index].value = input.value;
+    }
+  });
+
+  // ล้างรูปภาพที่ติดมา เพื่อให้ใส่รูปใหม่
+  clone.querySelectorAll('.preview-img').forEach(img => img.style.display = 'none');
+  clone.querySelectorAll('.bi-camera, .bi-image').forEach(i => i.style.display = 'block');
+
+  original.parentNode.insertBefore(clone, original.nextSibling);
+}
+
+// --- Drag & Drop ลอจิก ---
+let draggedElement = null;
+function makeDraggable(el) { el.closest('.drag-item').setAttribute('draggable', 'true'); }
+function makeUndraggable(el) { el.closest('.drag-item').setAttribute('draggable', 'false'); }
+
+function handleDragStart(e) {
+  draggedElement = e.target.closest('.drag-item');
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => { draggedElement.classList.add('opacity-50'); }, 0);
+}
+function handleDragOver(e) {
+  e.preventDefault(); e.dataTransfer.dropEffect = 'move';
+  const target = e.target.closest('.drag-item');
+  if(target && target !== draggedElement && target.parentNode === draggedElement.parentNode) {
+    const rect = target.getBoundingClientRect();
+    const next = (e.clientY - rect.top)/(rect.bottom - rect.top) > .5;
+    target.parentNode.insertBefore(draggedElement, next ? target.nextSibling : target);
+  }
+}
+function handleDragEnd(e) {
+  if(draggedElement) draggedElement.classList.remove('opacity-50');
+  draggedElement = null;
+  // รีเซ็ตให้พิมพ์ได้ปกติ
+  document.querySelectorAll('.drag-item').forEach(el => el.setAttribute('draggable', 'false'));
+}
+
+
+// ================= 4. Context Aware Form (ระบบจัดการฟอร์ม) =================
 function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
     let reader = new FileReader();
     reader.onload = function(e) {
       let preview = input.nextElementSibling;
-      preview.src = e.target.result;
-      preview.style.display = 'block';
+      preview.src = e.target.result; preview.style.display = 'block';
       input.previousElementSibling.style.display = 'none'; 
     }
     reader.readAsDataURL(input.files[0]);
@@ -180,56 +262,37 @@ function addComponentCard(btn) {
 function openAddFormContext() {
   document.getElementById('ledgerForm').reset();
   document.getElementById('subSystemsContainer').innerHTML = ''; 
+  populateImportDropdown(); // เตรียมตัวเลือกสำหรับดึงข้อมูล
+  toggleFabMode(true); // 🔴 แปลงร่าง FAB เป็นปุ่ม Save
   
   let lInput = document.getElementById('f_lineName');
   let mInput = document.getElementById('f_machineName');
-  
   let boxLine = document.getElementById('box_f_lineName');
   let boxMach = document.getElementById('box_f_machineName');
   let boxImgMach = document.getElementById('box_imgMach');
-  
   let cardStructure = document.getElementById('cardStructure');
   let btnAddSub = document.getElementById('btnAddSub');
   
-  let contextBanner = document.getElementById('formContextBanner');
-  let contextText = document.getElementById('formContextText');
-
   cardStructure.style.display = 'block';
   boxLine.style.display = 'block'; lInput.readOnly = false;
   boxMach.style.display = 'block'; mInput.readOnly = false;
   boxImgMach.style.display = 'block';
   btnAddSub.style.display = 'block';
-  contextBanner.classList.add('d-none');
 
   if (currentLine && currentMach && currentSub) {
-    cardStructure.style.display = 'none'; 
-    btnAddSub.style.display = 'none';
-    contextBanner.classList.remove('d-none');
-    contextText.innerText = `${currentLine} > ${currentMach} > ${currentSub}`;
-    
-    lInput.value = currentLine;
-    mInput.value = currentMach;
-    
+    cardStructure.style.display = 'none';  btnAddSub.style.display = 'none';
+    lInput.value = currentLine; mInput.value = currentMach;
     addSubsystemCard();
     let subCard = document.querySelector('.sub-system-card');
     subCard.querySelector('.input-subname').value = currentSub;
     subCard.querySelector('#subHeaderRow').style.display = 'none'; 
-    subCard.querySelector('.btn-remove-sub').style.display = 'none';
-
   } else if (currentLine && currentMach) {
     cardStructure.style.display = 'none'; 
-    contextBanner.classList.remove('d-none');
-    contextText.innerText = `เพิ่มระบบย่อยใน: ${currentLine} > ${currentMach}`;
-    
-    lInput.value = currentLine;
-    mInput.value = currentMach;
+    lInput.value = currentLine; mInput.value = currentMach;
     addSubsystemCard();
-
   } else if (currentLine) {
     boxLine.style.display = 'none';
     lInput.value = currentLine;
-    contextBanner.classList.remove('d-none');
-    contextText.innerText = `เพิ่มเครื่องจักรในไลน์: ${currentLine}`;
     addSubsystemCard();
   } else {
     addSubsystemCard();
@@ -240,97 +303,66 @@ function openAddFormContext() {
   window.scrollTo(0,0);
 }
 
-// ================= 4. 4-Triangle Calendar =================
-let currentCompactGrid = null; 
-let tempWeekData = [];
 
+// ================= 5. 4-Triangle Calendar =================
+let currentCompactGrid = null; let tempWeekData = [];
 function getTriangleSVGOnly(d) {
   return `<svg viewBox="0 0 20 20" width="100%" height="100%"><polygon class="tri-part tri-top ${d.t?'active':'inactive'}" points="0,0 20,0 10,10"/><polygon class="tri-part tri-right ${d.r?'active':'inactive'}" points="20,0 20,20 10,10"/><polygon class="tri-part tri-bottom ${d.b?'active':'inactive'}" points="20,20 0,20 10,10"/><polygon class="tri-part tri-left ${d.l?'active':'inactive'}" points="0,20 0,0 10,10"/></svg>`;
 }
-
 function renderCompactGrid(container, dataArray) {
-  container.innerHTML = '';
-  dataArray.forEach(d => { container.innerHTML += getTriangleSVGOnly(d); });
+  container.innerHTML = ''; dataArray.forEach(d => { container.innerHTML += getTriangleSVGOnly(d); });
 }
-
 function openWeekModal(compactGridElement) {
-  currentCompactGrid = compactGridElement;
-  tempWeekData = JSON.parse(compactGridElement.nextElementSibling.value);
-  
-  let grid = document.getElementById('expandedWeekGrid');
-  grid.innerHTML = '';
+  currentCompactGrid = compactGridElement; tempWeekData = JSON.parse(compactGridElement.nextElementSibling.value);
+  let grid = document.getElementById('expandedWeekGrid'); grid.innerHTML = '';
   for(let i=0; i<52; i++) {
     let d = tempWeekData[i];
     grid.innerHTML += `<div class="week-expand-box">W${i+1}<div class="week-svg-container"><svg viewBox="0 0 20 20" width="100%" height="100%"><polygon class="tri-part tri-top ${d.t?'active':''}" points="0,0 20,0 10,10" onclick="toggleTri(${i},'t',this)"/><polygon class="tri-part tri-right ${d.r?'active':''}" points="20,0 20,20 10,10" onclick="toggleTri(${i},'r',this)"/><polygon class="tri-part tri-bottom ${d.b?'active':''}" points="20,20 0,20 10,10" onclick="toggleTri(${i},'b',this)"/><polygon class="tri-part tri-left ${d.l?'active':''}" points="0,20 0,0 10,10" onclick="toggleTri(${i},'l',this)"/></svg></div></div>`;
   }
   new bootstrap.Modal(document.getElementById('weekModal')).show();
 }
-
-function toggleTri(index, side, el) {
-  tempWeekData[index][side] = tempWeekData[index][side] ? 0 : 1;
-  el.classList.toggle('active');
-}
-
+function toggleTri(index, side, el) { tempWeekData[index][side] = tempWeekData[index][side] ? 0 : 1; el.classList.toggle('active'); }
 function syncModalToCompact() {
-  if (currentCompactGrid) {
-    currentCompactGrid.nextElementSibling.value = JSON.stringify(tempWeekData);
-    renderCompactGrid(currentCompactGrid, tempWeekData);
-  }
+  if (currentCompactGrid) { currentCompactGrid.nextElementSibling.value = JSON.stringify(tempWeekData); renderCompactGrid(currentCompactGrid, tempWeekData); }
   bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
 }
 
-// ================= 5. Submit API =================
-function getBase64(imgElement) {
-  if(imgElement && imgElement.src && imgElement.src.startsWith('data:image')) return imgElement.src;
-  return "";
-}
+
+// ================= 6. Submit API =================
+function getBase64(imgElement) { if(imgElement && imgElement.src && imgElement.src.startsWith('data:image')) return imgElement.src; return ""; }
 
 async function submitFormViaAPI() {
   if(!document.getElementById('ledgerForm').checkValidity()) { document.getElementById('ledgerForm').reportValidity(); return; }
-
   document.getElementById('loadingOverlay').style.display = 'flex';
 
-  let payload = {
-    action: 'save_ledger', 
-    data: {
+  let payload = { action: 'save_ledger', data: {
       lineName: document.getElementById('f_lineName').value,
       machineName: document.getElementById('f_machineName').value,
-      updatedBy: document.getElementById('f_updatedBy').value, // 🔴 เพิ่มบรรทัดนี้เพื่อส่งชื่อคนทำ
+      updatedBy: document.getElementById('f_updatedBy').value, 
       imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std')?.querySelector('.preview-img')),
       subSystems: []
-    }
-  };
+  }};
 
   document.querySelectorAll('.sub-system-card').forEach(subCard => {
-    
     let riskActive = []; 
     let riskCheckboxes = subCard.querySelectorAll('.risk-grid .icon-checkbox:not(.not-used) .label');
-    if (riskCheckboxes) {
-        riskCheckboxes.forEach(el => riskActive.push(el.innerText));
-    }
+    if (riskCheckboxes) { riskCheckboxes.forEach(el => riskActive.push(el.innerText)); }
 
     let subData = {
       subName: subCard.querySelector('.input-subname').value,
       imgSub: getBase64(subCard.querySelector('.box_imgSub .preview-img')),
-      risks: riskActive.join(', '), 
-      components: []
+      risks: riskActive.join(', '), components: []
     };
 
     subCard.querySelectorAll('.part-item').forEach(pCard => {
       let ppeActive = []; 
       pCard.querySelectorAll('.ppe-grid .icon-checkbox:not(.not-used) .label').forEach(el => ppeActive.push(el.innerText));
-      
       subData.components.push({
-        compName: pCard.querySelector('.input-compname').value,
-        task: pCard.querySelector('.input-task').value,
-        spareClass: pCard.querySelector('.input-class').value,
-        pmStd: pCard.querySelector('.input-pmstd').value,
-        status: pCard.querySelector('.input-status').value,
-        stdTime: pCard.querySelector('.input-time').value,
-        remarkEwo: pCard.querySelector('.input-remark').value, 
-        risk: pCard.querySelector('.input-risk').checked,
-        ppe: ppeActive.join(', '),
-        imgComp: getBase64(pCard.querySelector('.box_imgComp .preview-img')),
+        compName: pCard.querySelector('.input-compname').value, task: pCard.querySelector('.input-task').value,
+        spareClass: pCard.querySelector('.input-class').value, pmStd: pCard.querySelector('.input-pmstd').value,
+        status: pCard.querySelector('.input-status').value, stdTime: pCard.querySelector('.input-time').value,
+        remarkEwo: pCard.querySelector('.input-remark').value, risk: pCard.querySelector('.input-risk').checked,
+        ppe: ppeActive.join(', '), imgComp: getBase64(pCard.querySelector('.box_imgComp .preview-img')),
         weeks: JSON.parse(pCard.querySelector('.week-data-input').value)
       });
     });
@@ -338,19 +370,13 @@ async function submitFormViaAPI() {
   });
 
   try {
-    const res = await fetch(GAS_API_URL, { 
-      method: 'POST', 
-      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
-      body: JSON.stringify(payload) 
-    });
+    const res = await fetch(GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
     const result = await res.json();
     if(result.success) { 
       alert("✅ บันทึกข้อมูลสำเร็จ!"); 
-      // สั่งให้รีโหลดข้อมูลใหม่ทันทีหลังเซฟเสร็จ
       await loadDataFromDatabase(); 
       window.history.back(); 
-    } 
-    else { alert("❌ เกิดข้อผิดพลาด: " + result.message); }
+    } else { alert("❌ เกิดข้อผิดพลาด: " + result.message); }
   } catch (error) { alert("❌ Error: เชื่อมต่อ API ไม่สำเร็จ"); } 
   finally { document.getElementById('loadingOverlay').style.display = 'none'; }
 }
