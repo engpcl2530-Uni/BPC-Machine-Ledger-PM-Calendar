@@ -1,6 +1,7 @@
 // 🔴 นำ Web App URL ของ Google Apps Script ของคุณมาใส่ตรงนี้
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec"; 
 
+
 let dbData = {
   "Machine A1": {
     image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80", machineCount: 1,
@@ -74,8 +75,8 @@ function renderComponentTable() {
   comps.forEach(c => {
     let weeksHtml = "";
     for(let w=1; w<=52; w++) { weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly({t:w%4===0?1:0, r:0, b:0, l:0})}</td>`; }
-    // อัปเดตตาราง Mockup ให้มีช่อง Remark ด้วย
-    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-muted" style="font-size:11px;">E-123</td><td class="text-center" style="font-size:10px;">Gloves</td>${weeksHtml}</tr>`;
+    // 🔴 คอลัมน์ EWO จะอยู่ต่อท้าย ${weeksHtml} 
+    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">Gloves</td>${weeksHtml}<td class="text-muted" style="font-size:11px;">E-123</td></tr>`;
   });
 }
 
@@ -201,7 +202,7 @@ async function submitFormViaAPI() {
   document.getElementById('loadingOverlay').style.display = 'flex';
 
   let payload = {
-    action: 'save_ledger', // 🔴 ส่ง action type
+    action: 'save_ledger', 
     data: {
       machineName: document.getElementById('f_machineName').value || currentLine,
       imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std')?.querySelector('.preview-img')),
@@ -227,10 +228,7 @@ async function submitFormViaAPI() {
         pmStd: pCard.querySelector('.input-pmstd').value,
         status: pCard.querySelector('.input-status').value,
         stdTime: pCard.querySelector('.input-time').value,
-        
-        // 🔴 ข้อมูลที่เพิ่มใหม่ (หมายเหตุ / EWO)
-        remarkEwo: pCard.querySelector('.input-remark').value, 
-        
+        remarkEwo: pCard.querySelector('.input-remark').value, // 🔴 ดึงค่า EWO ที่ย้ายมาหลัง 52 Weeks ไปบันทึก
         risk: pCard.querySelector('.input-risk').checked,
         ppe: ppeActive.join(', '),
         imgComp: getBase64(pCard.querySelector('.box_imgComp .preview-img')),
