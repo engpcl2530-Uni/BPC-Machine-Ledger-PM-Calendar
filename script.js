@@ -1,7 +1,6 @@
 // 🔴 นำ Web App URL ของ Google Apps Script ของคุณมาใส่ตรงนี้
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec"; 
 
-// Mock Data
 let dbData = {
   "Machine A1": {
     image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80", machineCount: 1,
@@ -14,7 +13,6 @@ let dbData = {
 let currentLine = null;
 let currentSub = null;
 
-// ================= 1. Routing & Render =================
 function navigateTo(line = null, sub = null) {
   let url = new URL(window.location);
   if (line) url.searchParams.set('line', line); else url.searchParams.delete('line');
@@ -76,11 +74,11 @@ function renderComponentTable() {
   comps.forEach(c => {
     let weeksHtml = "";
     for(let w=1; w<=52; w++) { weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly({t:w%4===0?1:0, r:0, b:0, l:0})}</td>`; }
-    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">Gloves</td>${weeksHtml}</tr>`;
+    // อัปเดตตาราง Mockup ให้มีช่อง Remark ด้วย
+    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-muted" style="font-size:11px;">E-123</td><td class="text-center" style="font-size:10px;">Gloves</td>${weeksHtml}</tr>`;
   });
 }
 
-// ================= 2. Context Aware Form (การจัดการฟอร์มอัจฉริยะ) =================
 function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
     let reader = new FileReader();
@@ -104,11 +102,9 @@ function addSubsystemCard() {
 function addComponentCard(btn) {
   const container = btn.closest('.sub-system-card').querySelector('.parts-container');
   const clone = document.getElementById('componentTemplate').content.cloneNode(true);
-  
   let defaultData = [];
   for(let i=0; i<52; i++) defaultData.push({t:0, r:0, b:0, l:0});
   clone.querySelector('.week-data-input').value = JSON.stringify(defaultData);
-  
   renderCompactGrid(clone.querySelector('.week-compact-grid'), defaultData);
   container.appendChild(clone);
 }
@@ -120,43 +116,34 @@ function openAddFormContext() {
   let mInput = document.getElementById('f_machineName');
   let cardStructure = document.getElementById('cardStructure');
   let btnAddSub = document.getElementById('btnAddSub');
-  
   let contextBanner = document.getElementById('formContextBanner');
   let contextText = document.getElementById('formContextText');
 
   if (currentLine && currentSub) {
-    // ระดับลึกสุด (Component) -> ล็อกและซ่อน Machine/Sub ให้โชว์แค่ Banner Context
     mInput.value = currentLine;
-    cardStructure.style.display = 'none'; // ซ่อนกรอบโครงสร้างไปเลย
+    cardStructure.style.display = 'none'; 
     btnAddSub.style.display = 'none';
-    
     contextBanner.classList.remove('d-none');
     contextText.innerText = `${currentLine} > ${currentSub}`;
     
     addSubsystemCard();
     let subCard = document.querySelector('.sub-system-card');
     subCard.querySelector('.input-subname').value = currentSub;
-    subCard.querySelector('#subHeaderRow').style.display = 'none'; // ซ่อนช่องกรอก Sub
+    subCard.querySelector('#subHeaderRow').style.display = 'none'; 
     subCard.querySelector('.btn-remove-sub').style.display = 'none';
 
   } else if (currentLine) {
-    // ระดับกลาง (Subassembly) -> ล็อกแค่ Machine
     mInput.value = currentLine;
     cardStructure.style.display = 'none'; 
     btnAddSub.style.display = 'block';
-    
     contextBanner.classList.remove('d-none');
     contextText.innerText = `${currentLine}`;
-
     addSubsystemCard();
-
   } else {
-    // ระดับนอกสุด -> เปิดให้กรอกทั้งหมด
     cardStructure.style.display = 'block';
     mInput.readOnly = false;
     btnAddSub.style.display = 'block';
     contextBanner.classList.add('d-none');
-    
     addSubsystemCard();
   }
 
@@ -165,7 +152,6 @@ function openAddFormContext() {
   window.scrollTo(0,0);
 }
 
-// ================= 3. 4-Triangle Calendar =================
 let currentCompactGrid = null; 
 let tempWeekData = [];
 
@@ -204,7 +190,6 @@ function syncModalToCompact() {
   bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
 }
 
-// ================= 4. Submit to Google Apps Script =================
 function getBase64(imgElement) {
   if(imgElement && imgElement.src && imgElement.src.startsWith('data:image')) return imgElement.src;
   return "";
@@ -216,9 +201,12 @@ async function submitFormViaAPI() {
   document.getElementById('loadingOverlay').style.display = 'flex';
 
   let payload = {
-    machineName: document.getElementById('f_machineName').value,
-    imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std')?.querySelector('.preview-img')),
-    subSystems: []
+    action: 'save_ledger', // 🔴 ส่ง action type
+    data: {
+      machineName: document.getElementById('f_machineName').value || currentLine,
+      imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std')?.querySelector('.preview-img')),
+      subSystems: []
+    }
   };
 
   document.querySelectorAll('.sub-system-card').forEach(subCard => {
@@ -229,7 +217,6 @@ async function submitFormViaAPI() {
     };
 
     subCard.querySelectorAll('.part-item').forEach(pCard => {
-      // 🔴 ดึงเฉพาะ PPE ที่ถูกเลือกใช้งาน (ตัดคลาส not-used ออก)
       let ppeActive = []; 
       pCard.querySelectorAll('.icon-checkbox:not(.not-used) .label').forEach(el => ppeActive.push(el.innerText));
       
@@ -240,17 +227,25 @@ async function submitFormViaAPI() {
         pmStd: pCard.querySelector('.input-pmstd').value,
         status: pCard.querySelector('.input-status').value,
         stdTime: pCard.querySelector('.input-time').value,
+        
+        // 🔴 ข้อมูลที่เพิ่มใหม่ (หมายเหตุ / EWO)
+        remarkEwo: pCard.querySelector('.input-remark').value, 
+        
         risk: pCard.querySelector('.input-risk').checked,
         ppe: ppeActive.join(', '),
         imgComp: getBase64(pCard.querySelector('.box_imgComp .preview-img')),
         weeks: JSON.parse(pCard.querySelector('.week-data-input').value)
       });
     });
-    payload.subSystems.push(subData);
+    payload.data.subSystems.push(subData);
   });
 
   try {
-    const res = await fetch(GAS_API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
+    const res = await fetch(GAS_API_URL, { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
+      body: JSON.stringify(payload) 
+    });
     const result = await res.json();
     if(result.success) { alert("✅ บันทึกข้อมูลสำเร็จ!"); window.history.back(); } 
     else { alert("❌ เกิดข้อผิดพลาด: " + result.message); }
