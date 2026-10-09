@@ -1,7 +1,9 @@
 // 🔴 นำ Web App URL ของ Google Apps Script ของคุณมาใส่ตรงนี้
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbyaFFS-_FgA5uMfU1dsS_1C4ab0bTVU_StMZOeXU1fx3JQroONG5047l2QuMYItuCJO9A/exec"; 
 
-// Mock Data
+// =========================================================
+// โครงสร้างฐานข้อมูลจำลอง (Line -> Machine -> Subassembly -> Component)
+// =========================================================
 let dbData = {
   "Line A1 (Packing)": {
     image: "https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?w=400&q=80",
@@ -11,7 +13,34 @@ let dbData = {
         subassemblies: {
           "Conveyor System": { 
             image: "https://images.unsplash.com/photo-1563248386-35eb05cc092b?w=400&q=80", 
-            components: [{name:"Belt Roll", time:30}] 
+            components: [{name: "Belt Roll", time: 30}, {name: "Main Motor", time: 45}] 
+          },
+          "Hydraulic Unit": { 
+            image: "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=400&q=80", 
+            components: [{name: "Main Pump", time: 60}] 
+          }
+        }
+      },
+      "PACKER-02": {
+        image: "https://images.unsplash.com/photo-1581092160607-ee22621dd758?w=400&q=80",
+        subassemblies: {
+          "Sealing Station": { 
+            image: "https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?w=400&q=80", 
+            components: [{name: "Heater Block", time: 15}] 
+          }
+        }
+      }
+    }
+  },
+  "MIX#1": {
+    image: "https://images.unsplash.com/photo-1581092795360-fd1ca04f0952?w=400&q=80",
+    machines: {
+      "MIXER-01": {
+        image: "https://images.unsplash.com/photo-1563248386-35eb05cc092b?w=400&q=80",
+        subassemblies: {
+          "Agitator Shaft": { 
+            image: "https://images.unsplash.com/photo-1581092580497-e0d23cbdf1dc?w=400&q=80", 
+            components: [{name: "Mechanical Seal", time: 120}] 
           }
         }
       }
@@ -23,7 +52,7 @@ let currentLine = null;
 let currentMach = null;
 let currentSub = null;
 
-// ================= 1. Routing & Render =================
+// ================= 1. Routing & Render (ระบบเปลี่ยนหน้า) =================
 function navigateTo(line = null, mach = null, sub = null) {
   let url = new URL(window.location);
   if (line) url.searchParams.set('line', line); else url.searchParams.delete('line');
@@ -43,21 +72,25 @@ function handleRouting() {
   let breadcrumb = "Dashboard";
 
   if (currentLine && currentMach && currentSub) {
+    // ระดับ 4: โชว์ตาราง Component
     document.getElementById('lbl-sub-title').innerText = currentSub;
     renderComponentTable();
     document.getElementById('view-components').classList.add('active');
     breadcrumb = `${currentLine} > ${currentMach} > ${currentSub}`;
   } else if (currentLine && currentMach) {
+    // ระดับ 3: โชว์ Subassemblies
     document.getElementById('lbl-mach-title').innerText = currentMach;
     renderSubs(currentLine, currentMach);
     document.getElementById('view-subs').classList.add('active');
     breadcrumb = `${currentLine} > ${currentMach}`;
   } else if (currentLine) {
+    // ระดับ 2: โชว์ Machines
     document.getElementById('lbl-line-title').innerText = currentLine;
     renderMachs(currentLine);
     document.getElementById('view-machs').classList.add('active');
     breadcrumb = `${currentLine}`;
   } else {
+    // ระดับ 1: โชว์ Lines (หน้าแรกสุด)
     renderLines();
     document.getElementById('view-lines').classList.add('active');
   }
@@ -65,13 +98,14 @@ function handleRouting() {
   document.getElementById('headerBreadcrumb').innerText = breadcrumb;
   window.scrollTo(0,0);
 }
-window.addEventListener('popstate', handleRouting);
+window.addEventListener('popstate', handleRouting); // ดักจับเวลากดปุ่ม Back/Forward บนเบราว์เซอร์
 
 function renderLines() {
   let grid = document.getElementById('lineGrid');
   grid.innerHTML = '';
   for (let lineName in dbData) {
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูเครื่องจักร <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    let mCount = Object.keys(dbData[lineName].machines).length;
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${lineName}</h5><div class="text-muted small"><i class="bi bi-hdd-rack"></i> มี ${mCount} เครื่องจักร</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${lineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูเครื่องจักรในไลน์นี้ <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
@@ -81,7 +115,8 @@ function renderMachs(lineName) {
   let line = dbData[lineName];
   if (!line) return;
   for (let machName in line.machines) {
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${machName}</h5></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${machName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูระบบย่อย <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    let sCount = Object.keys(line.machines[machName].subassemblies).length;
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${machName}</h5><div class="text-muted small"><i class="bi bi-diagram-3"></i> มี ${sCount} ระบบย่อย</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${machName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูระบบย่อย (Subassembly) <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
@@ -91,7 +126,8 @@ function renderSubs(lineName, machName) {
   let mach = dbData[lineName].machines[machName];
   if (!mach) return;
   for (let subName in mach.subassemblies) {
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}', '${subName}')"><img src="${mach.subassemblies[subName].image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${subName}</h6></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${subName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดู Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    let cCount = mach.subassemblies[subName].components.length;
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${lineName}', '${machName}', '${subName}')"><img src="${mach.subassemblies[subName].image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${subName}</h6><div class="text-muted small"><i class="bi bi-tools"></i> มี ${cCount} ชิ้นส่วน</div></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${subName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูตาราง Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
 }
 
@@ -102,18 +138,16 @@ function renderComponentTable() {
   comps.forEach(c => {
     let weeksHtml = "";
     for(let w=1; w<=52; w++) { weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly({t:w%4===0?1:0, r:0, b:0, l:0})}</td>`; }
-    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">ถุงมือ</td>${weeksHtml}<td class="text-muted" style="font-size:11px;">E-123</td></tr>`;
+    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect Condition</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">ถุงมือ</td>${weeksHtml}<td class="text-muted" style="font-size:11px;">-</td></tr>`;
   });
 }
 
 // 🔴 ระบบแก้ไขข้อมูล
 function editSubassembly() {
-  alert("เข้าสู่โหมดแก้ไขข้อมูลระบบย่อย: " + currentSub);
   openAddFormContext(); 
-  // ในความจริงต้อง Fetch ข้อมูลจาก Sheet มายัดใส่ Input ด้วย (ละไว้เพื่อความกระชับ)
 }
 
-// ================= 2. Context Aware Form =================
+// ================= 2. Context Aware Form (ฟอร์มอัจฉริยะ) =================
 function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
     let reader = new FileReader();
@@ -162,6 +196,7 @@ function openAddFormContext() {
   let contextBanner = document.getElementById('formContextBanner');
   let contextText = document.getElementById('formContextText');
 
+  // ค่าเริ่มต้น -> โชว์ทุกช่อง
   cardStructure.style.display = 'block';
   boxLine.style.display = 'block'; lInput.readOnly = false;
   boxMach.style.display = 'block'; mInput.readOnly = false;
@@ -170,12 +205,12 @@ function openAddFormContext() {
   contextBanner.classList.add('d-none');
 
   if (currentLine && currentMach && currentSub) {
-    // อยู่หน้าลึกสุด -> แก้ไข Component
+    // 🔴 1. อยู่หน้าลึกสุด (Component) -> ให้เติมแค่ Component (ล็อก 3 ชั้น)
     cardStructure.style.display = 'none'; 
     btnAddSub.style.display = 'none';
     
     contextBanner.classList.remove('d-none');
-    contextText.innerText = `แก้ไข: ${currentLine} > ${currentMach} > ${currentSub}`;
+    contextText.innerText = `${currentLine} > ${currentMach} > ${currentSub}`;
     
     lInput.value = currentLine;
     mInput.value = currentMach;
@@ -187,7 +222,7 @@ function openAddFormContext() {
     subCard.querySelector('.btn-remove-sub').style.display = 'none';
 
   } else if (currentLine && currentMach) {
-    // อยู่หน้า Sub -> ล็อก Machine ให้เติม Sub + Component
+    // 🔴 2. อยู่หน้า Subassembly -> ให้เติม Subassembly + Component (ล็อก 2 ชั้น)
     cardStructure.style.display = 'none'; 
     
     contextBanner.classList.remove('d-none');
@@ -198,16 +233,16 @@ function openAddFormContext() {
     addSubsystemCard();
 
   } else if (currentLine) {
-    // อยู่หน้า Machine -> ล็อกแค่ Line
+    // 🔴 3. อยู่หน้า Machine -> ให้เติม Machine + Sub + Comp (ล็อก 1 ชั้น)
     boxLine.style.display = 'none';
     lInput.value = currentLine;
     
     contextBanner.classList.remove('d-none');
-    contextText.innerText = `เพิ่มเครื่องจักรใน: ${currentLine}`;
+    contextText.innerText = `เพิ่มเครื่องจักรในไลน์: ${currentLine}`;
     addSubsystemCard();
     
   } else {
-    // หน้าแรกสุด
+    // 🔴 4. อยู่หน้าแรก -> เติมทุกอย่าง
     addSubsystemCard();
   }
 
@@ -278,7 +313,7 @@ async function submitFormViaAPI() {
 
   document.querySelectorAll('.sub-system-card').forEach(subCard => {
     
-    // 🔴 ดึง Risk จากระดับ Subassembly
+    // ดึง Risk ของ Subassembly
     let riskActive = []; 
     subCard.querySelectorAll('.risk-grid .icon-checkbox:not(.not-used) .label').forEach(el => riskActive.push(el.innerText));
 
