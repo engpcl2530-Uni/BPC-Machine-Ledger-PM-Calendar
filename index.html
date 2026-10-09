@@ -6,6 +6,7 @@
   <title>BPC Machine Ledger & PM Plan</title>
   <link rel="icon" type="image/png" href="logo.png">
   
+  <!-- CSS Framework & Fonts -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" rel="stylesheet">
@@ -69,7 +70,7 @@
           <p class="text-muted small mb-0">รายการชิ้นส่วนและปฏิทินบำรุงรักษา</p>
         </div>
         <div class="d-flex gap-2">
-          <!-- ปุ่มแก้ไขข้อมูล -->
+          <!-- 🔴 ปุ่มแก้ไขข้อมูล -->
           <button class="btn btn-warning fw-bold shadow-sm no-print" onclick="openAddFormContext()">
             <span class="material-symbols-rounded align-middle fs-5 me-1">edit_document</span> แก้ไขข้อมูล
           </button>
@@ -83,12 +84,17 @@
         <table class="table table-hover table-bordered mb-0 align-middle table-ledger" style="font-size: 13px;">
           <thead class="table-primary text-center">
             <tr>
-              <th rowspan="2">Image</th><th rowspan="2">Component Name</th><th rowspan="2">Task</th>
-              <th colspan="4">Standards</th><th rowspan="2">Safety/PPE</th><th colspan="52">Calendar 52 Weeks</th>
+              <th rowspan="2">Image</th>
+              <th rowspan="2">Component Name</th>
+              <th rowspan="2">Task</th>
+              <th colspan="4">Standards</th>
+              <th rowspan="2">Safety/PPE</th>
+              <th colspan="52">Calendar 52 Weeks</th>
               <th rowspan="2">EWO / Remark</th>
             </tr>
             <tr style="font-size: 11px;" id="weekHeaders">
               <th>Class</th><th>Type</th><th>Status</th><th>Min</th>
+              <!-- จะถูกเติมด้วย JavaScript เพื่อเลี่ยง document.write -->
             </tr>
           </thead>
           <tbody id="componentTableBody"></tbody>
@@ -96,22 +102,16 @@
       </div>
     </div>
 
-    <!-- ============================================== -->
-    <!-- View 5: Form Add/Edit Data (หน้าเพิ่มเครื่องจักร) -->
-    <!-- ============================================== -->
+    <!-- View 5: Form Add/Edit Data -->
     <div id="view-form" class="view-section">
       <button class="btn btn-outline-danger mb-3 no-print rounded-pill px-3 py-1" onclick="window.history.back()">
-        <span class="material-symbols-rounded fs-5 align-middle">close</span> ยกเลิกการกรอกข้อมูล
+        <span class="material-symbols-rounded align-middle fs-5 me-1">close</span> ยกเลิกการกรอกข้อมูล
       </button>
       
       <div class="d-flex justify-content-between align-items-center mb-4 no-print border-bottom pb-2">
         <h3 class="fw-bold mb-0 text-primary">
           <span class="material-symbols-rounded align-middle fs-4 text-warning">edit_document</span> ฟอร์มบันทึกข้อมูล
         </h3>
-        <!-- ย้ายปุ่มเซฟมาไว้ขวาบนในฟอร์มเพื่อความชัวร์ -->
-        <button type="button" class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitFormViaAPI()">
-          <span class="material-symbols-rounded align-middle fs-5 me-1">save</span> บันทึกข้อมูล
-        </button>
       </div>
 
       <form id="ledgerForm">
@@ -131,6 +131,7 @@
           </div>
         </div>
 
+        <!-- Banner แจ้งเตือนสถานะการทำงาน -->
         <div id="formContextBanner" class="alert alert-primary fw-bold d-none shadow-sm" style="font-size: 14px;">
            <span class="material-symbols-rounded align-middle fs-5">info</span> 
            กำลังปฏิบัติงานใน <span id="formContextText" class="text-decoration-underline ms-1"></span>
@@ -158,14 +159,10 @@
               <input type="file" class="d-none file-img" accept="image/*" onchange="previewDynamicFile(this)">
               <img class="preview-img w-100 rounded mt-2" style="display: none; max-height: 150px; object-fit: contain;" onclick="this.previousElementSibling.click()">
             </div>
-          </div>
-        </div>
-
-        <!-- 🔴 กล่องชื่อผู้บันทึก แยกออกมาข้างนอก ให้โฟกัสได้เสมอ -->
-        <div class="card shadow-sm mb-4 border-0">
-          <div class="card-body bg-light rounded border border-primary border-opacity-25 p-3">
-            <label class="form-label text-primary fw-bold"><i class="bi bi-person-badge me-1"></i> ชื่อผู้บันทึก / แก้ไขข้อมูล <span class="text-danger">*</span></label>
-            <input type="text" id="f_updatedBy" class="form-control fw-bold border-primary" placeholder="เช่น นายสมชาย (ช่างซ่อมบำรุง)" required>
+            <div class="col-md-12 mt-3 pt-3 border-top" id="box_f_updatedBy">
+              <label class="form-label text-primary fw-bold"><i class="bi bi-person-badge me-1"></i> ชื่อผู้บันทึก / แก้ไขข้อมูล <span class="text-danger">*</span></label>
+              <input type="text" id="f_updatedBy" class="form-control fw-bold border-primary" placeholder="เช่น นายสมชาย (ช่างซ่อมบำรุง)" required>
+            </div>
           </div>
         </div>
 
@@ -180,152 +177,128 @@
     </div>
   </div>
 
-
   <!-- ========================================== -->
   <!-- TEMPLATES (ซ่อนไว้สำหรับดึงไปใช้งานด้วย JS) -->
   <!-- ========================================== -->
 
-  <!-- Template: Subassembly Card (ดีไซน์ CMMS ออริจินัล) -->
+  <!-- Template: Subassembly Card -->
   <template id="subSystemTemplate">
-    <div class="card sub-system-card mb-5 border-0 shadow-sm drag-item">
-      <div class="card-header bg-white border-bottom-0 pt-4 pb-0 d-flex justify-content-between align-items-center" id="subHeaderRow">
-        <h5 class="fw-bold text-success mb-0">
-          <i class="bi bi-diagram-3 me-2"></i>ระบบย่อย (Subassembly)
-        </h5>
+    <div class="card sub-system-card mb-4 border-success drag-item shadow-sm" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragend="handleDragEnd(event)">
+      <div class="card-header bg-success text-white d-flex justify-content-between align-items-center" id="subHeaderRow">
         <div>
-          <button type="button" class="btn btn-sm btn-outline-danger shadow-sm rounded-pill px-3" onclick="this.closest('.sub-system-card').remove()"><i class="bi bi-trash me-1"></i> ลบระบบย่อย</button>
+          <i class="bi bi-grip-vertical me-2 fs-5 text-light opacity-75" style="cursor: grab;" onmousedown="makeDraggable(this)" onmouseup="makeUndraggable(this)" onmouseleave="makeUndraggable(this)"></i>
+          <i class="bi bi-diagram-3 me-2"></i>ระบบย่อย (Subassembly)
+        </div>
+        <div>
+          <button type="button" class="btn btn-sm btn-light text-success me-2 fw-bold shadow-sm" onclick="duplicateItem(this)"><i class="bi bi-copy me-1"></i>คัดลอกชุดนี้</button>
+          <button type="button" class="btn btn-sm btn-danger btn-remove-sub shadow-sm" onclick="this.closest('.sub-system-card').remove()"><i class="bi bi-trash"></i> ลบ</button>
         </div>
       </div>
-      
-      <div class="card-body">
-        <div class="row g-4 mb-4">
+      <div class="card-body bg-success bg-opacity-10">
+        <div class="row g-3 mb-3">
           <div class="col-md-8">
-            <label class="form-label fw-bold text-dark" style="font-size: 14px;">ชื่อระบบย่อย (Subassembly Name) <span class="text-danger">*</span></label>
-            <input type="text" class="form-control input-subname" placeholder="เช่น Main Conveyor, Hydraulic Unit" style="border-radius: 8px;" required>
+            <label class="form-label text-success fw-bold">ชื่อระบบย่อย (Subassembly Name) <span class="text-danger">*</span></label>
+            <input type="text" class="form-control input-subname border-success" placeholder="เช่น Main Conveyor, Hydraulic Unit" required>
           </div>
           <div class="col-md-4 text-center box_imgSub">
-            <label class="form-label fw-bold text-dark w-100 text-start" style="font-size: 14px;">รูปภาพระบบย่อย</label>
-            <div class="border rounded bg-light p-2 position-relative" style="min-height: 80px; border-style: dashed !important; border-width: 2px !important; cursor: pointer;">
-              <i class="bi bi-camera fs-4 text-muted" style="line-height: 60px;"></i>
+            <label class="form-label text-success fw-bold w-100 text-start">รูปภาพระบบย่อย</label>
+            <div class="border rounded bg-white p-2 position-relative" style="min-height: 100px;">
+              <i class="bi bi-camera fs-3 text-muted" style="line-height: 80px;"></i>
               <input type="file" accept="image/*" class="form-control position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;" onchange="previewDynamicFile(this)">
-              <img src="" class="preview-img w-100 rounded" style="display:none; max-height: 120px; object-fit: contain;">
+              <img src="" class="preview-img w-100 rounded" style="display:none; max-height: 150px; object-fit: contain;">
             </div>
           </div>
         </div>
         
-        <!-- ประเมินความเสี่ยง (รายการครบ 8 อัน) -->
-        <h6 class="text-danger fw-bold mb-3"><i class="bi bi-exclamation-triangle-fill me-1"></i> ประเมินความเสี่ยงและผลกระทบ (Risk & Impact)</h6>
-        <div class="risk-grid mb-5 bg-white">
-          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-gear-wide-connected"></i><span class="label">เครื่องจักรหยุดชะงัก</span></div></label>
+        <label class="form-label text-danger fw-bold"><i class="bi bi-exclamation-triangle-fill me-1"></i>ประเมินความเสี่ยงและผลกระทบ (Risk & Impact)</label>
+        <div class="risk-grid mb-4 bg-white p-2 border rounded">
+          <label class="icon-checkbox"><input type="checkbox" checked><div class="content"><i class="bi bi-gear-wide-connected"></i><span class="label">เครื่องจักรหยุดชะงัก</span></div></label>
           <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-shield-x"></i><span class="label">กระทบคุณภาพสินค้า</span></div></label>
           <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-exclamation-octagon"></i><span class="label">อันตรายต่อผู้ปฏิบัติงาน</span></div></label>
-          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-thermometer-high"></i><span class="label">ความร้อนสูง</span></div></label>
-          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-lightning-charge"></i><span class="label">ไฟฟ้าดูด / ลัดวงจร</span></div></label>
-          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-droplet-half"></i><span class="label">สารเคมี / น้ำมันรั่ว</span></div></label>
-          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-fire"></i><span class="label">อัคคีภัย / ประกายไฟ</span></div></label>
-          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-fan"></i><span class="label">ฝุ่น / กลิ่น / ควัน</span></div></label>
+          <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-thermometer-high"></i><span class="label">ความร้อนสูง / สารเคมี</span></div></label>
         </div>
         
-        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2 mt-4">
+        <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
           <h6 class="text-success fw-bold mb-0"><i class="bi bi-list-check me-2"></i>รายการชิ้นส่วน (Components)</h6>
+          <button type="button" class="btn btn-sm btn-success fw-bold" onclick="addComponentCard(this)"><i class="bi bi-plus-lg me-1"></i> เพิ่ม Component</button>
         </div>
         
-        <div class="parts-container bg-white"></div>
-        
-        <button type="button" class="btn btn-light text-success w-100 fw-bold py-2 mt-2 border border-success border-opacity-25" style="border-radius: 8px;" onclick="addComponentCard(this)">
-          <i class="bi bi-plus-lg me-1"></i> เพิ่ม Component
-        </button>
+        <div class="parts-container"></div>
       </div>
     </div>
   </template>
 
-  <!-- Template: Component Card (ดีไซน์ CMMS ออริจินัล) -->
+  <!-- Template: Component Card -->
   <template id="componentTemplate">
-    <div class="part-item bg-white mb-4 position-relative border-bottom pb-4 drag-item" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragend="handleDragEnd(event)">
-      <div class="mb-3 d-flex justify-content-between align-items-center">
-        <span class="badge bg-secondary px-3 py-2" style="font-size: 14px; border-radius: 6px;">
-          <i class="bi bi-grip-vertical me-1 text-white-50" style="cursor: grab;" onmousedown="makeDraggable(this)" onmouseup="makeUndraggable(this)" onmouseleave="makeUndraggable(this)"></i>ชิ้นส่วน
-        </span>
-        
+    <div class="card p-3 mb-3 part-item bg-white drag-item shadow-sm border" ondragstart="handleDragStart(event)" ondragover="handleDragOver(event)" ondragend="handleDragEnd(event)">
+      <div class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2">
+        <span class="badge bg-secondary fs-6"><i class="bi bi-grip-vertical me-1" style="cursor: grab;" onmousedown="makeDraggable(this)" onmouseup="makeUndraggable(this)" onmouseleave="makeUndraggable(this)"></i> ชิ้นส่วน</span>
         <div>
-          <button type="button" class="btn btn-sm btn-light text-primary me-2 shadow-sm" onclick="duplicateItem(this)" title="คัดลอก"><i class="bi bi-copy"></i></button>
-          <button type="button" class="btn btn-sm btn-light text-danger shadow-sm" onclick="this.closest('.part-item').remove()" title="ลบ"><i class="bi bi-trash"></i></button>
+          <button type="button" class="btn btn-sm btn-outline-primary me-2" onclick="duplicateItem(this)" title="คัดลอก Component นี้"><i class="bi bi-copy"></i></button>
+          <button type="button" class="btn btn-sm btn-outline-danger" onclick="this.closest('.part-item').remove()" title="ลบ"><i class="bi bi-trash"></i></button>
         </div>
       </div>
-
-      <div class="row g-3">
-        <div class="col-md-4">
-          <label class="form-label fw-bold text-dark" style="font-size: 13px;">ชื่อชิ้นส่วน (Component) <span class="text-danger">*</span></label>
-          <input type="text" class="form-control input-compname" placeholder="เช่น Drive Motor" style="border-radius: 6px;" required>
-        </div>
-        <div class="col-md-5">
-          <label class="form-label fw-bold text-dark" style="font-size: 13px;">ลักษณะงาน (Task)</label>
-          <input type="text" class="form-control input-task" placeholder="เช่น ตรวจสอบความร้อน" style="border-radius: 6px;">
+      <div class="row g-2">
+        <div class="col-md-3">
+          <label class="form-label small fw-bold">ชื่อชิ้นส่วน (Component) <span class="text-danger">*</span></label>
+          <input type="text" class="form-control form-control-sm input-compname" placeholder="เช่น Drive Motor" required>
         </div>
         <div class="col-md-3">
-          <label class="form-label fw-bold text-dark" style="font-size: 13px;">ความสำคัญ</label>
-          <select class="form-select input-class" style="border-radius: 6px;"><option>A</option><option>B</option><option>C</option></select>
+          <label class="form-label small fw-bold">ลักษณะงาน (Task)</label>
+          <input type="text" class="form-control form-control-sm input-task" placeholder="เช่น ตรวจสอบความร้อน">
         </div>
-
-        <div class="col-md-3 mt-3">
-          <label class="form-label fw-bold text-dark" style="font-size: 13px;">เวลามาตรฐาน (นาที)</label>
-          <input type="number" class="form-control input-time" placeholder="เช่น 30" style="border-radius: 6px;" required>
-          
-          <div class="mt-3">
-            <label class="form-label fw-bold text-dark" style="font-size: 13px;">มาตรฐาน PM & สถานะ</label>
-            <div class="d-flex gap-2">
-              <select class="form-select form-select-sm input-pmstd"><option>CBM</option><option>TBM</option></select>
-              <select class="form-select form-select-sm input-status"><option>Run</option><option>Stop</option></select>
-            </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold">ความสำคัญ</label>
+          <select class="form-select form-select-sm input-class"><option>A</option><option>B</option><option>C</option></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold">มาตรฐาน PM</label>
+          <select class="form-select form-select-sm input-pmstd"><option>CBM</option><option>TBM</option></select>
+        </div>
+        <div class="col-md-2">
+          <label class="form-label small fw-bold">สถานะเครื่องจักร</label>
+          <select class="form-select form-select-sm input-status"><option>Run</option><option>Stop</option></select>
+        </div>
+        
+        <div class="col-md-2 mt-2">
+          <label class="form-label small fw-bold">เวลามาตรฐาน (นาที)</label>
+          <input type="number" class="form-control form-control-sm input-time" placeholder="เช่น 30" required>
+        </div>
+        <div class="col-md-2 mt-2 text-center bg-light rounded border pt-1">
+          <label class="form-label small w-100 fw-bold">พื้นที่เสี่ยงสูง (Permit)</label>
+          <div class="form-check form-switch d-inline-block">
+            <input class="form-check-input input-risk" type="checkbox" role="switch">
           </div>
         </div>
-
-        <div class="col-md-3 mt-3">
-          <div class="bg-light border rounded p-3 h-100 d-flex flex-column justify-content-center align-items-center" style="border-radius: 8px !important;">
-            <label class="form-label fw-bold text-dark mb-3" style="font-size: 13px;">พื้นที่เสี่ยงสูง (Permit)</label>
-            <div class="form-check form-switch m-0 p-0 d-flex justify-content-center">
-              <input class="form-check-input input-risk m-0" type="checkbox" role="switch" style="width: 45px; height: 22px; cursor: pointer;">
-            </div>
-          </div>
-        </div>
-
-        <!-- อุปกรณ์ป้องกัน PPE (รายการครบ 8 อัน) -->
-        <div class="col-md-6 mt-3">
-          <label class="form-label fw-bold text-dark" style="font-size: 13px;">อุปกรณ์ป้องกัน (PPE) ที่จำเป็น</label>
+        <div class="col-md-6 mt-2">
+          <label class="form-label small fw-bold">อุปกรณ์ป้องกัน (PPE) ที่จำเป็น</label>
           <div class="ppe-grid">
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-person-video2"></i><span class="label">หมวกนิรภัย</span></div></label>
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-eyeglasses"></i><span class="label">แว่นตานิรภัย</span></div></label>
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-ear-fill"></i><span class="label">ปลั๊กอุดหู / ที่ครอบหู</span></div></label>
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-lungs"></i><span class="label">หน้ากากกันฝุ่น / สารเคมี</span></div></label>
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-hand-index-thumb"></i><span class="label">ถุงมือผ้า / หนัง</span></div></label>
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-bandaid"></i><span class="label">ถุงมือกันสารเคมี</span></div></label>
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-cone-striped"></i><span class="label">รองเท้านิรภัย</span></div></label>
-            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-life-preserver"></i><span class="label">เข็มขัดกันตก (ที่สูง)</span></div></label>
+            <label class="icon-checkbox"><input type="checkbox" checked><div class="content"><i class="bi bi-eyeglasses"></i><span class="label">แว่นตา</span></div></label>
+            <label class="icon-checkbox"><input type="checkbox" checked><div class="content"><i class="bi bi-hand-index-thumb"></i><span class="label">ถุงมือ</span></div></label>
+            <label class="icon-checkbox"><input type="checkbox"><div class="content"><i class="bi bi-ear-fill"></i><span class="label">ปลั๊กอุดหู</span></div></label>
           </div>
         </div>
-
-        <div class="col-md-3 mt-3 box_imgComp">
-          <label class="form-label fw-bold text-dark w-100" style="font-size: 13px;">ภาพชิ้นส่วน</label>
-          <div class="border rounded bg-light position-relative" style="height: 60px; border-style: dashed !important; border-width: 2px !important;">
-            <i class="bi bi-image text-muted text-center w-100 d-block" style="line-height: 60px;"></i>
+        <div class="col-md-2 mt-2 text-center box_imgComp">
+          <label class="form-label small fw-bold w-100 text-start">ภาพชิ้นส่วน</label>
+          <div class="border rounded bg-light position-relative" style="height: 50px;">
+            <i class="bi bi-image text-muted" style="line-height: 50px;"></i>
             <input type="file" accept="image/*" class="form-control position-absolute top-0 start-0 w-100 h-100 opacity-0" style="cursor: pointer;" onchange="previewDynamicFile(this)">
             <img src="" class="preview-img w-100 h-100 rounded" style="display:none; object-fit: cover;">
           </div>
         </div>
         
-        <div class="col-md-9 mt-3">
-           <label class="form-label fw-bold text-dark" style="font-size: 13px;">ปฏิทินแผนซ่อมบำรุง 52 สัปดาห์ (คลิกเพื่อแก้ไข)</label>
-           <div class="week-compact-grid border rounded bg-white p-1" onclick="openWeekModal(this)" style="cursor: pointer; min-height: 35px; display: flex; flex-wrap: wrap;"></div>
+        <div class="col-md-10 mt-2">
+           <label class="form-label small fw-bold">ปฏิทินแผนซ่อมบำรุง 52 สัปดาห์ (คลิกเพื่อแก้ไข)</label>
+           <div class="week-compact-grid border rounded bg-light p-1" onclick="openWeekModal(this)" style="cursor: pointer; min-height: 25px;"></div>
            <input type="hidden" class="week-data-input">
         </div>
-        
         <div class="col-md-12 mt-2">
-          <input type="text" class="form-control input-remark text-muted" placeholder="Remarks / EWO Reference (รายละเอียดเพิ่มเติม หรือเลขอ้างอิง EWO)" style="font-size: 13px; border-radius: 6px; background-color: #f8f9fa;">
+          <label class="form-label small fw-bold">Remarks / EWO Reference</label>
+          <input type="text" class="form-control form-control-sm input-remark" placeholder="รายละเอียดเพิ่มเติม หรือเลขอ้างอิง EWO">
         </div>
       </div>
     </div>
   </template>
-
 
   <!-- ========================================== -->
   <!-- Modal ขยาย 52 สัปดาห์ -->
@@ -359,8 +332,10 @@
     <i class="bi bi-plus-lg fs-4" id="mainFabIcon"></i>
   </button>
 
+  <!-- Scripts -->
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   
+  <!-- Script สร้าง <th> 52 สัปดาห์อัตโนมัติ (ลดโค้ด HTML รุงรัง) -->
   <script>
     const weekHeadersRow = document.getElementById('weekHeaders');
     for(let i=1; i<=52; i++) {
