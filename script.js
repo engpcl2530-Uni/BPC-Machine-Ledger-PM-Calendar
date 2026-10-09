@@ -76,11 +76,11 @@ function renderComponentTable() {
   comps.forEach(c => {
     let weeksHtml = "";
     for(let w=1; w<=52; w++) { weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly({t:w%4===0?1:0, r:0, b:0, l:0})}</td>`; }
-    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">PPE</td>${weeksHtml}</tr>`;
+    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${c.name}</td><td>Inspect</td><td class="text-center">A</td><td class="text-center">CBM</td><td class="text-center">Run</td><td class="text-center fw-bold">${c.time}</td><td class="text-center" style="font-size:10px;">Gloves</td>${weeksHtml}</tr>`;
   });
 }
 
-// ================= 2. Form Logic (CMMS Hierarchy) =================
+// ================= 2. Context Aware Form (การจัดการฟอร์มอัจฉริยะ) =================
 function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
     let reader = new FileReader();
@@ -88,7 +88,7 @@ function previewDynamicFile(input) {
       let preview = input.nextElementSibling;
       preview.src = e.target.result;
       preview.style.display = 'block';
-      input.previousElementSibling.style.display = 'none'; // ซ่อน Upload Box
+      input.previousElementSibling.style.display = 'none'; 
     }
     reader.readAsDataURL(input.files[0]);
   }
@@ -98,7 +98,7 @@ function addSubsystemCard() {
   const container = document.getElementById('subSystemsContainer');
   const clone = document.getElementById('subSystemTemplate').content.cloneNode(true);
   container.appendChild(clone);
-  addComponentCard(container.lastElementChild.querySelector('.btn-success')); // แถม 1 part อัตโนมัติ
+  addComponentCard(container.lastElementChild.querySelector('.btn-success')); 
 }
 
 function addComponentCard(btn) {
@@ -113,38 +113,50 @@ function addComponentCard(btn) {
   container.appendChild(clone);
 }
 
-// ================= 3. Context Aware Add Form =================
 function openAddFormContext() {
   document.getElementById('ledgerForm').reset();
-  document.getElementById('subSystemsContainer').innerHTML = ''; // ล้างกรุ๊ปเก่า
+  document.getElementById('subSystemsContainer').innerHTML = ''; 
   
   let mInput = document.getElementById('f_machineName');
+  let cardStructure = document.getElementById('cardStructure');
   let btnAddSub = document.getElementById('btnAddSub');
-  let boxMach = document.getElementById('box_imgMach');
+  
+  let contextBanner = document.getElementById('formContextBanner');
+  let contextText = document.getElementById('formContextText');
 
   if (currentLine && currentSub) {
-    // 3.1 อยู่หน้า Components (ลึกสุด) -> ล็อก Machine & Sub ให้เติมแค่ Component
-    mInput.value = currentLine; mInput.readOnly = true; boxMach.style.display = 'none';
+    // ระดับลึกสุด (Component) -> ล็อกและซ่อน Machine/Sub ให้โชว์แค่ Banner Context
+    mInput.value = currentLine;
+    cardStructure.style.display = 'none'; // ซ่อนกรอบโครงสร้างไปเลย
     btnAddSub.style.display = 'none';
     
-    // สร้าง 1 Subassembly ล็อกชื่อไว้ และซ่อนรูป Sub
+    contextBanner.classList.remove('d-none');
+    contextText.innerText = `${currentLine} > ${currentSub}`;
+    
     addSubsystemCard();
     let subCard = document.querySelector('.sub-system-card');
     subCard.querySelector('.input-subname').value = currentSub;
-    subCard.querySelector('.input-subname').readOnly = true;
-    subCard.querySelector('.box_imgSub').style.display = 'none';
+    subCard.querySelector('#subHeaderRow').style.display = 'none'; // ซ่อนช่องกรอก Sub
     subCard.querySelector('.btn-remove-sub').style.display = 'none';
 
   } else if (currentLine) {
-    // 3.2 อยู่หน้า Subassembly -> ล็อก Machine ให้เติม Sub + Component ได้
-    mInput.value = currentLine; mInput.readOnly = true; boxMach.style.display = 'none';
+    // ระดับกลาง (Subassembly) -> ล็อกแค่ Machine
+    mInput.value = currentLine;
+    cardStructure.style.display = 'none'; 
     btnAddSub.style.display = 'block';
+    
+    contextBanner.classList.remove('d-none');
+    contextText.innerText = `${currentLine}`;
+
     addSubsystemCard();
 
   } else {
-    // 3.3 อยู่หน้าแรกสุด -> เปิดอิสระ เติม Machine + Sub + Component
-    mInput.readOnly = false; boxMach.style.display = 'block';
+    // ระดับนอกสุด -> เปิดให้กรอกทั้งหมด
+    cardStructure.style.display = 'block';
+    mInput.readOnly = false;
     btnAddSub.style.display = 'block';
+    contextBanner.classList.add('d-none');
+    
     addSubsystemCard();
   }
 
@@ -153,7 +165,7 @@ function openAddFormContext() {
   window.scrollTo(0,0);
 }
 
-// ================= 4. 4-Triangle Calendar =================
+// ================= 3. 4-Triangle Calendar =================
 let currentCompactGrid = null; 
 let tempWeekData = [];
 
@@ -192,7 +204,7 @@ function syncModalToCompact() {
   bootstrap.Modal.getInstance(document.getElementById('weekModal')).hide();
 }
 
-// ================= 5. Submit to Google Apps Script =================
+// ================= 4. Submit to Google Apps Script =================
 function getBase64(imgElement) {
   if(imgElement && imgElement.src && imgElement.src.startsWith('data:image')) return imgElement.src;
   return "";
@@ -205,7 +217,7 @@ async function submitFormViaAPI() {
 
   let payload = {
     machineName: document.getElementById('f_machineName').value,
-    imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std').querySelector('.preview-img')),
+    imgMachine: getBase64(document.getElementById('f_machineName').closest('.card-std')?.querySelector('.preview-img')),
     subSystems: []
   };
 
@@ -217,7 +229,10 @@ async function submitFormViaAPI() {
     };
 
     subCard.querySelectorAll('.part-item').forEach(pCard => {
-      let ppeActive = []; pCard.querySelectorAll('.ppe-item.active').forEach(el => ppeActive.push(el.innerText));
+      // 🔴 ดึงเฉพาะ PPE ที่ถูกเลือกใช้งาน (ตัดคลาส not-used ออก)
+      let ppeActive = []; 
+      pCard.querySelectorAll('.icon-checkbox:not(.not-used) .label').forEach(el => ppeActive.push(el.innerText));
+      
       subData.components.push({
         compName: pCard.querySelector('.input-compname').value,
         task: pCard.querySelector('.input-task').value,
