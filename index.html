@@ -23,31 +23,35 @@
     <div class="container d-flex align-items-center">
       <span class="material-symbols-rounded text-warning me-2" style="font-size: 36px;">calendar_month</span>
       <div>
-        <h4 class="mb-0 fw-bold text-white">PM Calendar</h4>
+        <h4 class="mb-0 fw-bold text-white">Machine Ledger</h4>
         <div class="text-white opacity-75 small" id="headerBreadcrumb">Dashboard</div>
       </div>
     </div>
   </div>
 
-  <div class="container mt-4 mb-5 pb-5">
-    <!-- View 1: Machine Lines -->
+  <div class="container mt-3 mb-5 pb-5">
+    
+    <!-- ================= View 1: Machine Lines ================= -->
     <div id="view-lines" class="view-section active">
       <h4 class="fw-bold mb-4 text-dark"><i class="bi bi-building me-2 text-primary"></i> เลือกเครื่องจักร (Machines)</h4>
       <div class="row g-4" id="lineGrid"></div>
     </div>
 
-    <!-- View 2: Subassemblies -->
+    <!-- ================= View 2: Subassemblies ================= -->
     <div id="view-subs" class="view-section">
-      <button class="btn-back mb-3 no-print" onclick="navigateTo()"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไปหน้าแรก</button>
+      <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo()"><span class="material-symbols-rounded fs-5">arrow_back</span> กลับหน้าแรก</button>
       <h3 class="fw-bold mb-4 text-primary" id="lbl-line-title">Machine Name</h3>
       <div class="row g-4" id="subGrid"></div>
     </div>
 
-    <!-- View 3: Components Table -->
+    <!-- ================= View 3: Components Table ================= -->
     <div id="view-components" class="view-section">
-      <button class="btn-back mb-3 no-print" onclick="navigateTo(currentLine)"><i class="bi bi-arrow-left-circle-fill fs-4"></i> กลับไประบบย่อย</button>
+      <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo(currentLine)"><span class="material-symbols-rounded fs-5">arrow_back</span> กลับไประบบย่อย</button>
       <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
-        <h3 class="fw-bold mb-0 text-primary" id="lbl-sub-title">Subassembly Name</h3>
+        <div>
+          <h3 class="fw-bold mb-1 text-primary" id="lbl-sub-title">Subassembly Name</h3>
+          <p class="text-muted small mb-0">รายการชิ้นส่วนและปฏิทินบำรุงรักษา</p>
+        </div>
         <button class="btn btn-secondary fw-bold shadow-sm no-print" onclick="window.print()"><span class="material-symbols-rounded align-middle fs-5 me-1">print</span> พิมพ์ A3</button>
       </div>
       <div class="table-responsive bg-white rounded shadow-sm border mt-3">
@@ -67,24 +71,30 @@
       </div>
     </div>
 
-    <!-- View 4: Form Add Data (CMMS Style Hierarchy) -->
+    <!-- ================= View 4: Form Add Data ================= -->
     <div id="view-form" class="view-section">
-      <button class="btn-back mb-3 no-print" onclick="window.history.back()"><i class="bi bi-arrow-left-circle-fill fs-4"></i> ยกเลิก</button>
+      <button class="btn-back-prominent mb-3 no-print" onclick="window.history.back()"><span class="material-symbols-rounded fs-5">close</span> ยกเลิกการกรอกข้อมูล</button>
       <div class="d-flex justify-content-between align-items-center mb-4 no-print border-bottom pb-2">
-        <h3 class="fw-bold mb-0 text-primary">ฟอร์มบันทึกเครื่องจักร</h3>
+        <h3 class="fw-bold mb-0 text-primary"><span class="material-symbols-rounded align-middle fs-4 text-warning">edit_document</span> ฟอร์มบันทึกเครื่องจักร</h3>
         <button class="btn btn-primary fw-bold px-4 shadow-sm" onclick="submitFormViaAPI()"><span class="material-symbols-rounded align-middle fs-5 me-1">save</span> บันทึกข้อมูล</button>
       </div>
 
       <form id="ledgerForm">
-        <!-- Machine Level -->
-        <div class="card-std shadow-sm print-break-inside-avoid">
+        <!-- แจ้งเตือนบริบทการกรอกข้อมูล -->
+        <div id="formContextBanner" class="alert alert-primary fw-bold d-none shadow-sm" style="font-size: 14px;">
+           <span class="material-symbols-rounded align-middle fs-5">info</span> 
+           กำลังเพิ่มข้อมูลลงใน <span id="formContextText" class="text-decoration-underline ms-1"></span>
+        </div>
+
+        <!-- 1. โครงสร้างเครื่องจักร (ซ่อนอัตโนมัติตามบริบท) -->
+        <div class="card-std shadow-sm print-break-inside-avoid" id="cardStructure">
           <div class="card-header-custom text-white bg-primary rounded-top p-3 d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0 fw-bold"><i class="bi bi-hdd-rack"></i> ข้อมูลเครื่องจักรหลัก</h6>
           </div>
           <div class="row g-3">
             <div class="col-md-8">
-              <label class="form-label">ชื่อเครื่องจักร (Machine Name)</label>
-              <input type="text" id="f_machineName" class="form-control fw-bold" required>
+              <label class="form-label">ชื่อเครื่องจักร (Machine Name) <span class="text-danger">*</span></label>
+              <input type="text" id="f_machineName" class="form-control fw-bold" placeholder="ระบุชื่อเครื่องจักร" required>
             </div>
             <div class="col-md-4" id="box_imgMach">
               <div class="upload-box" onclick="this.nextElementSibling.click()"><i class="bi bi-camera fs-3 d-block text-muted"></i> ภาพรวมเครื่องจักร</div>
@@ -94,7 +104,6 @@
           </div>
         </div>
 
-        <!-- Subassembly Container -->
         <div id="subSystemsContainer"></div>
 
         <button type="button" id="btnAddSub" class="btn btn-outline-primary w-100 fw-bold mb-4 py-3 shadow-sm border-2 rounded-3" style="border-style: dashed !important;" onclick="addSubsystemCard()">
@@ -109,11 +118,14 @@
     <div class="sub-system-card card shadow-sm mb-4 border-info">
       <div class="card-header bg-info text-dark d-flex justify-content-between align-items-center p-3 rounded-top">
         <h6 class="mb-0 fw-bold"><i class="bi bi-diagram-2-fill"></i> ระบบย่อย (Subassembly)</h6>
-        <button type="button" class="btn btn-sm btn-danger btn-remove-sub" onclick="this.closest('.sub-system-card').remove()">ลบกลุ่ม</button>
+        <button type="button" class="btn btn-sm btn-danger btn-remove-sub" onclick="this.closest('.sub-system-card').remove()">ลบระบบย่อย</button>
       </div>
       <div class="card-body">
-        <div class="row g-3 mb-3">
-          <div class="col-md-8"><input type="text" class="form-control input-subname" placeholder="ชื่อระบบย่อย" required></div>
+        <div class="row g-3 mb-3" id="subHeaderRow">
+          <div class="col-md-8">
+            <label class="form-label">ชื่อระบบย่อย <span class="text-danger">*</span></label>
+            <input type="text" class="form-control input-subname fw-bold" placeholder="ระบุชื่อระบบย่อย" required>
+          </div>
           <div class="col-md-4 box_imgSub">
             <div class="upload-box" onclick="this.nextElementSibling.click()"><i class="bi bi-images fs-3 d-block text-muted"></i> ภาพระบบย่อย</div>
             <input type="file" class="d-none file-sub-img" accept="image/*" onchange="previewDynamicFile(this)">
@@ -122,7 +134,7 @@
         </div>
         <!-- Components Container -->
         <div class="parts-container p-3 rounded" style="background-color: #f0f4ff;">
-          <h6 class="fw-bold text-primary mb-3"><i class="bi bi-tools"></i> ชิ้นส่วนอะไหล่ในกลุ่มนี้:</h6>
+          <h6 class="fw-bold text-primary mb-3"><i class="bi bi-tools"></i> ชิ้นส่วนอะไหล่ (Component):</h6>
         </div>
         <div class="text-end mt-3">
           <button type="button" class="btn btn-success fw-bold rounded-pill px-4 shadow-sm" onclick="addComponentCard(this)"><i class="bi bi-plus-circle-fill"></i> เพิ่ม Component</button>
@@ -134,7 +146,7 @@
   <!-- Template: Component Card -->
   <template id="componentTemplate">
     <div class="part-item bg-white border rounded shadow-sm p-3 mb-3 position-relative" style="border-left: 5px solid #198754 !important;">
-      <button type="button" class="btn btn-outline-danger btn-sm position-absolute top-0 end-0 m-2 btn-remove-part" onclick="this.closest('.part-item').remove()"><i class="bi bi-trash"></i> ลบ</button>
+      <button type="button" class="btn btn-outline-danger btn-sm position-absolute top-0 end-0 m-2 btn-remove-part" onclick="this.closest('.part-item').remove()"><i class="bi bi-trash"></i> ลบชิ้นส่วน</button>
       <div class="row g-3">
         <div class="col-md-3 text-center box_imgComp">
           <div class="upload-box h-100" onclick="this.nextElementSibling.click()"><i class="bi bi-camera fs-3 d-block text-muted"></i> ภาพอะไหล่</div>
@@ -143,24 +155,36 @@
         </div>
         <div class="col-md-9">
           <div class="row g-2">
-            <div class="col-md-6"><label class="form-label text-success">ชื่อ Component</label><input type="text" class="form-control border-success input-compname" required></div>
-            <div class="col-md-6"><label class="form-label">รายละเอียด (Task)</label><input type="text" class="form-control input-task"></div>
+            <div class="col-md-6"><label class="form-label text-success">ชื่อ Component <span class="text-danger">*</span></label><input type="text" class="form-control border-success input-compname fw-bold" required></div>
+            <div class="col-md-6"><label class="form-label">รายละเอียดงาน (Task)</label><input type="text" class="form-control input-task"></div>
             <div class="col-md-3 col-6"><label class="form-label">Class</label><select class="form-select input-class"><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
-            <div class="col-md-3 col-6"><label class="form-label">Std</label><select class="form-select input-pmstd"><option value="TBM">TBM</option><option value="CBM">CBM</option></select></div>
+            <div class="col-md-3 col-6"><label class="form-label">Std</label><select class="form-select input-pmstd"><option value="TBM">TBM</option><option value="CBM">CBM</option><option value="BDM">BDM</option></select></div>
             <div class="col-md-3 col-6"><label class="form-label">Status</label><select class="form-select input-status"><option value="Run">Run</option><option value="Stop">Stop</option></select></div>
             <div class="col-md-3 col-6"><label class="form-label">เวลา(นาที)</label><input type="number" class="form-control input-time" min="1"></div>
-            <div class="col-md-12">
-              <div class="form-check form-switch mb-2"><input class="form-check-input input-risk" type="checkbox" style="transform: scale(1.2);"><label class="form-check-label ms-2 text-danger fw-bold">เสี่ยงสูง (Work Permit)</label></div>
+            
+            <!-- PPE & Safety Module -->
+            <div class="col-md-12 mt-3 p-3 bg-light border rounded">
+              <div class="form-check form-switch mb-3 d-flex align-items-center">
+                <input class="form-check-input input-risk" type="checkbox" style="transform: scale(1.3); margin-top:0;">
+                <label class="form-check-label ms-3 text-danger fw-bold">เสี่ยงสูง (Work Permit)</label>
+              </div>
+              <label class="form-label text-muted small fw-bold">เลือกอุปกรณ์ PPE (แตะเพื่อใช้งาน)</label>
               <div class="ppe-grid">
-                <div class="ppe-item" onclick="this.classList.toggle('active')">ถุงมือ</div>
-                <div class="ppe-item" onclick="this.classList.toggle('active')">แว่นตา</div>
-                <div class="ppe-item" onclick="this.classList.toggle('active')">หน้ากาก</div>
-                <div class="ppe-item" onclick="this.classList.toggle('active')">LOTO</div>
+                <div class="icon-checkbox not-used" data-val="ถุงมือ" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_gloves.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">ถุงมือ</span></div>
+                <div class="icon-checkbox not-used" data-val="หมวกนิรภัย" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_helmet.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">หมวกนิรภัย</span></div>
+                <div class="icon-checkbox not-used" data-val="แว่นตา" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_glasses.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">แว่นตา</span></div>
+                <div class="icon-checkbox not-used" data-val="หน้ากาก" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_mask.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">หน้ากาก</span></div>
+                <div class="icon-checkbox not-used" data-val="ที่อุดหู" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_headphone.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">ที่อุดหู</span></div>
+                <div class="icon-checkbox not-used" data-val="รองเท้า" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_foot.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">รองเท้า</span></div>
+                <div class="icon-checkbox not-used" data-val="กันตก" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_harness.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">กันตกที่สูง</span></div>
+                <div class="icon-checkbox not-used" data-val="เสื้อสะท้อน" onclick="this.classList.toggle('not-used')"><img src="PPE File/ppe_vis_cloth.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">สะท้อนแสง</span></div>
+                <div class="icon-checkbox not-used" data-val="LOTO" onclick="this.classList.toggle('not-used')"><img src="PPE File/icon_loto.png" class="custom-icon-img" onerror="this.src='https://via.placeholder.com/40'"><span class="label">LOTO</span></div>
               </div>
             </div>
+
             <!-- 52-Week Grid Compact -->
-            <div class="col-12 mt-3 border-top pt-2">
-              <div class="d-flex justify-content-between align-items-center mb-1"><label class="form-label text-warning m-0">แผน 52 สัปดาห์</label><small class="text-muted"><i class="bi bi-zoom-in"></i> แตะขยาย</small></div>
+            <div class="col-12 mt-3">
+              <div class="d-flex justify-content-between align-items-center mb-1"><label class="form-label text-warning m-0"><span class="material-symbols-rounded align-middle">calendar_month</span> แผน 52 สัปดาห์</label><small class="text-muted fw-bold"><i class="bi bi-zoom-in"></i> แตะขยาย</small></div>
               <div class="week-compact-grid p-2 bg-light border rounded d-flex flex-wrap gap-1" style="cursor:pointer;" onclick="openWeekModal(this)"></div>
               <input type="hidden" class="week-data-input" value="[]">
             </div>
@@ -194,6 +218,6 @@
   <button class="fab-main no-print" onclick="openAddFormContext()"><span class="material-symbols-rounded">add</span></button>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="script.js"></script> <!-- ลิงก์ไฟล์ JS -->
+  <script src="script.js"></script> 
 </body>
 </html>
