@@ -1,112 +1,33 @@
 // 🔴 นำ Web App URL ของ Google Apps Script มาใส่ตรงนี้
 const GAS_API_URL =
   "https://script.google.com/macros/s/AKfycbxRj_dahQfwuT4X8iTFF2-ds_9vo-GHVbvLDgxvOdW-r8UfYQ3F4uXtvN-MOuhHOu0Ngg/exec";
-
-/**
- * API Service Abstraction
- * Centralizes all server communication for easy future migration.
- */
-const ApiService = {
-  async request(action, data = {}) {
-    let apiKey = sessionStorage.getItem("BPC_API_KEY");
-
-    if (!apiKey) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlKey = urlParams.get("key");
-
-      if (urlKey) {
-        apiKey = urlKey;
-        sessionStorage.setItem("BPC_API_KEY", apiKey);
-      } else {
-        apiKey = prompt("กรุณาใส่รหัสผ่านเข้าสู่ระบบ (API Key):");
-        if (!apiKey) throw new Error("AUTH_REQUIRED");
-        sessionStorage.setItem("BPC_API_KEY", apiKey);
-      }
-    }
-
-    try {
-      const response = await fetch(GAS_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ apiKey, action, ...data }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP_ERROR_${response.status}`);
-      }
-
-      const result = await response.json();
-
-      // Handle API-level errors (e.g., Authentication failed)
-      if (!result.success) {
-        if (result.message && result.message.includes("Authentication failed")) {
-          sessionStorage.removeItem("BPC_API_KEY");
-          throw new Error("AUTH_FAILED");
-        }
-        throw new Error(result.message || "API_ERROR");
-      }
-
-      return result;
-    } catch (err) {
-      // Log the real error for developers, but throw a clean error for the UI
-      console.error(`ApiService Error [${action}]:`, err);
-      throw err;
-    }
-  },
-
-  async getAllData() {
-    const result = await this.request("get_all_data");
-    return result.data; // Return just the data part for the app
-  },
-
-  async saveLedger(ledgerData) {
-    return await this.request("save_ledger", { data: ledgerData });
-  }
-};
+// 🔴 ลบ const API_KEY ออกไปแล้ว เพื่อความปลอดภัย
 
 let dbData = {};
 let currentLine = null;
 let currentMach = null;
 let currentSub = null;
 
-// Helper: Simple HTML Escaping to prevent XSS
-function escapeHTML(str) {
-  if (!str) return "";
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
-}
-
-// Helper: Secure JSON Parsing
-function safeJSONParse(str, fallback = {}) {
-  try {
-    return JSON.parse(str);
-  } catch (e) {
-    console.error("JSON Parse Error:", e);
-    return fallback;
-  }
-}
-
 // ================= 1. ดึงข้อมูลจากฐานข้อมูล =================
 async function loadDataFromDatabase() {
   document.getElementById("loadingOverlay").style.display = "flex";
   try {
-    // Now returns just the data directly
-    dbData = await ApiService.getAllData();
-    handleRouting();
-  } catch (err) {
-    if (err.message === "AUTH_REQUIRED") {
-      alert("กรุณาใส่รหัสผ่านเพื่อเข้าใช้งานระบบครับ");
-    } else if (err.message === "AUTH_FAILED") {
-      alert("รหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง");
-    } else if (err.message.startsWith("HTTP_ERROR")) {
-      alert("เซิร์ฟเวอร์ไม่ตอบสนอง (HTTP Error). กรุณาลองใหม่อีกครั้ง");
+    const res = await fetch(GAS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      // 🔴 แก้ไข: ไม่ต้องส่ง apiKey ในการดึงข้อมูล (ให้สิทธิ์ทุกคนเปิดดูหน้าเว็บได้)
+      body: JSON.stringify({ action: "get_all_data" }),
+    });
+    const result = await res.json();
+    if (result.success) {
+      dbData = result.data;
+      handleRouting();
     } else {
-      alert("เกิดข้อผิดพลาด: " + err.message);
+      console.error("API Error:", result.message);
+      alert("โหลดข้อมูลล้มเหลว: " + result.message);
     }
+  } catch (err) {
+    console.error("API Error:", err);
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }
@@ -141,7 +62,7 @@ function handleRouting() {
   let breadcrumb = "Dashboard";
   toggleFabMode(false);
 
-  if (!dbData || Object.keys(dbData).length === 0) {
+  if (Object.keys(dbData).length === 0) {
     document.getElementById("view-lines").classList.add("active");
     document.getElementById("lineGrid").innerHTML =
       `<div class="col-12 text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-3"></i>ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ</div>`;
@@ -177,7 +98,7 @@ function renderLines() {
   let grid = document.getElementById("lineGrid");
   grid.innerHTML = "";
   for (let lineName in dbData) {
-    let safeLineName = escapeHTML(lineName);
+    let safeLineName = escapeHTML(lineName); // ทำความสะอาดชื่อ
     let mCount = Object.keys(dbData[lineName].machines).length;
     grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${safeLineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${safeLineName}</h5><div class="text-muted small"><i class="bi bi-hdd-rack"></i> มี ${mCount} เครื่องจักร</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${safeLineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูเครื่องจักร <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
   }
@@ -219,6 +140,7 @@ function renderComponentTable() {
       weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`;
     });
 
+    // ทำความสะอาดข้อมูลที่จะลงตาราง
     let safeName = escapeHTML(c.name);
     let safeTask = escapeHTML(c.task || "-");
     let safeRemark = escapeHTML(c.remarkEwo || "-");
@@ -248,7 +170,7 @@ function toggleFabMode(isFormMode) {
 
 function populateImportDropdown() {
   let select = document.getElementById("importDbSelect");
-  if (!select) return;
+  if (!select) return; // 🔴 แก้ไข: ถ้าหาหน้าต่าง Import ไม่เจอ ให้ข้ามไปเลย ไม่ต้องพัง
 
   select.innerHTML =
     '<option value="">-- เลือกเครื่องจักรจากระบบเพื่อคัดลอก (Template) --</option>';
@@ -282,6 +204,7 @@ function executeImportData() {
     subCard.querySelector(".input-subname").value = subName;
     subCard.querySelector(".parts-container").innerHTML = "";
 
+    // 🔴 แก้ไข: เซ็ตค่า Risk ให้ตรงกับแบบรูปภาพ
     let importedRisks = subInfo.risks || "";
     subCard.querySelectorAll(".risk-grid .icon-checkbox").forEach((chk) => {
       let val = chk.getAttribute("data-val");
@@ -302,6 +225,7 @@ function executeImportData() {
       compCard.querySelector(".input-risk").checked = comp.risk;
       compCard.querySelector(".input-remark").value = comp.remarkEwo || "";
 
+      // 🔴 แก้ไข: เซ็ตค่า PPE ให้ตรงกับแบบรูปภาพ
       let importedPPE = comp.ppe || "";
       compCard.querySelectorAll(".ppe-grid .icon-checkbox").forEach((chk) => {
         let val = chk.getAttribute("data-val");
@@ -335,6 +259,7 @@ function duplicateItem(btn) {
     }
   });
 
+  // 🔴 แก้ไข: คัดลอกสถานะของไอคอนรูปภาพ PPE/Risk ด้วย
   let originalIcons = original.querySelectorAll(".icon-checkbox");
   let cloneIcons = clone.querySelectorAll(".icon-checkbox");
   originalIcons.forEach((icon, idx) => {
@@ -394,13 +319,6 @@ function handleDragEnd(e) {
 // ================= 4. Context Aware Form (ระบบจัดการฟอร์ม) =================
 function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
-    // SECURITY: Check file size before processing (Max 5MB)
-    if (input.files[0].size > 5 * 1024 * 1024) {
-      alert("รูปภาพมีขนาดใหญ่เกินไป (จำกัด 5MB)");
-      input.value = "";
-      return;
-    }
-
     let reader = new FileReader();
     reader.onload = function (e) {
       let preview = input.nextElementSibling;
@@ -537,6 +455,7 @@ function toggleSmartColor(side) {
     tri.classList.add("inactive");
     lbl.classList.remove("active");
   }
+  // 🔴 UX เด็ดๆ: พอกดรูปภาพปุ๊บ ให้เอาเมาส์ไปกระพริบรอที่ช่องใส่ตัวเลขสัปดาห์เลย!
   document.getElementById("inputWeeks").focus();
 }
 
@@ -545,7 +464,7 @@ function openWeekModal(compactGridElement) {
   currentWeekInput = compactGridElement.nextElementSibling;
 
   try {
-    let loadedData = safeJSONParse(currentWeekInput.value);
+    let loadedData = JSON.parse(currentWeekInput.value);
     tempWeekData = loadedData.map((w) => ({
       t: w.t || 0,
       r: w.r || 0,
@@ -580,7 +499,7 @@ function updatePreviewAndList() {
     let d = tempWeekData[i];
     grid.innerHTML += `<div class="preview-box">W${i + 1}${getTriangleSVGOnly(d)}</div>`;
 
-    let safeRemark = escapeHTML(d.remark);
+    let safeRemark = escapeHTML(d.remark); // ทำความสะอาดหมายเหตุ
 
     if (safeRemark && safeRemark.trim() !== "") {
       hasRemarks = true;
@@ -719,9 +638,21 @@ async function submitFormViaAPI() {
     document.getElementById("ledgerForm").reportValidity();
     return;
   }
+  
+  // 🔴 1. เด้งหน้าต่างถามรหัสผ่านจากผู้ใช้งาน
+  let userPassword = prompt("🔒 กรุณากรอกรหัสผ่านเพื่อยืนยันการบันทึกข้อมูล:");
+  
+  // 🔴 2. เช็คว่าถ้ากดยกเลิก หรือไม่พิมพ์รหัสผ่าน ให้หยุดการทำงานทันที
+  if (userPassword === null || userPassword.trim() === "") {
+    alert("❌ ยกเลิกการบันทึกข้อมูล (ไม่มีรหัสผ่าน)");
+    return; 
+  }
+
   document.getElementById("loadingOverlay").style.display = "flex";
 
   let payload = {
+    apiKey: userPassword.trim(), // 🔴 3. แนบรหัสผ่านที่ผู้ใช้เพิ่งพิมพ์ ส่งไปให้หลังบ้านตรวจสอบ
+    action: "save_ledger",
     data: {
       lineName: document.getElementById("f_lineName").value,
       machineName: document.getElementById("f_machineName").value,
@@ -737,6 +668,7 @@ async function submitFormViaAPI() {
   };
 
   document.querySelectorAll(".sub-system-card").forEach((subCard) => {
+    // 🔴 แก้ไข: ดึงข้อมูล Risk แบบรูปภาพ
     let riskActive = [];
     subCard
       .querySelectorAll(".risk-grid .icon-checkbox:not(.not-used)")
@@ -752,6 +684,7 @@ async function submitFormViaAPI() {
     };
 
     subCard.querySelectorAll(".part-item").forEach((pCard) => {
+      // 🔴 แก้ไข: ดึงข้อมูล PPE แบบรูปภาพ
       let ppeActive = [];
       pCard
         .querySelectorAll(".ppe-grid .icon-checkbox:not(.not-used)")
@@ -770,14 +703,19 @@ async function submitFormViaAPI() {
         risk: pCard.querySelector(".input-risk").checked,
         ppe: ppeActive.join(", "),
         imgComp: getBase64(pCard.querySelector(".box_imgComp .preview-img")),
-        weeks: safeJSONParse(pCard.querySelector(".week-data-input").value, Array(52).fill({t:0,r:0,b:0,l:0})),
+        weeks: JSON.parse(pCard.querySelector(".week-data-input").value),
       });
     });
     payload.data.subSystems.push(subData);
-  }
+  });
 
   try {
-    const result = await ApiService.saveLedger(payload.data);
+    const res = await fetch(GAS_API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify(payload),
+    });
+    const result = await res.json();
     if (result.success) {
       alert("✅ บันทึกข้อมูลสำเร็จ!");
       await loadDataFromDatabase();
@@ -786,7 +724,7 @@ async function submitFormViaAPI() {
       alert("❌ เกิดข้อผิดพลาด: " + result.message);
     }
   } catch (error) {
-    alert("❌ Error: " + error.message);
+    alert("❌ Error: เชื่อมต่อ API ไม่สำเร็จ");
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }
