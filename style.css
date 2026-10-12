@@ -1,5 +1,6 @@
 :root {
-  --primary: #001f5b;
+  /* 🔴 สีหลักของ Unilever (Deep Royal Blue) */
+  --primary: #0F0E9A;
   --secondary: #005eb8;
   --bg: #f8fafc;
   --text-main: #1e293b;
