@@ -2,74 +2,16 @@
 const GAS_API_URL =
   "https://script.google.com/macros/s/AKfycbxRj_dahQfwuT4X8iTFF2-ds_9vo-GHVbvLDgxvOdW-r8UfYQ3F4uXtvN-MOuhHOu0Ngg/exec";
 
-/**
- * API Service Abstraction
- * Centralizes all server communication for easy future migration.
- */
-const ApiService = {
-  async request(action, data = {}) {
-    let apiKey = sessionStorage.getItem("BPC_API_KEY");
+// ================= 0. Helper Functions (Modal Alert & Security) =================
+// ฟังก์ชันโชว์แจ้งเตือนด้วย Modal สวยๆ แทน alert()
+function showModalAlert(title, message, isError = false) {
+  const header = document.getElementById("msgModalHeader");
+  header.className = `modal-header text-white ${isError ? "bg-danger" : "bg-success"}`;
+  document.getElementById("msgModalTitle").innerText = title;
+  document.getElementById("msgModalBody").innerText = message;
+  new bootstrap.Modal(document.getElementById("messageModal")).show();
+}
 
-    if (!apiKey) {
-      const urlParams = new URLSearchParams(window.location.search);
-      const urlKey = urlParams.get("key");
-
-      if (urlKey) {
-        apiKey = urlKey;
-        sessionStorage.setItem("BPC_API_KEY", apiKey);
-      } else {
-        apiKey = prompt("กรุณาใส่รหัสผ่านเข้าสู่ระบบ (API Key):");
-        if (!apiKey) throw new Error("AUTH_REQUIRED");
-        sessionStorage.setItem("BPC_API_KEY", apiKey);
-      }
-    }
-
-    try {
-      const response = await fetch(GAS_API_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ apiKey, action, ...data }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`HTTP_ERROR_${response.status}`);
-      }
-
-      const result = await response.json();
-
-      // Handle API-level errors (e.g., Authentication failed)
-      if (!result.success) {
-        if (result.message && result.message.includes("Authentication failed")) {
-          sessionStorage.removeItem("BPC_API_KEY");
-          throw new Error("AUTH_FAILED");
-        }
-        throw new Error(result.message || "API_ERROR");
-      }
-
-      return result;
-    } catch (err) {
-      // Log the real error for developers, but throw a clean error for the UI
-      console.error(`ApiService Error [${action}]:`, err);
-      throw err;
-    }
-  },
-
-  async getAllData() {
-    const result = await this.request("get_all_data");
-    return result.data; // Return just the data part for the app
-  },
-
-  async saveLedger(ledgerData) {
-    return await this.request("save_ledger", { data: ledgerData });
-  }
-};
-
-let dbData = {};
-let currentLine = null;
-let currentMach = null;
-let currentSub = null;
-
-// Helper: Simple HTML Escaping to prevent XSS
 function escapeHTML(str) {
   if (!str) return "";
   return String(str)
@@ -79,39 +21,64 @@ function escapeHTML(str) {
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
 }
-
-// Helper: Secure JSON Parsing
 function safeJSONParse(str, fallback = {}) {
   try {
     return JSON.parse(str);
   } catch (e) {
-    console.error("JSON Parse Error:", e);
     return fallback;
   }
 }
+
+/**
+ * API Service (ตัดระบบรหัสผ่านออก User โหลด-เซฟได้เลย)
+ */
+const ApiService = {
+  async request(action, data = {}) {
+    try {
+      const response = await fetch(GAS_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action, ...data }),
+      });
+      if (!response.ok) throw new Error(`HTTP_ERROR_${response.status}`);
+      const result = await response.json();
+      if (!result.success) throw new Error(result.message || "API_ERROR");
+      return result;
+    } catch (err) {
+      console.error(`ApiService Error [${action}]:`, err);
+      throw err;
+    }
+  },
+  async getAllData() {
+    return (await this.request("get_all_data")).data;
+  },
+  async saveLedger(ledgerData) {
+    return await this.request("save_ledger", { data: ledgerData });
+  },
+};
+
+let dbData = {};
+let currentLine = null;
+let currentMach = null;
+let currentSub = null;
 
 // ================= 1. ดึงข้อมูลจากฐานข้อมูล =================
 async function loadDataFromDatabase() {
   document.getElementById("loadingOverlay").style.display = "flex";
   try {
-    // Now returns just the data directly
     dbData = await ApiService.getAllData();
     handleRouting();
+    checkDraftStatus(); // เช็คว่ามีแบบร่างค้างไว้ไหม
   } catch (err) {
-    if (err.message === "AUTH_REQUIRED") {
-      alert("กรุณาใส่รหัสผ่านเพื่อเข้าใช้งานระบบครับ");
-    } else if (err.message === "AUTH_FAILED") {
-      alert("รหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง");
-    } else if (err.message.startsWith("HTTP_ERROR")) {
-      alert("เซิร์ฟเวอร์ไม่ตอบสนอง (HTTP Error). กรุณาลองใหม่อีกครั้ง");
-    } else {
-      alert("เกิดข้อผิดพลาด: " + err.message);
-    }
+    showModalAlert(
+      "โหลดข้อมูลล้มเหลว",
+      "ไม่สามารถเชื่อมต่อฐานข้อมูลได้: " + err.message,
+      true,
+    );
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }
 }
-
 window.onload = () => {
   loadDataFromDatabase();
 };
@@ -242,7 +209,11 @@ function toggleFabMode(isFormMode) {
 
 // 🔴 ฟังก์ชันกดยกเลิกการกรอกและย้อนกลับอย่างปลอดภัย
 function cancelFormContext() {
-  if (confirm("⚠️ คุณต้องการยกเลิกการกรอกข้อมูลและย้อนกลับใช่หรือไม่? (ข้อมูลที่กรอกไว้จะไม่ถูกบันทึก)")) {
+  if (
+    confirm(
+      "⚠️ คุณต้องการยกเลิกการกรอกข้อมูลและย้อนกลับใช่หรือไม่? (ข้อมูลที่กรอกไว้จะไม่ถูกบันทึก)",
+    )
+  ) {
     handleRouting(); // กลับไปหน้า Dashboard หรือหน้ารายละเอียดเดิม
   }
 }
@@ -489,7 +460,7 @@ function openAddFormContext() {
   window.scrollTo(0, 0);
 }
 
-// ================= 5. 4-Triangle Calendar (Smart UI) =================
+// ================= 5. 4-Triangle Calendar (Smart UI 52 Weeks) =================
 let currentCompactGrid = null;
 let currentWeekInput = null;
 let tempWeekData = [];
@@ -522,6 +493,8 @@ function resetSmartColorSelector() {
       lbl.classList.remove("active");
     }
   });
+  document.getElementById("boxTaskDetail").classList.add("d-none");
+  document.getElementById("boxEwoDetail").classList.add("d-none");
 }
 
 function toggleSmartColor(side) {
@@ -538,13 +511,21 @@ function toggleSmartColor(side) {
     tri.classList.add("inactive");
     lbl.classList.remove("active");
   }
+
+  // 🔴 เงื่อนไขโชว์ช่องกรอกข้อมูล: เหลือง(b)=Task , แดง(r)=EWO
+  document
+    .getElementById("boxTaskDetail")
+    .classList.toggle("d-none", !smartColorState.b);
+  document
+    .getElementById("boxEwoDetail")
+    .classList.toggle("d-none", !smartColorState.r);
+
   document.getElementById("inputWeeks").focus();
 }
 
 function openWeekModal(compactGridElement) {
   currentCompactGrid = compactGridElement;
   currentWeekInput = compactGridElement.nextElementSibling;
-
   try {
     let loadedData = safeJSONParse(currentWeekInput.value);
     tempWeekData = loadedData.map((w) => ({
@@ -559,72 +540,35 @@ function openWeekModal(compactGridElement) {
       .fill()
       .map(() => ({ t: 0, r: 0, b: 0, l: 0, remark: "" }));
   }
-
   resetSmartColorSelector();
   document.getElementById("inputWeeks").value = "";
-  document.getElementById("inputRemark").value = "";
+  document.getElementById("inputTaskText").value = "";
+  document.getElementById("inputEwoText").value = "";
   updatePreviewAndList();
   new bootstrap.Modal(document.getElementById("weekModal")).show();
 }
 
+// 🔴 อัปเดต Preview & Summary เป็นฟอร์แมต Week X : ทำอะไร
 function updatePreviewAndList() {
   let grid = document.getElementById("weekPreviewGrid");
-  let remarksContainer = document.getElementById("weekRemarksSummary");
-  let entriesList = document.getElementById("planEntriesList");
-
+  let summary = document.getElementById("weekRemarksSummary");
   grid.innerHTML = "";
-  remarksContainer.innerHTML = "";
+  summary.innerHTML = "";
   let hasRemarks = false;
-  let activePlans = [];
 
   for (let i = 0; i < 52; i++) {
     let d = tempWeekData[i];
-    grid.innerHTML += `<div class="preview-box">W${i + 1}${getTriangleSVGOnly(d)}</div>`;
+    grid.innerHTML += `<div class="preview-box" onclick="removePlanWeek(${i})" style="cursor:pointer;" title="คลิกเพื่อล้างข้อมูลสัปดาห์นี้">W${i + 1}${getTriangleSVGOnly(d)}</div>`;
 
-    let safeRemark = escapeHTML(d.remark);
-
-    if (safeRemark && safeRemark.trim() !== "") {
+    if (d.remark && d.remark.trim() !== "") {
       hasRemarks = true;
-      remarksContainer.innerHTML += `<div class="mb-1"><strong>W${i + 1}:</strong> ${safeRemark}</div>`;
+      // ฟอร์แมต Week X : ทำอะไร
+      summary.innerHTML += `<div class="mb-2 border-bottom pb-1"><span class="fw-bold text-primary">Week ${i + 1}</span> : ${escapeHTML(d.remark)}</div>`;
     }
-
-    let colors = [];
-    if (d.t) colors.push('<i class="bi bi-circle-fill text-dark"></i>');
-    if (d.b) colors.push('<i class="bi bi-circle-fill text-warning"></i>');
-    if (d.l) colors.push('<i class="bi bi-circle-fill text-primary"></i>');
-    if (d.r) colors.push('<i class="bi bi-circle-fill text-danger"></i>');
-
-    if (colors.length > 0)
-      activePlans.push({
-        week: i + 1,
-        colors: colors.join(" "),
-        remark: safeRemark,
-      });
   }
-
   if (!hasRemarks)
-    remarksContainer.innerHTML =
-      '<span class="text-muted fst-italic">ไม่มีหมายเหตุ</span>';
-
-  entriesList.innerHTML = "";
-  if (activePlans.length === 0) {
-    entriesList.innerHTML =
-      '<div class="text-center text-muted small p-3 bg-white border rounded">ยังไม่มีข้อมูล</div>';
-  } else {
-    activePlans.forEach((plan) => {
-      entriesList.innerHTML += `
-        <div class="plan-entry-card p-2 border rounded shadow-sm mb-2" style="border-left: 4px solid #005EB8; background-color: #f8fafc;">
-          <div class="d-flex justify-content-between align-items-center mb-1">
-            <strong class="text-primary small">W${plan.week}</strong>
-            <div>${plan.colors}</div>
-          </div>
-          ${plan.remark ? `<div class="small text-muted text-truncate" style="font-size:11px;">📝 ${plan.remark}</div>` : ""}
-          <div class="text-end mt-1">
-             <button class="btn btn-sm text-danger p-0 border-0" onclick="removePlanWeek(${plan.week - 1})"><i class="bi bi-x-circle"></i> ลบข้อมูล W${plan.week}</button>
-          </div>
-        </div>`;
-    });
-  }
+    summary.innerHTML =
+      '<span class="text-muted fst-italic">ไม่มีงานระบุในสัปดาห์ใดๆ</span>';
 }
 
 function parseWeeks(inputStr) {
@@ -655,38 +599,54 @@ function addPlanEntry() {
     !smartColorState.l &&
     !smartColorState.r
   ) {
-    alert("กรุณาแตะเลือกประเภทงาน (สี) ที่รูปสามเหลี่ยมอย่างน้อย 1 ข้อครับ");
+    showModalAlert(
+      "ข้อมูลไม่ครบ",
+      "กรุณาแตะเลือกประเภทงาน (สี) ที่รูปสามเหลี่ยมอย่างน้อย 1 ข้อครับ",
+      true,
+    );
     return;
   }
   let targetWeeksIndex = parseWeeks(
     document.getElementById("inputWeeks").value,
   );
   if (targetWeeksIndex.length === 0) {
-    alert("กรุณาระบุสัปดาห์ให้ถูกต้อง (1-52)");
+    showModalAlert("ข้อมูลไม่ครบ", "กรุณาระบุสัปดาห์ให้ถูกต้อง (1-52)", true);
     return;
   }
 
-  let remark = document.getElementById("inputRemark").value.trim();
+  // ประกอบข้อความหมายเหตุตามสีที่เลือก
+  let taskTxt = document.getElementById("inputTaskText").value.trim();
+  let ewoTxt = document.getElementById("inputEwoText").value.trim();
+  let notes = [];
+  if (smartColorState.b && taskTxt) notes.push(`Task: ${taskTxt}`);
+  if (smartColorState.r && ewoTxt) notes.push(`EWO: ${ewoTxt}`);
+  let newRemark = notes.join(" | ");
+
   targetWeeksIndex.forEach((idx) => {
     if (smartColorState.t) tempWeekData[idx].t = 1;
     if (smartColorState.b) tempWeekData[idx].b = 1;
     if (smartColorState.l) tempWeekData[idx].l = 1;
     if (smartColorState.r) tempWeekData[idx].r = 1;
-    if (remark)
+    if (newRemark) {
+      // ถีามีงานเดิมอยู่แล้วให้ใส่ลูกน้ำคั่น
       tempWeekData[idx].remark = tempWeekData[idx].remark
-        ? tempWeekData[idx].remark + " / " + remark
-        : remark;
+        ? tempWeekData[idx].remark + ", " + newRemark
+        : newRemark;
+    }
   });
 
   document.getElementById("inputWeeks").value = "";
-  document.getElementById("inputRemark").value = "";
+  document.getElementById("inputTaskText").value = "";
+  document.getElementById("inputEwoText").value = "";
   resetSmartColorSelector();
   updatePreviewAndList();
 }
 
 function removePlanWeek(idx) {
-  tempWeekData[idx] = { t: 0, r: 0, b: 0, l: 0, remark: "" };
-  updatePreviewAndList();
+  if (confirm(`ต้องการลบข้อมูลแผนงานของ Week ${idx + 1} ใช่หรือไม่?`)) {
+    tempWeekData[idx] = { t: 0, r: 0, b: 0, l: 0, remark: "" };
+    updatePreviewAndList();
+  }
 }
 
 function clearAllPlans() {
@@ -721,39 +681,51 @@ async function submitFormViaAPI() {
     document.getElementById("ledgerForm").reportValidity();
     return;
   }
-  
+
   // 🔴 ป้องกันข้อมูลเท็จ (Data Integrity & Spam Protection)
   let f_line = document.getElementById("f_lineName").value.trim();
   let f_mach = document.getElementById("f_machineName").value.trim();
   let f_updatedBy = document.getElementById("f_updatedBy").value.trim();
-  
+
   if (f_line.length < 2 || f_mach.length < 2 || f_updatedBy.length < 2) {
-    alert("❌ ข้อมูลไม่สมบูรณ์: กรุณากรอกชื่อไลน์, ชื่อเครื่องจักร และชื่อผู้แก้ไข ให้มีความยาวอย่างน้อย 2 ตัวอักษร");
+    alert(
+      "❌ ข้อมูลไม่สมบูรณ์: กรุณากรอกชื่อไลน์, ชื่อเครื่องจักร และชื่อผู้แก้ไข ให้มีความยาวอย่างน้อย 2 ตัวอักษร",
+    );
     return;
   }
   // ป้องกันพิมพ์อักขระพิเศษแปลกๆ ในชื่อเครื่อง
   if (!/^[a-zA-Z0-9ก-๙\s\-_()\[\]]+$/.test(f_mach)) {
-    alert("❌ ข้อมูลไม่ถูกต้อง: ชื่อเครื่องจักรมีอักขระพิเศษที่ไม่ได้รับอนุญาต");
+    alert(
+      "❌ ข้อมูลไม่ถูกต้อง: ชื่อเครื่องจักรมีอักขระพิเศษที่ไม่ได้รับอนุญาต",
+    );
     return;
   }
-  
+
   let subCards = document.querySelectorAll(".sub-system-card");
   if (subCards.length === 0) {
-    alert("❌ ข้อมูลไม่สมบูรณ์: ต้องมี 'ระบบย่อย (Sub-system)' อย่างน้อย 1 ระบบ");
+    alert(
+      "❌ ข้อมูลไม่สมบูรณ์: ต้องมี 'ระบบย่อย (Sub-system)' อย่างน้อย 1 ระบบ",
+    );
     return;
   }
-  
+
   let hasComponent = false;
-  subCards.forEach(card => {
-     if(card.querySelectorAll(".part-item").length > 0) hasComponent = true;
+  subCards.forEach((card) => {
+    if (card.querySelectorAll(".part-item").length > 0) hasComponent = true;
   });
   if (!hasComponent) {
-    alert("❌ ข้อมูลไม่สมบูรณ์: ต้องมี 'ชิ้นส่วนอะไหล่ (Component)' อย่างน้อย 1 ชิ้นในระบบย่อย");
+    alert(
+      "❌ ข้อมูลไม่สมบูรณ์: ต้องมี 'ชิ้นส่วนอะไหล่ (Component)' อย่างน้อย 1 ชิ้นในระบบย่อย",
+    );
     return;
   }
 
   // ถามยืนยันอีกครั้งก่อนส่ง
-  if(!confirm(`ระบบกำลังจะบันทึกข้อมูลเครื่องจักร: ${f_mach}\nคุณตรวจสอบข้อมูลถูกต้องแล้วใช่หรือไม่?`)) {
+  if (
+    !confirm(
+      `ระบบกำลังจะบันทึกข้อมูลเครื่องจักร: ${f_mach}\nคุณตรวจสอบข้อมูลถูกต้องแล้วใช่หรือไม่?`,
+    )
+  ) {
     return;
   }
 
@@ -808,12 +780,15 @@ async function submitFormViaAPI() {
         risk: pCard.querySelector(".input-risk").checked,
         ppe: ppeActive.join(", "),
         imgComp: getBase64(pCard.querySelector(".box_imgComp .preview-img")),
-        weeks: safeJSONParse(pCard.querySelector(".week-data-input").value, Array(52).fill({t:0,r:0,b:0,l:0})),
+        weeks: safeJSONParse(
+          pCard.querySelector(".week-data-input").value,
+          Array(52).fill({ t: 0, r: 0, b: 0, l: 0 }),
+        ),
       });
     });
     payload.data.subSystems.push(subData);
   });
-  
+
   try {
     const result = await ApiService.saveLedger(payload.data);
     if (result.success) {
@@ -825,6 +800,146 @@ async function submitFormViaAPI() {
     }
   } catch (error) {
     alert("❌ Error: " + error.message);
+  } finally {
+    document.getElementById("loadingOverlay").style.display = "none";
+  }
+}
+
+let passwordModalResolver = null;
+function openPasswordModalAsync() {
+  return new Promise((resolve) => {
+    passwordModalResolver = resolve;
+    document.getElementById("modalApiKeyInput").value = "";
+    new bootstrap.Modal(document.getElementById("passwordModal")).show();
+  });
+}
+function submitPasswordModal() {
+  let val = document.getElementById("modalApiKeyInput").value.trim();
+  bootstrap.Modal.getInstance(document.getElementById("passwordModal")).hide();
+  if (passwordModalResolver) passwordModalResolver(val);
+}
+function resolvePasswordModal(val) {
+  bootstrap.Modal.getInstance(document.getElementById("passwordModal")).hide();
+  if (passwordModalResolver) passwordModalResolver(val);
+}
+
+// ================= 7. ระบบแบบร่าง (Draft Auto-Save) =================
+// ทำงานทุกครั้งที่พิมพ์ข้อมูลในหน้าฟอร์ม
+document.addEventListener("input", () => {
+  let formView = document.getElementById("view-form");
+  if (formView && formView.classList.contains("active")) {
+    let draftData = {
+      lineName: document.getElementById("f_lineName")?.value || "",
+      machineName: document.getElementById("f_machineName")?.value || "",
+      updatedBy: document.getElementById("f_updatedBy")?.value || "",
+      time: new Date().toLocaleString("th-TH")
+    };
+    localStorage.setItem("bpc_draft", JSON.stringify(draftData));
+    document.getElementById("fabDraftBtn").style.display = "flex";
+  }
+});
+
+function checkDraftStatus() {
+  if(localStorage.getItem("bpc_draft")) {
+    document.getElementById("fabDraftBtn").style.display = "flex";
+  }
+}
+
+function restoreDraftData() {
+  let draft = safeJSONParse(localStorage.getItem("bpc_draft"));
+  if (draft.time) {
+    if(confirm(`พบข้อมูลที่เคยพิมพ์ค้างไว้เมื่อ: ${draft.time}\nคุณต้องการกู้คืนมาแก้ไขต่อหรือไม่?`)) {
+      openAddFormContext();
+      document.getElementById("f_lineName").value = draft.lineName || "";
+      document.getElementById("f_machineName").value = draft.machineName || "";
+      document.getElementById("f_updatedBy").value = draft.updatedBy || "";
+    }
+  }
+}
+
+// อัปเดตฟังก์ชัน submitFormViaAPI ให้ใช้ showModalAlert แทน alert()
+async function submitFormViaAPI() {
+  if (!document.getElementById("ledgerForm").checkValidity()) {
+    document.getElementById("ledgerForm").reportValidity(); return;
+  }
+  
+  let f_line = document.getElementById("f_lineName").value.trim();
+  let f_mach = document.getElementById("f_machineName").value.trim();
+  
+  if (f_line.length < 2 || f_mach.length < 2) {
+    showModalAlert("ข้อมูลไม่สมบูรณ์", "กรุณากรอกชื่อไลน์และชื่อเครื่องจักรให้ชัดเจน", true);
+    return;
+  }
+  if (!/^[a-zA-Z0-9ก-๙\s\-_()\[\]]+$/.test(f_mach)) {
+    showModalAlert("ข้อมูลไม่ถูกต้อง", "ชื่อเครื่องจักรมีอักขระพิเศษที่ไม่ได้รับอนุญาต", true);
+    return;
+  }
+  
+  let subCards = document.querySelectorAll(".sub-system-card");
+  if (subCards.length === 0) {
+    showModalAlert("ข้อมูลไม่ครบ", "ต้องมี 'ระบบย่อย (Sub-system)' อย่างน้อย 1 ระบบ", true); return;
+  }
+
+  // แจ้งยืนยัน
+  if(!confirm(`ระบบกำลังจะบันทึกข้อมูลเครื่องจักร: ${f_mach}\nคุณตรวจสอบข้อมูลถูกต้องแล้วใช่หรือไม่?`)) return;
+
+  document.getElementById("loadingOverlay").style.display = "flex";
+
+  // สร้าง Payload (โค้ดดึงค่าเหมือนเดิม)
+  let payload = {
+    data: {
+      lineName: f_line,
+      machineName: f_mach,
+      updatedBy: document.getElementById("f_updatedBy").value.trim(),
+      imgMachine: getBase64(document.getElementById("f_machineName").closest(".card-std")?.querySelector(".preview-img")),
+      subSystems: [],
+    },
+  };
+
+  subCards.forEach((subCard) => {
+    let riskActive = [];
+    subCard.querySelectorAll(".risk-grid .icon-checkbox:not(.not-used)").forEach((chk) => riskActive.push(chk.getAttribute("data-val")));
+    let subData = {
+      subName: subCard.querySelector(".input-subname").value,
+      imgSub: getBase64(subCard.querySelector(".box_imgSub .preview-img")),
+      risks: riskActive.join(", "),
+      components: [],
+    };
+    subCard.querySelectorAll(".part-item").forEach((pCard) => {
+      let ppeActive = [];
+      pCard.querySelectorAll(".ppe-grid .icon-checkbox:not(.not-used)").forEach((chk) => ppeActive.push(chk.getAttribute("data-val")));
+      subData.components.push({
+        compName: pCard.querySelector(".input-compname").value,
+        task: pCard.querySelector(".input-task").value,
+        spareClass: pCard.querySelector(".input-class").value,
+        pmStd: pCard.querySelector(".input-pmstd").value,
+        status: pCard.querySelector(".input-status").value,
+        stdTime: pCard.querySelector(".input-time").value,
+        remarkEwo: pCard.querySelector(".input-remark").value,
+        risk: pCard.querySelector(".input-risk").checked,
+        ppe: ppeActive.join(", "),
+        imgComp: getBase64(pCard.querySelector(".box_imgComp .preview-img")),
+        weeks: safeJSONParse(pCard.querySelector(".week-data-input").value, Array(52).fill({t:0,r:0,b:0,l:0})),
+      });
+    });
+    payload.data.subSystems.push(subData);
+  });
+
+  try {
+    const result = await ApiService.saveLedger(payload.data);
+    if (result.success) {
+      // 🔴 เคลียร์แบบร่างทิ้งเมื่อบันทึกสำเร็จ
+      localStorage.removeItem("bpc_draft");
+      document.getElementById("fabDraftBtn").style.display = "none";
+
+      showModalAlert("สำเร็จ!", "บันทึกข้อมูลเข้าสู่ระบบเรียบร้อยแล้ว");
+      await loadDataFromDatabase();
+      handleRouting(); 
+    } else {
+      showModalAlert("เกิดข้อผิดพลาด", result.message, true);
+    }
+  } catch (error) {
+    showModalAlert("เชื่อมต่อล้มเหลว", error.message, true);
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }

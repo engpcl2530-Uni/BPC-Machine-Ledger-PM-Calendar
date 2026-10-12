@@ -156,13 +156,12 @@
 
       <!-- View 5: Form Add/Edit Data -->
       <div id="view-form" class="view-section">
-        <!-- 🔴 เปลี่ยนปุ่มจาก window.history.back() เป็นฟังก์ชันเฉพาะ -->
         <button
           class="btn-back-prominent mb-3 no-print"
-          onclick="cancelFormContext()"
+          onclick="window.history.back()"
         >
-          <span class="material-symbols-rounded fs-5">arrow_back</span>
-          ย้อนกลับ (ยกเลิกการกรอกข้อมูล)
+          <span class="material-symbols-rounded fs-5">close</span>
+          ยกเลิกการกรอกข้อมูล
         </button>
         <div
           class="d-flex justify-content-between align-items-center mb-4 no-print border-bottom pb-2"
@@ -174,7 +173,15 @@
             >
             ฟอร์มบันทึกข้อมูล
           </h3>
-          <!-- (ปุ่มเซฟที่เคยอยู่ตรงนี้ ถูกย้ายไปไว้ด้านล่างสุด) -->
+          <button
+            class="btn btn-primary fw-bold px-4 shadow-sm"
+            onclick="submitFormViaAPI()"
+          >
+            <span class="material-symbols-rounded align-middle fs-5 me-1"
+              >save</span
+            >
+            บันทึกข้อมูล
+          </button>
         </div>
 
         <form id="ledgerForm">
@@ -274,20 +281,9 @@
             <i class="bi bi-plus-circle-dotted fs-5 align-middle me-2"></i>
             เพิ่มระบบย่อยใหม่ (Sub-system)
           </button>
-
-          <!-- 🔴 ย้ายปุ่มบันทึกข้อมูลมาไว้ล่างสุด ตรงนี้ครับ -->
-          <div class="text-center border-top pt-4 pb-4 no-print mt-3">
-            <button
-              type="button"
-              class="btn btn-primary btn-lg fw-bold px-5 py-3 shadow-lg w-100"
-              style="border-radius: 12px; font-size: 16px;"
-              onclick="submitFormViaAPI()"
-            >
-              <i class="bi bi-floppy-fill me-2"></i> ยืนยันและบันทึกข้อมูลทั้งหมดเข้าสู่ระบบ
-            </button>
-          </div>
         </form>
       </div>
+    </div>
 
     <!-- Template: Subassembly Card (🔴 เพิ่มช่องประเมินความเสี่ยง) -->
     <template id="subSystemTemplate">
@@ -346,7 +342,7 @@
             >
             <div class="risk-grid mt-2 d-flex flex-wrap gap-2">
               <div
-                class="icon-checkbox"
+                class="icon-checkbox not-used"
                 data-val="จุดหนีบ"
                 onclick="this.classList.toggle('not-used')"
               >
@@ -357,7 +353,7 @@
                 /><span class="label">จุดหนีบ</span>
               </div>
               <div
-                class="icon-checkbox"
+                class="icon-checkbox not-used"
                 data-val="อุปกรณ์"
                 onclick="this.classList.toggle('not-used')"
               >
@@ -368,7 +364,7 @@
                 /><span class="label">อุปกรณ์เครื่องมือ</span>
               </div>
               <div
-                class="icon-checkbox"
+                class="icon-checkbox not-used"
                 data-val="ยกของหนัก"
                 onclick="this.classList.toggle('not-used')"
               >
@@ -379,7 +375,7 @@
                 /><span class="label">ยกด้วยมือ</span>
               </div>
               <div
-                class="icon-checkbox"
+                class="icon-checkbox not-used"
                 data-val="ที่สูง"
                 onclick="this.classList.toggle('not-used')"
               >
@@ -390,7 +386,7 @@
                 /><span class="label">ทำงานที่สูง</span>
               </div>
               <div
-                class="icon-checkbox"
+                class="icon-checkbox not-used"
                 data-val="สารเคมี"
                 onclick="this.classList.toggle('not-used')"
               >
@@ -401,7 +397,7 @@
                 /><span class="label">สารเคมี</span>
               </div>
               <div
-                class="icon-checkbox"
+                class="icon-checkbox not-used"
                 data-val="เสียงดัง"
                 onclick="this.classList.toggle('not-used')"
               >
@@ -412,7 +408,7 @@
                 /><span class="label">เสียงดัง</span>
               </div>
               <div
-                class="icon-checkbox"
+                class="icon-checkbox not-used"
                 data-val="รถโฟล์คลิฟต์"
                 onclick="this.classList.toggle('not-used')"
               >
@@ -552,7 +548,7 @@
                 >
                 <div class="ppe-grid">
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="ถุงมือ"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -563,7 +559,7 @@
                     /><span class="label">ถุงมือ</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="หมวกนิรภัย"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -574,7 +570,7 @@
                     /><span class="label">หมวกนิรภัย</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="แว่นตา"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -585,7 +581,7 @@
                     /><span class="label">แว่นตา</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="หน้ากาก"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -596,7 +592,7 @@
                     /><span class="label">หน้ากาก</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="ที่อุดหู"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -607,7 +603,7 @@
                     /><span class="label">ที่อุดหู</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="รองเท้า"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -618,7 +614,7 @@
                     /><span class="label">รองเท้า</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="กันตก"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -629,7 +625,7 @@
                     /><span class="label">กันตกที่สูง</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="เสื้อสะท้อน"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -640,7 +636,7 @@
                     /><span class="label">สะท้อนแสง</span>
                   </div>
                   <div
-                    class="icon-checkbox"
+                    class="icon-checkbox not-used"
                     data-val="LOTO"
                     onclick="this.classList.toggle('not-used')"
                   >
@@ -706,11 +702,11 @@
               <!-- คอลัมน์ซ้าย: ฟอร์มเพิ่มแผนงานแบบ Visual -->
               <div class="col-lg-5 border-end">
                 <h6 class="fw-bold text-primary mb-3">
-                  <i class="bi bi-plus-circle-fill me-1"></i>สร้างรายการแผนงาน
+                  <i class="bi bi-plus-circle-fill me-1"></i
+                  >กำหนดค่างานรายสัปดาห์
                 </h6>
 
                 <div class="bg-white p-3 border rounded shadow-sm mb-3">
-                  <!-- ส่วนที่ 1: เลือกสีจากรูปภาพ -->
                   <div class="text-center mb-4">
                     <label class="form-label fw-bold text-dark small mb-3"
                       >1. แตะเลือกประเภทงาน (เลือกได้หลายข้อ)</label
@@ -730,7 +726,6 @@
                       >
                         Unplanned<br />Extra
                       </div>
-
                       <div class="svg-center position-relative">
                         <svg
                           viewBox="0 0 100 100"
@@ -766,7 +761,6 @@
                           />
                         </svg>
                       </div>
-
                       <div
                         class="lbl-text lbl-right text-danger fw-bold"
                         id="lbl-r"
@@ -784,83 +778,91 @@
                     </div>
                   </div>
 
-                  <!-- ส่วนที่ 2: ระบุสัปดาห์ (จะถูก Auto-Focus เมื่อคลิกรูป) -->
                   <label class="form-label fw-bold text-dark small"
                     >2. ระบุสัปดาห์ (1-52)</label
                   >
                   <input
                     type="text"
-                    class="form-control form-control-sm mb-1 border-primary"
+                    class="form-control form-control-sm mb-3 border-primary"
                     id="inputWeeks"
                     placeholder="เช่น 25, 30, 35 หรือ 10-15"
                     required
                   />
+
+                  <!-- 🔴 ช่อง Task จะโชว์เมื่อกดสีเหลือง -->
                   <div
-                    class="form-text text-muted mb-3"
-                    style="font-size: 11px"
+                    id="boxTaskDetail"
+                    class="mb-3 d-none p-2 bg-warning bg-opacity-10 border border-warning rounded"
                   >
-                    ใช้ลูกน้ำ (,) คั่น หรือใช้ขีด (-) เพื่อระบุช่วงสัปดาห์
+                    <label
+                      class="form-label fw-bold text-warning-emphasis small"
+                      ><i class="bi bi-tools"></i> ระบุ Task
+                      (งานที่ต้องทำ):</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="inputTaskText"
+                      placeholder="เช่น Lube, Inspect, เปลี่ยนอะไหล่"
+                    />
                   </div>
 
-                  <!-- ส่วนที่ 3: ระบุหมายเหตุ -->
-                  <label class="form-label fw-bold text-dark small"
-                    >3. หมายเหตุสำหรับงานนี้ (ถ้ามี)</label
+                  <!-- 🔴 ช่อง EWO จะโชว์เมื่อกดสีแดง -->
+                  <div
+                    id="boxEwoDetail"
+                    class="mb-3 d-none p-2 bg-danger bg-opacity-10 border border-danger rounded"
                   >
-                  <input
-                    type="text"
-                    class="form-control form-control-sm mb-3"
-                    id="inputRemark"
-                    placeholder="เช่น เติมจาระบี, ตรวจสอบความร้อน"
-                  />
+                    <label class="form-label fw-bold text-danger-emphasis small"
+                      ><i class="bi bi-exclamation-octagon"></i> รหัส EWO (กรณี
+                      Breakdown):</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control form-control-sm"
+                      id="inputEwoText"
+                      placeholder="เช่น EWO-12345"
+                    />
+                  </div>
 
                   <button
                     type="button"
-                    class="btn btn-primary btn-sm w-100 fw-bold py-2"
+                    class="btn btn-primary btn-sm w-100 fw-bold py-2 mt-2"
                     onclick="addPlanEntry()"
                   >
-                    <i class="bi bi-plus-lg me-1"></i> ยืนยันเพิ่มรายการ (Add)
+                    <i class="bi bi-plus-lg me-1"></i> เพิ่มงานลงในสัปดาห์
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-outline-danger btn-sm w-100 mt-2"
+                    onclick="clearAllPlans()"
+                  >
+                    <i class="bi bi-trash"></i> ล้างข้อมูล 52 สัปดาห์ทั้งหมด
                   </button>
                 </div>
-
-                <!-- รายการที่เพิ่มแล้ว -->
-                <h6 class="fw-bold text-secondary mb-2 small">
-                  <i class="bi bi-list-ul me-1"></i>รายการแผนงานที่สร้างไว้
-                </h6>
-                <div
-                  id="planEntriesList"
-                  class="d-flex flex-column gap-2"
-                  style="max-height: 250px; overflow-y: auto"
-                ></div>
-                <button
-                  type="button"
-                  class="btn btn-outline-danger btn-sm w-100 mt-2"
-                  onclick="clearAllPlans()"
-                >
-                  <i class="bi bi-trash"></i> ล้างข้อมูลทั้งหมด
-                </button>
               </div>
 
-              <!-- คอลัมน์ขวา: Preview 52 สัปดาห์ -->
+              <!-- คอลัมน์ขวา: Preview และ Summary -->
               <div class="col-lg-7 mt-4 mt-lg-0">
                 <h6 class="fw-bold text-success mb-3">
-                  <i class="bi bi-eye-fill me-1"></i>แสดงผลลัพธ์ 52 สัปดาห์
-                  (Preview)
+                  <i class="bi bi-eye-fill me-1"></i>อัปเดตผลลัพธ์ (Preview)
                 </h6>
                 <div
-                  class="week-preview-grid p-2 bg-white border rounded shadow-sm"
+                  class="week-preview-grid p-2 bg-white border rounded shadow-sm mb-3"
                   id="weekPreviewGrid"
                 ></div>
 
-                <div class="mt-4 p-3 bg-white border rounded shadow-sm">
+                <div class="p-3 bg-white border rounded shadow-sm">
                   <h6 class="fw-bold text-dark small mb-2">
-                    <i class="bi bi-chat-text me-1"></i>หมายเหตุรวม
-                    (สัปดาห์ที่มีหมายเหตุ)
+                    <i class="bi bi-list-check me-1"></i
+                    >รายละเอียดงานแต่ละสัปดาห์
                   </h6>
                   <div
                     id="weekRemarksSummary"
-                    class="small text-muted"
-                    style="max-height: 120px; overflow-y: auto"
-                  ></div>
+                    class="small text-dark lh-lg"
+                    style="max-height: 250px; overflow-y: auto"
+                  >
+                    <!-- จะแสดงผลเป็น Week X : ทำอะไร -->
+                  </div>
                 </div>
               </div>
             </div>
@@ -871,14 +873,14 @@
               class="btn btn-secondary fw-bold px-4"
               data-bs-dismiss="modal"
             >
-              ยกเลิก
+              ปิดหน้าต่าง
             </button>
             <button
               type="button"
               class="btn btn-success fw-bold px-4"
               onclick="syncModalToCompact()"
             >
-              <i class="bi bi-check-circle me-1"></i> บันทึกแผนงานกลับสู่ฟอร์ม
+              <i class="bi bi-check-circle me-1"></i> บันทึกแผนงาน
             </button>
           </div>
         </div>
@@ -891,5 +893,60 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="script.js"></script>
+
+    <!-- 🟢 Modal แจ้งเตือน (แทน Alert เดิม) -->
+    <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header text-white" id="msgModalHeader">
+            <h5 class="modal-title fw-bold" id="msgModalTitle">แจ้งเตือน</h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body p-4 text-center">
+            <h6 id="msgModalBody" class="mb-0 text-dark lh-base"></h6>
+          </div>
+          <div class="modal-footer border-0 justify-content-center">
+            <button
+              type="button"
+              class="btn btn-secondary px-4 fw-bold"
+              data-bs-dismiss="modal"
+            >
+              ตกลง (OK)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💾 FAB กู้คืนแบบร่าง (ซ่อนไว้เป็นค่าเริ่มต้น) -->
+    <button
+      id="fabDraftBtn"
+      class="no-print shadow-lg"
+      style="
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #eab308;
+        color: white;
+        border: none;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        cursor: pointer;
+        transition: 0.3s;
+      "
+      title="กู้คืนแบบร่างล่าสุด"
+      onclick="restoreDraftData()"
+    >
+      <span class="material-symbols-rounded fs-3">save_as</span>
+    </button>
   </body>
 </html>
