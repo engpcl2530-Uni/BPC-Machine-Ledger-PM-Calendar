@@ -4,36 +4,63 @@ const GAS_API_URL =
 
 /**
  * API Service Abstraction
- * This object centralizes all server communication.
- * When migrating to a factory server, you only need to change this object.
+ * Centralizes all server communication for easy future migration.
  */
 const ApiService = {
   async request(action, data = {}) {
     let apiKey = sessionStorage.getItem("BPC_API_KEY");
 
-    // If no key, ask the user
     if (!apiKey) {
-      apiKey = prompt("กรุณาใส่รหัสผ่านเข้าสู่ระบบ (API Key):");
-      if (!apiKey) throw new Error("Authentication required");
-      sessionStorage.setItem("BPC_API_KEY", apiKey);
+      const urlParams = new URLSearchParams(window.location.search);
+      const urlKey = urlParams.get("key");
+
+      if (urlKey) {
+        apiKey = urlKey;
+        sessionStorage.setItem("BPC_API_KEY", apiKey);
+      } else {
+        apiKey = prompt("กรุณาใส่รหัสผ่านเข้าสู่ระบบ (API Key):");
+        if (!apiKey) throw new Error("AUTH_REQUIRED");
+        sessionStorage.setItem("BPC_API_KEY", apiKey);
+      }
     }
 
-    const response = await fetch(GAS_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ apiKey, action, ...data }),
-    });
+    try {
+      const response = await fetch(GAS_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ apiKey, action, ...data }),
+      });
 
-    if (!response.ok) throw new Error("Network response was not ok");
-    return await response.json();
+      if (!response.ok) {
+        throw new Error(`HTTP_ERROR_${response.status}`);
+      }
+
+      const result = await response.json();
+
+      // Handle API-level errors (e.g., Authentication failed)
+      if (!result.success) {
+        if (result.message && result.message.includes("Authentication failed")) {
+          sessionStorage.removeItem("BPC_API_KEY");
+          throw new Error("AUTH_FAILED");
+        }
+        throw new Error(result.message || "API_ERROR");
+      }
+
+      return result;
+    } catch (err) {
+      // Log the real error for developers, but throw a clean error for the UI
+      console.error(`ApiService Error [${action}]:`, err);
+      throw err;
+    }
   },
 
   async getAllData() {
-    return this.request("get_all_data");
+    const result = await this.request("get_all_data");
+    return result.data; // Return just the data part for the app
   },
 
   async saveLedger(ledgerData) {
-    return this.request("save_ledger", { data: ledgerData });
+    return await this.request("save_ledger", { data: ledgerData });
   }
 };
 
@@ -67,22 +94,19 @@ function safeJSONParse(str, fallback = {}) {
 async function loadDataFromDatabase() {
   document.getElementById("loadingOverlay").style.display = "flex";
   try {
-    const result = await ApiService.getAllData();
-    if (result.success) {
-      dbData = result.data;
-      handleRouting();
-    } else {
-      console.error("API Error:", result.message);
-      if (result.message.includes("Authentication failed")) {
-        alert("รหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง");
-        sessionStorage.removeItem("BPC_API_KEY");
-      } else {
-        alert("โหลดข้อมูลล้มเหลว: " + result.message);
-      }
-    }
+    // Now returns just the data directly
+    dbData = await ApiService.getAllData();
+    handleRouting();
   } catch (err) {
-    console.error("API Error:", err);
-    alert("เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ หรือคุณไม่ได้ใส่รหัสผ่าน");
+    if (err.message === "AUTH_REQUIRED") {
+      alert("กรุณาใส่รหัสผ่านเพื่อเข้าใช้งานระบบครับ");
+    } else if (err.message === "AUTH_FAILED") {
+      alert("รหัสผ่านไม่ถูกต้อง กรุณาลองอีกครั้ง");
+    } else if (err.message.startsWith("HTTP_ERROR")) {
+      alert("เซิร์ฟเวอร์ไม่ตอบสนอง (HTTP Error). กรุณาลองใหม่อีกครั้ง");
+    } else {
+      alert("เกิดข้อผิดพลาด: " + err.message);
+    }
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }
@@ -117,7 +141,7 @@ function handleRouting() {
   let breadcrumb = "Dashboard";
   toggleFabMode(false);
 
-  if (Object.keys(dbData).length === 0) {
+  if (!dbData || Object.keys(dbData).length === 0) {
     document.getElementById("view-lines").classList.add("active");
     document.getElementById("lineGrid").innerHTML =
       `<div class="col-12 text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-3"></i>ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ</div>`;
@@ -750,7 +774,7 @@ async function submitFormViaAPI() {
       });
     });
     payload.data.subSystems.push(subData);
-  });
+  }
 
   try {
     const result = await ApiService.saveLedger(payload.data);
@@ -762,7 +786,7 @@ async function submitFormViaAPI() {
       alert("❌ เกิดข้อผิดพลาด: " + result.message);
     }
   } catch (error) {
-    alert("❌ Error: เชื่อมต่อ API ไม่สำเร็จ");
+    alert("❌ Error: " + error.message);
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }
