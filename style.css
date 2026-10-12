@@ -1,71 +1,543 @@
-:root { 
-  --primary: #001F5B; --secondary: #005EB8; --bg: #F8FAFC; 
-  --text-main: #1E293B; --border: #E2E8F0; --card-bg: #FFFFFF;
+:root {
+  --primary: #001f5b;
+  --secondary: #005eb8;
+  --bg: #f8fafc;
+  --text-main: #1e293b;
+  --border: #e2e8f0;
+  --card-bg: #ffffff;
 }
-body { background-color: var(--bg); font-family: 'Prompt', sans-serif; color: var(--text-main); }
-.header { background: linear-gradient(135deg, var(--primary), var(--secondary)); padding: 20px 0; border-bottom-left-radius: 20px; border-bottom-right-radius: 20px; box-shadow: 0 4px 15px rgba(0,94,184,0.15); margin-bottom: 20px;}
+body {
+  background-color: var(--bg);
+  font-family: "Prompt", sans-serif;
+  color: var(--text-main);
+}
+.header {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  padding: 20px 0;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 20px;
+  box-shadow: 0 4px 15px rgba(0, 94, 184, 0.15);
+  margin-bottom: 20px;
+}
 
-.view-section { display: none; animation: fadeIn 0.3s; }
-.view-section.active { display: block; }
-@keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+.view-section {
+  display: none;
+  animation: fadeIn 0.3s;
+}
+.view-section.active {
+  display: block;
+}
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 /* ปุ่มย้อนกลับที่ชัดเจน */
-.btn-back-prominent { background: #E2E8F0; color: var(--primary); border: 1px solid #CBD5E0; padding: 8px 16px; border-radius: 8px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: 0.2s; font-size: 14px; box-shadow: 0 2px 5px rgba(0,0,0,0.05);}
-.btn-back-prominent:hover { background: #CBD5E0; transform: translateX(-3px); box-shadow: 0 4px 8px rgba(0,0,0,0.1);}
+.btn-back-prominent {
+  background: #e2e8f0;
+  color: var(--primary);
+  border: 1px solid #cbd5e0;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: 0.2s;
+  font-size: 14px;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+}
+.btn-back-prominent:hover {
+  background: #cbd5e0;
+  transform: translateX(-3px);
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
 
 /* Hover Cards */
-.hover-card { position: relative; border-radius: 12px; overflow: hidden; border: none; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.08); cursor: pointer; transition: 0.3s; height: 250px; border-left: 6px solid var(--secondary); }
-.hover-card:hover { box-shadow: 0 12px 25px rgba(0,94,184,0.2); border-left-color: #198754; transform: translateY(-5px); }
-.card-img-top { width: 100%; height: 140px; object-fit: cover; background: #e2e8f0; }
-.card-overlay { position: absolute; bottom: -100%; left: 0; width: 100%; height: 100%; background: rgba(0, 31, 91, 0.95); color: white; padding: 20px; transition: bottom 0.3s; display: flex; flex-direction: column; justify-content: center; text-align: left; }
-.hover-card:hover .card-overlay { bottom: 0; }
+.hover-card {
+  position: relative;
+  border-radius: 12px;
+  overflow: hidden;
+  border: none;
+  background: white;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  cursor: pointer;
+  transition: 0.3s;
+  height: 250px;
+  border-left: 6px solid var(--secondary);
+}
+.hover-card:hover {
+  box-shadow: 0 12px 25px rgba(0, 94, 184, 0.2);
+  border-left-color: #198754;
+  transform: translateY(-5px);
+}
+.card-img-top {
+  width: 100%;
+  height: 140px;
+  object-fit: cover;
+  background: #e2e8f0;
+}
+.card-overlay {
+  position: absolute;
+  bottom: -100%;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 31, 91, 0.95);
+  color: white;
+  padding: 20px;
+  transition: bottom 0.3s;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: left;
+}
+.hover-card:hover .card-overlay {
+  bottom: 0;
+}
 
-.card-std { border: 1px solid var(--border); border-radius: 16px; background: var(--card-bg); padding: 25px; margin-bottom: 20px; }
-.form-label { font-weight: 600; font-size: 13.5px; color: #475569; margin-bottom: 5px; }
-.form-control, .form-select { border-radius: 10px; padding: 10px; font-size: 14px; background: #F8FAFC; border: 1.5px solid var(--border); }
-.form-control:focus, .form-select:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(0,94,184,0.1); background: #FFF;}
-.form-control:disabled, .form-control[readonly] { background-color: #e2e8f0; opacity: 0.8; }
+.card-std {
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  background: var(--card-bg);
+  padding: 25px;
+  margin-bottom: 20px;
+}
+.form-label {
+  font-weight: 600;
+  font-size: 13.5px;
+  color: #475569;
+  margin-bottom: 5px;
+}
+.form-control,
+.form-select {
+  border-radius: 10px;
+  padding: 10px;
+  font-size: 14px;
+  background: #f8fafc;
+  border: 1.5px solid var(--border);
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--secondary);
+  box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.1);
+  background: #fff;
+}
+.form-control:disabled,
+.form-control[readonly] {
+  background-color: #e2e8f0;
+  opacity: 0.8;
+}
 
 /* Image Upload UI */
-.upload-box { border: 2px dashed #cbd5e1; padding: 10px; border-radius: 12px; font-size: 12px; font-weight: 600; color: #94a3b8; cursor: pointer; transition: 0.2s; background: #f8fafc; display: flex; flex-direction: column; justify-content: center; align-items: center; height: 100px; text-align: center;}
-.upload-box:hover { border-color: var(--secondary); color: var(--secondary); background: #f0f7ff; }
-.preview-img { width: 100%; height: 100px; object-fit: contain; border-radius: 8px; border: 1px solid var(--border); padding: 2px; background: white; display: none; cursor: pointer;}
+.upload-box {
+  border: 2px dashed #cbd5e1;
+  padding: 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: 0.2s;
+  background: #f8fafc;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  height: 100px;
+  text-align: center;
+}
+.upload-box:hover {
+  border-color: var(--secondary);
+  color: var(--secondary);
+  background: #f0f7ff;
+}
+.preview-img {
+  width: 100%;
+  height: 100px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  padding: 2px;
+  background: white;
+  display: none;
+  cursor: pointer;
+}
 
 /* PPE Icons (แบบ SMP มีกากบาท) */
-.ppe-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: flex-start;}
-.icon-checkbox { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; width: 75px; height: 85px; cursor: pointer; position: relative; background: #F8FAFC; border: 2px solid transparent; border-radius: 12px; transition: 0.2s; padding: 5px; border: 1px solid var(--border);}
-.icon-checkbox:hover { background: #E2E8F0; }
-.custom-icon-img { width: 40px; height: 40px; object-fit: contain; margin-bottom: 5px; transition: 0.2s; }
-.icon-checkbox span.label { font-size: 11px; color: #333; font-weight: 600; text-align: center; line-height: 1.1; }
-.icon-checkbox.not-used { background: white; border: 2px dashed #cbd5e1; opacity: 0.85; }
-.icon-checkbox.not-used .custom-icon-img { filter: grayscale(100%); opacity: 0.3; }
-.icon-checkbox.not-used::after { content: 'close'; font-family: 'Material Symbols Rounded'; color: #E53E3E; font-size: 45px; position: absolute; font-weight: 700; top: 10px; text-shadow: 0 0 5px white; }
+.ppe-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: flex-start;
+}
+.icon-checkbox {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 75px;
+  height: 85px;
+  cursor: pointer;
+  position: relative;
+  background: #f8fafc;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  transition: 0.2s;
+  padding: 5px;
+  border: 1px solid var(--border);
+}
+.icon-checkbox:hover {
+  background: #e2e8f0;
+}
+.custom-icon-img {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  margin-bottom: 5px;
+  transition: 0.2s;
+}
+.icon-checkbox span.label {
+  font-size: 11px;
+  color: #333;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.1;
+}
+.icon-checkbox.not-used {
+  background: white;
+  border: 2px dashed #cbd5e1;
+  opacity: 0.85;
+}
+.icon-checkbox.not-used .custom-icon-img {
+  filter: grayscale(100%);
+  opacity: 0.3;
+}
+.icon-checkbox.not-used::after {
+  content: "close";
+  font-family: "Material Symbols Rounded";
+  color: #e53e3e;
+  font-size: 45px;
+  position: absolute;
+  font-weight: 700;
+  top: 10px;
+  text-shadow: 0 0 5px white;
+}
 
 /* 4-Triangle Grid */
-.week-compact-grid svg { width: 16px; height: 16px; }
-.week-expanded-grid { display: grid; grid-template-columns: repeat(13, 1fr); gap: 10px; }
-@media (max-width: 768px) { .week-expanded-grid { grid-template-columns: repeat(7, 1fr); } }
-.week-expand-box { border: 1px solid #cbd5e1; border-radius: 8px; padding: 10px 5px; text-align: center; font-size: 12px; font-weight: bold; background: white;}
-.week-expand-box svg { width: 45px; height: 45px; margin-top: 8px; display: block; margin-left: auto; margin-right: auto;}
-.tri-part { stroke: #cbd5e1; stroke-width: 1; cursor: pointer; transition: 0.2s; }
-.tri-part:hover { stroke: #000; stroke-width: 1.5; }
-.tri-top.active { fill: #FDE047; stroke: #854D0E; } 
-.tri-right.active { fill: #4ADE80; stroke: #14532D; } 
-.tri-bottom.active { fill: #60A5FA; stroke: #1E3A8A; } 
-.tri-left.active { fill: #F87171; stroke: #7F1D1D; } 
-.tri-part.inactive { fill: #f8fafc; }
+.week-compact-grid svg {
+  width: 16px;
+  height: 16px;
+}
+.week-expanded-grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 10px;
+}
+@media (max-width: 768px) {
+  .week-expanded-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+.week-expand-box {
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 10px 5px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: bold;
+  background: white;
+}
+.week-expand-box svg {
+  width: 45px;
+  height: 45px;
+  margin-top: 8px;
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+.tri-part {
+  stroke: #cbd5e1;
+  stroke-width: 1;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.tri-part:hover {
+  stroke: #000;
+  stroke-width: 1.5;
+}
+.tri-top.active {
+  fill: #fde047;
+  stroke: #854d0e;
+}
+.tri-right.active {
+  fill: #4ade80;
+  stroke: #14532d;
+}
+.tri-bottom.active {
+  fill: #60a5fa;
+  stroke: #1e3a8a;
+}
+.tri-left.active {
+  fill: #f87171;
+  stroke: #7f1d1d;
+}
+.tri-part.inactive {
+  fill: #f8fafc;
+}
 
-.fab-main { position: fixed; bottom: 30px; right: 30px; width: 60px; height: 60px; border-radius: 50%; background: var(--secondary); color: white; border: none; box-shadow: 0 10px 25px rgba(0,94,184,0.3); display: flex; justify-content: center; align-items: center; cursor: pointer; transition: 0.3s; z-index: 100;}
-#loadingOverlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,31,91,0.85); z-index: 9999; display: flex; flex-direction: column; justify-content: center; align-items: center; backdrop-filter: blur(5px); }
+.fab-main {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  background: var(--secondary);
+  color: white;
+  border: none;
+  box-shadow: 0 10px 25px rgba(0, 94, 184, 0.3);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  transition: 0.3s;
+  z-index: 100;
+}
+#loadingOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 31, 91, 0.85);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  backdrop-filter: blur(5px);
+}
 
 @media print {
-  @page { size: A3 landscape; margin: 5mm; }
-  body { background: white !important; font-size: 10px; -webkit-print-color-adjust: exact; print-color-adjust: exact;}
-  .no-print { display: none !important; }
-  .container { max-width: 100% !important; padding: 0 !important; margin: 0 !important; }
-  .table-ledger { width: 100%; border: 1px solid #000; font-size: 9px; }
-  .table-ledger th, .table-ledger td { border: 1px solid #000 !important; padding: 4px !important; }
-  .table-ledger svg { width: 14px; height: 14px; display: block; margin: auto; }
-  .tri-part { stroke: #000; stroke-width: 0.5; }
-  .tri-part.active { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  @page {
+    size: A3 landscape;
+    margin: 5mm;
+  }
+  body {
+    background: white !important;
+    font-size: 10px;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .no-print {
+    display: none !important;
+  }
+  .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .table-ledger {
+    width: 100%;
+    border: 1px solid #000;
+    font-size: 9px;
+  }
+  .table-ledger th,
+  .table-ledger td {
+    border: 1px solid #000 !important;
+    padding: 4px !important;
+  }
+  .table-ledger svg {
+    width: 14px;
+    height: 14px;
+    display: block;
+    margin: auto;
+  }
+  .tri-part {
+    stroke: #000;
+    stroke-width: 0.5;
+  }
+  .tri-part.active {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
 }
+
+/* =========================================================
+   52-Week Plan (New Design)
+   ========================================================= */
+
+/* กำหนดสีของสามเหลี่ยมตาม Requirement ใหม่ */
+.tri-top.active {
+  fill: #000000;
+  stroke: #333333;
+} /* สีดำ: Planned Maintenance Executed */
+.tri-left.active {
+  fill: #2563eb;
+  stroke: #1e3a8a;
+} /* สีน้ำเงิน: Unplanned Extra Maintenance */
+.tri-bottom.active {
+  fill: #eab308;
+  stroke: #ca8a04;
+} /* สีเหลือง: Planned Maintenance */
+.tri-right.active {
+  fill: #dc2626;
+  stroke: #991b1b;
+} /* สีแดง: Breakdown Maintenance */
+
+/* สีของป้ายกำกับ (Legend) */
+.legend-top {
+  color: #000000;
+}
+.legend-left {
+  color: #2563eb;
+}
+.legend-bottom {
+  color: #eab308;
+}
+.legend-right {
+  color: #dc2626;
+}
+
+/* รายการแผนงาน (Plan Entries) */
+.plan-entry-card {
+  border-left: 4px solid var(--secondary);
+  background-color: #f8fafc;
+  transition: all 0.2s ease;
+}
+.plan-entry-card:hover {
+  background-color: #f1f5f9;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* สี Checkbox ในฟอร์มเพิ่มแผน */
+.form-check-input.chk-color-black:checked {
+  background-color: #000000;
+  border-color: #000000;
+}
+.form-check-input.chk-color-blue:checked {
+  background-color: #2563eb;
+  border-color: #2563eb;
+}
+.form-check-input.chk-color-yellow:checked {
+  background-color: #eab308;
+  border-color: #eab308;
+}
+.form-check-input.chk-color-red:checked {
+  background-color: #dc2626;
+  border-color: #dc2626;
+}
+
+/* Grid แสดงผล 52 สัปดาห์ขนาดเล็กใน Modal */
+.week-preview-grid {
+  display: grid;
+  grid-template-columns: repeat(13, 1fr);
+  gap: 4px;
+}
+@media (max-width: 768px) {
+  .week-preview-grid {
+    grid-template-columns: repeat(7, 1fr);
+  }
+}
+.preview-box {
+  border: 1px solid #e2e8f0;
+  border-radius: 4px;
+  text-align: center;
+  font-size: 10px;
+  background: white;
+  padding: 2px;
+}
+.preview-box svg {
+  width: 24px;
+  height: 24px;
+  display: block;
+  margin: auto;
+}
+
+/* =========================================================
+   Smart Color Selector (UI ใหม่ 4 สามเหลี่ยม)
+   ========================================================= */
+.selector-grid {
+  display: grid;
+  grid-template-columns: 1fr 120px 1fr;
+  grid-template-rows: auto 120px auto;
+  gap: 10px;
+  align-items: center;
+  justify-items: center;
+  user-select: none;
+}
+.lbl-text {
+  cursor: pointer;
+  font-size: 11px;
+  line-height: 1.3;
+  transition: all 0.2s ease;
+  opacity: 0.35; /* สีจางตอนเริ่มต้น */
+  padding: 4px 8px;
+  border-radius: 6px;
+}
+.lbl-text:hover {
+  background: #f1f5f9;
+  opacity: 0.7;
+}
+.lbl-text.active {
+  opacity: 1;
+  transform: scale(1.05);
+}
+
+.lbl-top {
+  grid-column: 2;
+  grid-row: 1;
+}
+.lbl-bottom {
+  grid-column: 2;
+  grid-row: 3;
+}
+.lbl-left {
+  grid-column: 1;
+  grid-row: 2;
+  text-align: right;
+}
+.lbl-right {
+  grid-column: 3;
+  grid-row: 2;
+  text-align: left;
+}
+.svg-center {
+  grid-column: 2;
+  grid-row: 2;
+}
+
+/* ดีไซน์ปุ่มสามเหลี่ยม */
+.smart-tri {
+  stroke: #ffffff;
+  stroke-width: 2.5;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.smart-tri:hover {
+  opacity: 0.8;
+}
+.smart-tri.inactive {
+  fill: #e2e8f0;
+} /* ค่าเริ่มต้นให้เป็นสีเทาจาง */
+
+/* เมื่อถูกเลือก (Active) ให้แสดงสีเต็ม */
+#tri-t.active {
+  fill: #000000;
+} /* ดำ */
+#tri-r.active {
+  fill: #dc2626;
+} /* แดง */
+#tri-b.active {
+  fill: #eab308;
+} /* เหลือง */
+#tri-l.active {
+  fill: #2563eb;
+} /* น้ำเงิน */
