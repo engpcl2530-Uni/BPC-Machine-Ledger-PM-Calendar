@@ -103,8 +103,67 @@
     <div class="container mt-3 mb-5 pb-5">
       <!-- View 1: Lines -->
       <div id="view-lines" class="view-section active">
+        <!-- แถบเครื่องมือ Filter & Search -->
+        <div class="filter-bar bg-white p-3 rounded-3 shadow-sm border mb-4">
+          <div class="row g-3 align-items-center">
+            <div class="col-md-4">
+              <label class="form-label text-muted small mb-1 fw-bold"
+                >กรองตามแผนก (Department)</label
+              >
+              <select
+                id="filterDept"
+                class="form-select"
+                onchange="handleRouting()"
+              >
+                <option value="ALL">รวมทุกแผนก (All Departments)</option>
+                <option value="PCL">PCL</option>
+                <option value="CO">CO</option>
+                <option value="PCL_MIX">PCL_MIX</option>
+                <option value="CO_MIX">CO_MIX</option>
+              </select>
+            </div>
+            <div class="col-md-5">
+              <label class="form-label text-muted small mb-1 fw-bold"
+                >ค้นหาชื่อไลน์ / เครื่องจักร</label
+              >
+              <div class="input-group">
+                <span class="input-group-text bg-light"
+                  ><span class="material-symbols-rounded">search</span></span
+                >
+                <input
+                  type="text"
+                  id="filterSearch"
+                  class="form-control"
+                  placeholder="พิมพ์คำค้นหา..."
+                  onkeyup="handleRouting()"
+                />
+              </div>
+            </div>
+            <div class="col-md-3">
+              <div class="form-check form-switch mt-md-4 pt-md-1">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="filterUpcoming"
+                  onchange="handleRouting()"
+                  style="transform: scale(1.3); cursor: pointer"
+                />
+                <label
+                  class="form-check-label ms-2 fw-bold text-danger"
+                  for="filterUpcoming"
+                  style="cursor: pointer"
+                >
+                  🔥 ไฮไลท์งานใกล้ถึง (Upcoming)
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
         <h4 class="fw-bold mb-4 text-dark">
-          <span class="material-symbols-rounded me-2 text-primary align-middle"
+          <span
+            class="material-symbols-rounded me-2 text-primary align-middle"
+            style="font-size: 28px"
             >domain</span
           >
           <span data-i18n="select_line">เลือกไลน์ผลิต (Lines)</span>
@@ -274,18 +333,81 @@
             </div>
 
             <div class="form-row">
+              <div class="form-group" id="box_f_dept">
+                <label
+                  >แผนก (Department) <span class="required-star">*</span></label
+                >
+                <select id="f_department" class="form-select" required>
+                  <option value="" disabled selected>-- เลือกแผนก --</option>
+                  <option value="PCL">PCL</option>
+                  <option value="CO">CO</option>
+                </select>
+              </div>
+
               <div class="form-group" id="box_f_lineName">
                 <label
                   ><span data-i18n="label_line_name">ไลน์ผลิต (Line Name)</span>
                   <span class="required-star">*</span></label
                 >
+
+                <!-- Dropdown จัดกลุ่มตามข้อมูลที่ได้มา -->
+                <select
+                  id="f_lineSelect"
+                  class="form-select"
+                  onchange="toggleCustomLineInput()"
+                  required
+                >
+                  <option value="" disabled selected>
+                    -- เลือกไลน์ผลิต --
+                  </option>
+
+                  <optgroup label="CO">
+                    <option value="R5">R5</option>
+                    <option value="IWK1">IWK1</option>
+                    <option value="CF3">CF3</option>
+                    <option value="R6">R6</option>
+                    <option value="V4">V4</option>
+                  </optgroup>
+
+                  <optgroup label="PCL">
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="O1">O1</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                    <option value="SB">SB</option>
+                    <option value="R1">R1</option>
+                    <option value="R2">R2</option>
+                    <option value="R3">R3</option>
+                    <option value="R4">R4</option>
+                    <option value="IWK2">IWK2</option>
+                    <option value="FGI">FGI</option>
+                    <option value="M1">M1</option>
+                    <option value="EOL">EOL</option>
+                  </optgroup>
+
+                  <optgroup label="Mixing">
+                    <option value="MIXING_CUSTOM">Mixing (ระบุเลข Mix)</option>
+                    <option value="Mix-utility">Mix-utility</option>
+                  </optgroup>
+
+                  <optgroup label="อื่นๆ (Others)">
+                    <option value="Utility">Utility</option>
+                    <option value="Packing">Packing</option>
+                    <option value="Lab">Lab</option>
+                    <option value="OTHER_CUSTOM">เพิ่ม อื่นๆ (ระบุเอง)</option>
+                  </optgroup>
+                </select>
+
+                <!-- ช่อง Text ที่จะโผล่มาเมื่อกดเลือก Mixing หรือ อื่นๆ -->
                 <input
                   type="text"
-                  id="f_lineName"
-                  class="form-control"
-                  required
+                  id="f_lineCustom"
+                  class="form-control mt-2 d-none"
+                  placeholder="ระบุชื่อไลน์..."
                 />
               </div>
+              <!-- 🔴 เพิ่มช่องกรอกเครื่องจักรที่หายไปกลับเข้ามา -->
               <div class="form-group" id="box_f_machineName">
                 <label
                   ><span data-i18n="label_machine_name"

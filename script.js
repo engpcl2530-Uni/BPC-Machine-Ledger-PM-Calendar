@@ -58,6 +58,7 @@ const ApiService = {
 };
 
 let dbData = {};
+let currentDept = null;
 let currentLine = null;
 let currentMach = null;
 let currentSub = null;
@@ -83,9 +84,59 @@ window.onload = () => {
   loadDataFromDatabase();
 };
 
-// ================= 2. Routing & Render =================
-function navigateTo(line = null, mach = null, sub = null) {
+// ดึงภาษาปัจจุบันที่ใช้อยู่ (ถ้าไม่มีให้เป็น 'th')
+function getCurrentLang() {
+  return localStorage.getItem("app_lang") || "th";
+}
+
+// ฟังก์ชันหาว่าตอนนี้อยู่สัปดาห์ที่เท่าไหร่ของปี (1-52)
+function getCurrentWeekNumber() {
+  const d = new Date();
+  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+}
+
+// ฟังก์ชันเช็คว่าเครื่องจักร/ไลน์นี้ มีงานในสัปดาห์นี้หรือสัปดาห์หน้าหรือไม่?
+function hasUpcomingTasks(entityData, isLine = false) {
+  const currentWeekIndex = getCurrentWeekNumber() - 1; // index ใน array 0-51
+  let found = false;
+
+  const checkComponent = (comp) => {
+    // เช็คสัปดาห์ปัจจุบัน (w) และ สัปดาห์หน้า (w+1)
+    for (let i = currentWeekIndex; i <= currentWeekIndex + 1; i++) {
+      if (i < 52 && comp.weeks[i]) {
+        let w = comp.weeks[i];
+        if (w.t === 1 || w.r === 1 || w.b === 1 || w.l === 1) return true;
+      }
+    }
+    return false;
+  };
+
+  if (isLine) {
+    for (let m in entityData.machines) {
+      for (let s in entityData.machines[m].subassemblies) {
+        for (let c of entityData.machines[m].subassemblies[s].components) {
+          if (checkComponent(c)) return true;
+        }
+      }
+    }
+  } else {
+    // เช็คระดับเครื่องจักร
+    for (let s in entityData.subassemblies) {
+      for (let c of entityData.subassemblies[s].components) {
+        if (checkComponent(c)) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// อัปเดต Navigate ให้พ่วง Department ไปด้วย
+function navigateTo(dept = null, line = null, mach = null, sub = null) {
   let url = new URL(window.location);
+  if (dept) url.searchParams.set("dept", dept);
+  else url.searchParams.delete("dept");
   if (line) url.searchParams.set("line", line);
   else url.searchParams.delete("line");
   if (mach) url.searchParams.set("mach", mach);
@@ -95,18 +146,15 @@ function navigateTo(line = null, mach = null, sub = null) {
   window.history.pushState({}, "", url);
   handleRouting();
 }
-// ดึงภาษาปัจจุบันที่ใช้อยู่ (ถ้าไม่มีให้เป็น 'th')
-function getCurrentLang() {
-  return localStorage.getItem("app_lang") || "th";
-}
 
 function handleRouting() {
   let params = new URLSearchParams(window.location.search);
+  currentDept = params.get("dept");
   currentLine = params.get("line");
   currentMach = params.get("mach");
   currentSub = params.get("sub");
 
-  const lang = getCurrentLang(); // ดึงภาษาปัจจุบัน
+  const lang = getCurrentLang();
 
   document
     .querySelectorAll(".view-section")
@@ -116,27 +164,26 @@ function handleRouting() {
 
   if (!dbData || Object.keys(dbData).length === 0) {
     document.getElementById("view-lines").classList.add("active");
-    // 🔴 แปลข้อความไม่มีข้อมูล
     document.getElementById("lineGrid").innerHTML =
       `<div class="col-12 text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-3"></i>${translations[lang].no_data}</div>`;
     return;
   }
 
-  if (currentLine && currentMach && currentSub) {
+  if (currentDept && currentLine && currentMach && currentSub) {
     document.getElementById("lbl-sub-title").innerText = currentSub;
     renderComponentTable();
     document.getElementById("view-components").classList.add("active");
-    breadcrumb = `${currentLine} > ${currentMach} > ${currentSub}`;
-  } else if (currentLine && currentMach) {
+    breadcrumb = `${currentDept} > ${currentLine} > ${currentMach} > ${currentSub}`;
+  } else if (currentDept && currentLine && currentMach) {
     document.getElementById("lbl-mach-title").innerText = currentMach;
-    renderSubs(currentLine, currentMach);
+    renderSubs(currentDept, currentLine, currentMach);
     document.getElementById("view-subs").classList.add("active");
-    breadcrumb = `${currentLine} > ${currentMach}`;
-  } else if (currentLine) {
+    breadcrumb = `${currentDept} > ${currentLine} > ${currentMach}`;
+  } else if (currentDept && currentLine) {
     document.getElementById("lbl-line-title").innerText = currentLine;
-    renderMachs(currentLine);
+    renderMachs(currentDept, currentLine);
     document.getElementById("view-machs").classList.add("active");
-    breadcrumb = `${currentLine}`;
+    breadcrumb = `${currentDept} > ${currentLine}`;
   } else {
     renderLines();
     document.getElementById("view-lines").classList.add("active");
@@ -145,26 +192,67 @@ function handleRouting() {
   document.getElementById("headerBreadcrumb").innerText = breadcrumb;
   window.scrollTo(0, 0);
 }
-// window.addEventListener("popstate", handleRouting); (อันเดิมที่คุณมีอยู่แล้ว ปล่อยไว้)
 
 function renderLines() {
   let grid = document.getElementById("lineGrid");
   grid.innerHTML = "";
-  const lang = getCurrentLang(); // ดึงภาษา
-  const t = translations[lang]; // ดึงพจนานุกรมของภาษาปัจจุบัน
+  const lang = getCurrentLang();
+  const t = translations[lang];
 
-  for (let lineName in dbData) {
-    let safeLineName = escapeHTML(lineName);
-    let mCount = Object.keys(dbData[lineName].machines).length;
-    // 🔴 แก้ข้อความในเทมเพลต
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${safeLineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${safeLineName}</h5><div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">dns</span> ${t.has_machine} ${mCount} ${t.unit_machine}</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${safeLineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div></div></div></div>`;
+  // ดึงค่าจาก Filter
+  const filterDept = document.getElementById("filterDept").value;
+  const filterSearch = document
+    .getElementById("filterSearch")
+    .value.toLowerCase();
+  const filterUpcoming = document.getElementById("filterUpcoming").checked;
+
+  let hasResult = false;
+
+  for (let deptName in dbData) {
+    // กรองแผนก
+    if (filterDept !== "ALL" && deptName !== filterDept) continue;
+
+    for (let lineName in dbData[deptName]) {
+      // กรองคำค้นหา
+      if (
+        filterSearch &&
+        !lineName.toLowerCase().includes(filterSearch) &&
+        !deptName.toLowerCase().includes(filterSearch)
+      )
+        continue;
+
+      let isUpcoming = hasUpcomingTasks(dbData[deptName][lineName], true);
+      // กรองเฉพาะงานที่มีใกล้ถึง
+      if (filterUpcoming && !isUpcoming) continue;
+
+      hasResult = true;
+      let safeDept = escapeHTML(deptName);
+      let safeLine = escapeHTML(lineName);
+      let mCount = Object.keys(dbData[deptName][lineName].machines).length;
+      let highlightClass = isUpcoming ? "upcoming-task" : "";
+
+      grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card ${highlightClass}" onclick="navigateTo('${safeDept}', '${safeLine}')">
+        <img src="${dbData[deptName][lineName].image}" class="card-img-top">
+        <div class="p-3">
+          <span class="badge bg-secondary mb-2">${safeDept}</span>
+          <h5 class="fw-bold text-primary mb-1">${safeLine}</h5>
+          <div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">dns</span> ${t.has_machine} ${mCount} ${t.unit_machine}</div>
+        </div>
+        <div class="card-overlay">
+          <h5 class="fw-bold text-warning mb-3">${safeLine}</h5>
+          <div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div>
+        </div></div></div>`;
+    }
   }
+
+  if (!hasResult)
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</div>`;
 }
 
-function renderMachs(lineName) {
+function renderMachs(deptName, lineName) {
   let grid = document.getElementById("machGrid");
   grid.innerHTML = "";
-  let line = dbData[lineName];
+  let line = dbData[deptName][lineName];
   if (!line) return;
   const lang = getCurrentLang();
   const t = translations[lang];
@@ -172,15 +260,26 @@ function renderMachs(lineName) {
   for (let machName in line.machines) {
     let safeMachName = escapeHTML(machName);
     let sCount = Object.keys(line.machines[machName].subassemblies).length;
-    // 🔴 แก้ข้อความในเทมเพลต
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${escapeHTML(lineName)}', '${safeMachName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${safeMachName}</h5><div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">account_tree</span> ${t.has_sub} ${sCount} ${t.unit_sub}</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${safeMachName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_sub} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div></div></div></div>`;
+    let isUpcoming = hasUpcomingTasks(line.machines[machName], false);
+    let highlightClass = isUpcoming ? "upcoming-task" : "";
+
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card ${highlightClass}" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${safeMachName}')">
+      <img src="${line.machines[machName].image}" class="card-img-top">
+      <div class="p-3">
+        <h5 class="fw-bold text-dark mb-1">${safeMachName}</h5>
+        <div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">account_tree</span> ${t.has_sub} ${sCount} ${t.unit_sub}</div>
+      </div>
+      <div class="card-overlay">
+        <h5 class="fw-bold text-warning mb-3">${safeMachName}</h5>
+        <div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_sub} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div>
+      </div></div></div>`;
   }
 }
 
-function renderSubs(lineName, machName) {
+function renderSubs(deptName, lineName, machName) {
   let grid = document.getElementById("subGrid");
   grid.innerHTML = "";
-  let mach = dbData[lineName].machines[machName];
+  let mach = dbData[deptName][lineName].machines[machName];
   if (!mach) return;
   const lang = getCurrentLang();
   const t = translations[lang];
@@ -188,8 +287,17 @@ function renderSubs(lineName, machName) {
   for (let subName in mach.subassemblies) {
     let safeSubName = escapeHTML(subName);
     let cCount = mach.subassemblies[subName].components.length;
-    // 🔴 แก้ข้อความในเทมเพลต
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${escapeHTML(lineName)}', '${escapeHTML(machName)}', '${safeSubName}')"><img src="${mach.subassemblies[subName].image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${safeSubName}</h6><div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">build</span> ${t.has_comp} ${cCount} ${t.unit_comp}</div></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${safeSubName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_comp} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div></div></div></div>`;
+
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${escapeHTML(machName)}', '${safeSubName}')">
+      <img src="${mach.subassemblies[subName].image}" class="card-img-top">
+      <div class="p-3">
+        <h6 class="fw-bold text-dark mb-1">${safeSubName}</h6>
+        <div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">build</span> ${t.has_comp} ${cCount} ${t.unit_comp}</div>
+      </div>
+      <div class="card-overlay">
+        <h6 class="fw-bold text-warning mb-3">${safeSubName}</h6>
+        <div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_comp} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div>
+      </div></div></div>`;
   }
 }
 
@@ -197,18 +305,18 @@ function renderComponentTable() {
   let tbody = document.getElementById("componentTableBody");
   tbody.innerHTML = "";
   let comps =
-    dbData[currentLine].machines[currentMach].subassemblies[currentSub]
-      .components;
+    dbData[currentDept][currentLine].machines[currentMach].subassemblies[
+      currentSub
+    ].components;
+  // ... (ฟังก์ชันตัวในตารางเหมือนเดิม ไม่ต้องเปลี่ยน)
   comps.forEach((c) => {
     let weeksHtml = "";
     c.weeks.forEach((w) => {
       weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`;
     });
-
     let safeName = escapeHTML(c.name);
     let safeTask = escapeHTML(c.task || "-");
     let safeRemark = escapeHTML(c.remarkEwo || "-");
-
     tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${safeName}</td><td>${safeTask}</td><td class="text-center">${c.class || "-"}</td><td class="text-center">${c.std || "-"}</td><td class="text-center"><span class="badge bg-success">${c.stat || "Run"}</span></td><td class="text-center fw-bold text-danger">${c.time || "-"}</td><td class="text-center" style="font-size:10px;">${c.ppe || "-"}</td>${weeksHtml}<td class="text-muted fw-bold" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td></tr>`;
   });
 }
@@ -254,9 +362,11 @@ function populateImportDropdown() {
 
   select.innerHTML =
     '<option value="">-- เลือกเครื่องจักรจากระบบเพื่อคัดลอก (Template) --</option>';
-  for (let lineName in dbData) {
-    for (let machName in dbData[lineName].machines) {
-      select.innerHTML += `<option value="${lineName}|${machName}">[${lineName}] - ${machName}</option>`;
+  for (let deptName in dbData) {
+    for (let lineName in dbData[deptName]) {
+      for (let machName in dbData[deptName][lineName].machines) {
+        select.innerHTML += `<option value="${deptName}|${lineName}|${machName}">[${deptName}] ${lineName} - ${machName}</option>`;
+      }
     }
   }
 }
@@ -264,14 +374,48 @@ function populateImportDropdown() {
 function executeImportData() {
   let val = document.getElementById("importDbSelect").value;
   if (!val) {
-    alert("กรุณาเลือกเครื่องจักรที่ต้องการคัดลอกครับ");
+    showModalAlert(
+      "แจ้งเตือน",
+      "กรุณาเลือกเครื่องจักรที่ต้องการคัดลอกครับ",
+      true,
+    );
     return;
   }
 
-  let [lineName, machName] = val.split("|");
-  let machData = dbData[lineName].machines[machName];
+  // นำค่าไปใส่ในฟอร์ม (เวอร์ชันรองรับ Select + Custom)
+  document.getElementById("f_department").value = deptName;
+
+  let lineSelect = document.getElementById("f_lineSelect");
+  let lineCustom = document.getElementById("f_lineCustom");
+
+  // เช็คว่าชื่อไลน์ที่ Import มา มีอยู่ในตัวเลือกหรือเปล่า
+  let optionExists = Array.from(lineSelect.options).some(
+    (opt) => opt.value === lineName,
+  );
+
+  if (optionExists) {
+    lineSelect.value = lineName;
+    toggleCustomLineInput(); // สั่งซ่อนกล่อง
+  } else if (lineName.toUpperCase().includes("MIX")) {
+    lineSelect.value = "MIXING_CUSTOM";
+    toggleCustomLineInput(); // สั่งเปิดกล่อง
+    lineCustom.value = lineName;
+  } else {
+    lineSelect.value = "OTHER_CUSTOM";
+    toggleCustomLineInput(); // สั่งเปิดกล่อง
+    lineCustom.value = lineName;
+  }
+
+  document.getElementById("f_machineName").value = machName + " (Copy)";
+  document.getElementById("subSystemsContainer").innerHTML = "";
+
+  let [deptName, lineName, machName] = val.split("|");
+  let machData = dbData[deptName][lineName].machines[machName];
   if (!machData) return;
 
+  // นำค่าไปใส่ในฟอร์ม
+  document.getElementById("f_department").value = deptName;
+  document.getElementById("f_lineName").value = lineName;
   document.getElementById("f_machineName").value = machName + " (Copy)";
   document.getElementById("subSystemsContainer").innerHTML = "";
 
@@ -320,7 +464,7 @@ function executeImportData() {
       );
     });
   }
-  alert(`ดึงข้อมูลโครงสร้างของเครื่อง ${machName} สำเร็จ!`);
+  showModalAlert("สำเร็จ!", `ดึงข้อมูลโครงสร้างของเครื่อง ${machName} สำเร็จ!`);
 }
 
 function duplicateItem(btn) {
@@ -394,23 +538,30 @@ function handleDragEnd(e) {
 }
 
 // ================= 4. Context Aware Form (ระบบจัดการฟอร์ม) =================
-function previewDynamicFile(input) {
+// 🟢 อัปเดตฟังก์ชันพรีวิวและบีบอัดภาพ
+async function previewDynamicFile(input) {
   if (input.files && input.files[0]) {
-    // SECURITY: Check file size before processing (Max 5MB)
-    if (input.files[0].size > 5 * 1024 * 1024) {
-      alert("รูปภาพมีขนาดใหญ่เกินไป (จำกัด 5MB)");
+    let file = input.files[0];
+
+    // เช็คขนาดไฟล์เริ่มต้น (เช่น หากใหญ่เกิน 15MB เตือนก่อน)
+    if (file.size > 15 * 1024 * 1024) {
+      showModalAlert("แจ้งเตือน", "ไฟล์มีขนาดใหญ่เกินไป (จำกัด 15MB)", true);
       input.value = "";
       return;
     }
 
-    let reader = new FileReader();
-    reader.onload = function (e) {
+    try {
+      // เรียกใช้ฟังก์ชันย่อขนาดภาพ (บีบให้เหลือความกว้าง/สูงไม่เกิน 1000px และคุณภาพ 70%)
+      let compressedBase64 = await compressImage(file, 1000, 1000, 0.7);
+
       let preview = input.nextElementSibling;
-      preview.src = e.target.result;
+      preview.src = compressedBase64;
       preview.style.display = "block";
       input.previousElementSibling.style.display = "none";
-    };
-    reader.readAsDataURL(input.files[0]);
+    } catch (e) {
+      console.error("Compression error:", e);
+      showModalAlert("แจ้งเตือน", "ไม่สามารถประมวลผลรูปภาพนี้ได้", true);
+    }
   }
 }
 
@@ -447,39 +598,58 @@ function openAddFormContext() {
   populateImportDropdown();
   toggleFabMode(true);
 
-  let lInput = document.getElementById("f_lineName");
+  // 🔴 อัปเดตการดึง ID ให้ตรงกับ HTML ตัวใหม่ (Dropdown แผนก และ ไลน์)
+  let deptSelect = document.getElementById("f_department");
+  let lineSelect = document.getElementById("f_lineSelect");
+  let lineCustom = document.getElementById("f_lineCustom");
   let mInput = document.getElementById("f_machineName");
+
+  let boxDept = document.getElementById("box_f_dept");
   let boxLine = document.getElementById("box_f_lineName");
   let boxMach = document.getElementById("box_f_machineName");
   let boxImgMach = document.getElementById("box_imgMach");
   let cardStructure = document.getElementById("cardStructure");
   let btnAddSub = document.getElementById("btnAddSub");
 
-  cardStructure.style.display = "block";
-  boxLine.style.display = "block";
-  lInput.readOnly = false;
-  boxMach.style.display = "block";
-  mInput.readOnly = false;
-  boxImgMach.style.display = "block";
-  btnAddSub.style.display = "block";
+  if (cardStructure) cardStructure.style.display = "block";
+  if (boxDept) boxDept.style.display = "block";
+  if (boxLine) boxLine.style.display = "block";
+  if (boxMach) boxMach.style.display = "block";
+  if (boxImgMach) boxImgMach.style.display = "block";
+  if (btnAddSub) btnAddSub.style.display = "block";
 
-  if (currentLine && currentMach && currentSub) {
+  // ปลดล็อกฟอร์มให้แก้ไขได้
+  if (deptSelect) deptSelect.disabled = false;
+  if (lineSelect) lineSelect.disabled = false;
+  if (lineCustom) lineCustom.readOnly = false;
+  if (mInput) mInput.readOnly = false;
+
+  // รีเซ็ตซ่อนกล่อง Custom ไว้ก่อน
+  if (lineCustom) lineCustom.classList.add("d-none");
+
+  // 🔴 ตรรกะจัดการเวลาผู้ใช้กดปุ่ม + จากหน้าแผนก/ไลน์/เครื่องจักร (Context Aware)
+  if (currentDept && currentLine && currentMach && currentSub) {
     cardStructure.style.display = "none";
     btnAddSub.style.display = "none";
-    lInput.value = currentLine;
+
+    if (deptSelect) deptSelect.value = currentDept;
+    autoSetLineDropdown(currentLine);
     mInput.value = currentMach;
+
     addSubsystemCard();
     let subCard = document.querySelector(".sub-system-card");
     subCard.querySelector(".input-subname").value = currentSub;
-    subCard.querySelector("#subHeaderRow").style.display = "none";
-  } else if (currentLine && currentMach) {
+  } else if (currentDept && currentLine && currentMach) {
     cardStructure.style.display = "none";
-    lInput.value = currentLine;
+    if (deptSelect) deptSelect.value = currentDept;
+    autoSetLineDropdown(currentLine);
     mInput.value = currentMach;
     addSubsystemCard();
-  } else if (currentLine) {
+  } else if (currentDept && currentLine) {
+    if (boxDept) boxDept.style.display = "none";
     boxLine.style.display = "none";
-    lInput.value = currentLine;
+    if (deptSelect) deptSelect.value = currentDept;
+    autoSetLineDropdown(currentLine);
     addSubsystemCard();
   } else {
     addSubsystemCard();
@@ -490,6 +660,29 @@ function openAddFormContext() {
     .forEach((v) => v.classList.remove("active"));
   document.getElementById("view-form").classList.add("active");
   window.scrollTo(0, 0);
+}
+
+// 🔴 ฟังก์ชันช่วยเลือก Dropdown ไลน์ผลิตให้อัตโนมัติ (ใช้คู่กับ openAddFormContext)
+function autoSetLineDropdown(lineName) {
+  let lineSelect = document.getElementById("f_lineSelect");
+  let lineCustom = document.getElementById("f_lineCustom");
+  if (!lineSelect) return;
+
+  let optionExists = Array.from(lineSelect.options).some(
+    (opt) => opt.value === lineName,
+  );
+  if (optionExists) {
+    lineSelect.value = lineName;
+    toggleCustomLineInput(); // ฟังก์ชันนี้เราเขียนไว้แล้วด้านล่าง
+  } else if (lineName.toUpperCase().includes("MIX")) {
+    lineSelect.value = "MIXING_CUSTOM";
+    toggleCustomLineInput();
+    if (lineCustom) lineCustom.value = lineName;
+  } else {
+    lineSelect.value = "OTHER_CUSTOM";
+    toggleCustomLineInput();
+    if (lineCustom) lineCustom.value = lineName;
+  }
 }
 
 // ================= 5. 4-Triangle Calendar (Smart UI 52 Weeks) =================
@@ -683,7 +876,9 @@ document.addEventListener("input", () => {
   let formView = document.getElementById("view-form");
   if (formView && formView.classList.contains("active")) {
     let draftData = {
-      lineName: document.getElementById("f_lineName")?.value || "",
+      department: document.getElementById("f_department")?.value || "",
+      lineSelect: document.getElementById("f_lineSelect")?.value || "", // เก็บค่า Dropdown
+      lineCustom: document.getElementById("f_lineCustom")?.value || "", // เก็บค่าที่พิมพ์เอง
       machineName: document.getElementById("f_machineName")?.value || "",
       updatedBy: document.getElementById("f_updatedBy")?.value || "",
       time: new Date().toLocaleString("th-TH"),
@@ -702,16 +897,19 @@ function checkDraftStatus() {
 function restoreDraftData() {
   let draft = safeJSONParse(localStorage.getItem("bpc_draft"));
   if (draft.time) {
-    if (
-      confirm(
-        `พบข้อมูลที่เคยพิมพ์ค้างไว้เมื่อ: ${draft.time}\nคุณต้องการกู้คืนมาแก้ไขต่อหรือไม่?`,
-      )
-    ) {
-      openAddFormContext();
-      document.getElementById("f_lineName").value = draft.lineName || "";
-      document.getElementById("f_machineName").value = draft.machineName || "";
-      document.getElementById("f_updatedBy").value = draft.updatedBy || "";
-    }
+    // ใช้ showModalConfirm แทน confirm ธรรมดาให้สวยงาม
+    showModalConfirm(
+      "กู้คืนแบบร่าง",
+      `พบข้อมูลที่เคยพิมพ์ค้างไว้เมื่อ: ${draft.time}<br/>คุณต้องการกู้คืนมาแก้ไขต่อหรือไม่?`,
+      () => {
+        openAddFormContext();
+        document.getElementById("f_department").value = draft.department || ""; // 🔴 เพิ่มบรรทัดนี้
+        document.getElementById("f_lineName").value = draft.lineName || "";
+        document.getElementById("f_machineName").value =
+          draft.machineName || "";
+        document.getElementById("f_updatedBy").value = draft.updatedBy || "";
+      },
+    );
   }
 }
 
@@ -722,7 +920,12 @@ async function submitFormViaAPI() {
     return;
   }
 
-  let f_line = document.getElementById("f_lineName").value.trim();
+  // ดึงค่าไลน์แบบใหม่ (เช็คว่ากรอกเอง หรือ เลือกจาก Dropdown)
+  let f_line_select = document.getElementById("f_lineSelect").value;
+  let f_line = f_line_select;
+  if (f_line_select === "MIXING_CUSTOM" || f_line_select === "OTHER_CUSTOM") {
+    f_line = document.getElementById("f_lineCustom").value.trim();
+  }
   let f_mach = document.getElementById("f_machineName").value.trim();
 
   if (f_line.length < 2 || f_mach.length < 2) {
@@ -762,9 +965,9 @@ async function submitFormViaAPI() {
 
   document.getElementById("loadingOverlay").style.display = "flex";
 
-  // สร้าง Payload (โค้ดดึงค่าเหมือนเดิม)
   let payload = {
     data: {
+      department: document.getElementById("f_department").value, // 🔴 เพิ่มฟิลด์แผนก
       lineName: f_line,
       machineName: f_mach,
       updatedBy: document.getElementById("f_updatedBy").value.trim(),
@@ -1089,3 +1292,77 @@ document.addEventListener("DOMContentLoaded", () => {
   const savedLang = localStorage.getItem("app_lang") || "th";
   window.changeLanguage(savedLang);
 });
+
+// ==========================================
+// ฟังก์ชันจัดการช่องกรอกไลน์แบบพิเศษ
+// ==========================================
+function toggleCustomLineInput() {
+  const select = document.getElementById("f_lineSelect");
+  const custom = document.getElementById("f_lineCustom");
+  const dept = document.getElementById("f_department");
+
+  // ถ้าเลือก Mixing แบบต้องระบุเลข
+  if (select.value === "MIXING_CUSTOM") {
+    custom.classList.remove("d-none");
+    custom.placeholder = "ระบุเลข Mix เช่น MIX#1";
+    custom.required = true;
+  }
+  // ถ้าเลือก อื่นๆ แบบต้องระบุเอง
+  else if (select.value === "OTHER_CUSTOM") {
+    custom.classList.remove("d-none");
+    custom.placeholder = "ระบุชื่อไลน์ หรือ แผนกที่ต้องการ...";
+    custom.required = true;
+  }
+  // ถ้าเลือกไลน์ปกติ (ซ่อนกล่องและช่วยเปลี่ยนแผนกให้อัตโนมัติ)
+  else {
+    custom.classList.add("d-none");
+    custom.required = false;
+    custom.value = "";
+
+    // 🔴 Auto-select แผนกเพื่อความสะดวกของ User
+    const optGroup = select.options[select.selectedIndex].parentNode.label;
+    if (optGroup === "CO") dept.value = "CO";
+    else if (optGroup === "PCL") dept.value = "PCL";
+  }
+}
+
+// 🟢 ฟังก์ชันย่อขนาดและบีบอัดภาพอัตโนมัติก่อนส่งขึ้น Google Drive
+function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload = (event) => {
+      const img = new Image();
+      img.src = event.target.result;
+      img.onload = () => {
+        let width = img.width;
+        let height = img.height;
+
+        // คำนวณสัดส่วนใหม่ไม่ให้เกินขนาด maxWidth และ maxHeight ที่กำหนด
+        if (width > height) {
+          if (width > maxWidth) {
+            height = Math.round((height * maxWidth) / width);
+            width = maxWidth;
+          }
+        } else {
+          if (height > maxHeight) {
+            width = Math.round((width * maxHeight) / height);
+            height = maxHeight;
+          }
+        }
+
+        const canvas = document.createElement("canvas");
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext("2d");
+        ctx.drawImage(img, 0, 0, width, height);
+
+        // แปลงไฟล์ภาพเป็น JPEG พร้อมปรับระดับความคมชัด (Quality 0.7 = 70% ขนาดลดลงเยอะมากแต่ภาพยังชัดเจน)
+        const compressedDataUrl = canvas.toDataURL("image/jpeg", quality);
+        resolve(compressedDataUrl);
+      };
+      img.onerror = (error) => reject(error);
+    };
+    reader.onerror = (error) => reject(error);
+  });
+}
