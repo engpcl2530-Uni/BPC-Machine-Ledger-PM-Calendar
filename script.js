@@ -95,12 +95,18 @@ function navigateTo(line = null, mach = null, sub = null) {
   window.history.pushState({}, "", url);
   handleRouting();
 }
+// ดึงภาษาปัจจุบันที่ใช้อยู่ (ถ้าไม่มีให้เป็น 'th')
+function getCurrentLang() {
+  return localStorage.getItem("app_lang") || "th";
+}
 
 function handleRouting() {
   let params = new URLSearchParams(window.location.search);
   currentLine = params.get("line");
   currentMach = params.get("mach");
   currentSub = params.get("sub");
+
+  const lang = getCurrentLang(); // ดึงภาษาปัจจุบัน
 
   document
     .querySelectorAll(".view-section")
@@ -110,8 +116,9 @@ function handleRouting() {
 
   if (!dbData || Object.keys(dbData).length === 0) {
     document.getElementById("view-lines").classList.add("active");
+    // 🔴 แปลข้อความไม่มีข้อมูล
     document.getElementById("lineGrid").innerHTML =
-      `<div class="col-12 text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-3"></i>ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ</div>`;
+      `<div class="col-12 text-center text-muted p-5"><i class="bi bi-inbox fs-1 d-block mb-3"></i>${translations[lang].no_data}</div>`;
     return;
   }
 
@@ -138,15 +145,19 @@ function handleRouting() {
   document.getElementById("headerBreadcrumb").innerText = breadcrumb;
   window.scrollTo(0, 0);
 }
-window.addEventListener("popstate", handleRouting);
+// window.addEventListener("popstate", handleRouting); (อันเดิมที่คุณมีอยู่แล้ว ปล่อยไว้)
 
 function renderLines() {
   let grid = document.getElementById("lineGrid");
   grid.innerHTML = "";
+  const lang = getCurrentLang(); // ดึงภาษา
+  const t = translations[lang]; // ดึงพจนานุกรมของภาษาปัจจุบัน
+
   for (let lineName in dbData) {
     let safeLineName = escapeHTML(lineName);
     let mCount = Object.keys(dbData[lineName].machines).length;
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${safeLineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${safeLineName}</h5><div class="text-muted small"><i class="bi bi-hdd-rack"></i> มี ${mCount} เครื่องจักร</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${safeLineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูเครื่องจักร <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    // 🔴 แก้ข้อความในเทมเพลต
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${safeLineName}')"><img src="${dbData[lineName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-primary mb-1">${safeLineName}</h5><div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">dns</span> ${t.has_machine} ${mCount} ${t.unit_machine}</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${safeLineName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div></div></div></div>`;
   }
 }
 
@@ -155,10 +166,14 @@ function renderMachs(lineName) {
   grid.innerHTML = "";
   let line = dbData[lineName];
   if (!line) return;
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
   for (let machName in line.machines) {
     let safeMachName = escapeHTML(machName);
     let sCount = Object.keys(line.machines[machName].subassemblies).length;
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${escapeHTML(lineName)}', '${safeMachName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${safeMachName}</h5><div class="text-muted small"><i class="bi bi-diagram-3"></i> มี ${sCount} ระบบย่อย</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${safeMachName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูระบบย่อย <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    // 🔴 แก้ข้อความในเทมเพลต
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${escapeHTML(lineName)}', '${safeMachName}')"><img src="${line.machines[machName].image}" class="card-img-top"><div class="p-3"><h5 class="fw-bold text-dark mb-1">${safeMachName}</h5><div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">account_tree</span> ${t.has_sub} ${sCount} ${t.unit_sub}</div></div><div class="card-overlay"><h5 class="fw-bold text-warning mb-3">${safeMachName}</h5><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_sub} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div></div></div></div>`;
   }
 }
 
@@ -167,10 +182,14 @@ function renderSubs(lineName, machName) {
   grid.innerHTML = "";
   let mach = dbData[lineName].machines[machName];
   if (!mach) return;
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
   for (let subName in mach.subassemblies) {
     let safeSubName = escapeHTML(subName);
     let cCount = mach.subassemblies[subName].components.length;
-    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${escapeHTML(lineName)}', '${escapeHTML(machName)}', '${safeSubName}')"><img src="${mach.subassemblies[subName].image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${safeSubName}</h6><div class="text-muted small"><i class="bi bi-tools"></i> มี ${cCount} ชิ้นส่วน</div></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${safeSubName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">ดูตาราง Component <i class="bi bi-arrow-right-circle-fill ms-1"></i></span></div></div></div></div>`;
+    // 🔴 แก้ข้อความในเทมเพลต
+    grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card" onclick="navigateTo('${escapeHTML(lineName)}', '${escapeHTML(machName)}', '${safeSubName}')"><img src="${mach.subassemblies[subName].image}" class="card-img-top"><div class="p-3"><h6 class="fw-bold text-dark mb-1">${safeSubName}</h6><div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">build</span> ${t.has_comp} ${cCount} ${t.unit_comp}</div></div><div class="card-overlay"><h6 class="fw-bold text-warning mb-3">${safeSubName}</h6><div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_comp} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div></div></div></div>`;
   }
 }
 
@@ -207,15 +226,26 @@ function toggleFabMode(isFormMode) {
   }
 }
 
-// 🔴 ฟังก์ชันกดยกเลิกการกรอกและย้อนกลับอย่างปลอดภัย
+// 🔴 ฟังก์ชันกดยกเลิกการกรอก (เรียก Bootstrap Modal)
 function cancelFormContext() {
-  if (
-    confirm(
-      "⚠️ คุณต้องการยกเลิกการกรอกข้อมูลและย้อนกลับใช่หรือไม่? (ข้อมูลที่กรอกไว้จะไม่ถูกบันทึก)",
-    )
-  ) {
-    handleRouting(); // กลับไปหน้า Dashboard หรือหน้ารายละเอียดเดิม
-  }
+  const cancelModal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("confirmCancelModal"),
+  );
+  cancelModal.show();
+}
+
+// 🔴 ฟังก์ชันทำงานจริงเมื่อกด "ใช่, ย้อนกลับ" บน Modal
+function executeCancelForm() {
+  // ปิด Modal
+  const cancelModal = bootstrap.Modal.getOrCreateInstance(
+    document.getElementById("confirmCancelModal"),
+  );
+  cancelModal.hide();
+
+  // ซ่อนฟอร์มและกลับไปหน้าเดิม
+  document.getElementById("view-form").classList.remove("active");
+  handleRouting();
+  window.scrollTo(0, 0);
 }
 
 function populateImportDropdown() {
@@ -393,6 +423,7 @@ function addSubsystemCard() {
   addComponentCard(
     container.lastElementChild.querySelector(".parts-container"),
   );
+  window.changeLanguage(localStorage.getItem("app_lang") || "th");
 }
 
 function addComponentCard(elementInsideCard) {
@@ -407,6 +438,7 @@ function addComponentCard(elementInsideCard) {
   clone.querySelector(".week-data-input").value = JSON.stringify(defaultData);
   renderCompactGrid(clone.querySelector(".week-compact-grid"), defaultData);
   container.appendChild(clone);
+  window.changeLanguage(localStorage.getItem("app_lang") || "th");
 }
 
 function openAddFormContext() {
@@ -548,8 +580,39 @@ function openWeekModal(compactGridElement) {
   new bootstrap.Modal(document.getElementById("weekModal")).show();
 }
 
-// 🔴 อัปเดต Preview & Summary เป็นฟอร์แมต Week X : ทำอะไร
+// 🔴 ฟังก์ชันเรียก Modal Confirm แบบสากล (แทน confirm สีดำ)
+function showModalConfirm(title, message, onConfirm) {
+  const lang = localStorage.getItem("app_lang") || "th";
+  const t = translations[lang];
+
+  document.getElementById("genericConfirmTitle").innerHTML = title;
+  document.getElementById("genericConfirmMsg").innerHTML = message;
+  document.getElementById("genericConfirmCancelBtn").innerText =
+    t.btn_cancel || "Cancel";
+  document.getElementById("genericConfirmOkBtn").innerText =
+    t.btn_confirm || "Confirm";
+
+  const modal = new bootstrap.Modal(
+    document.getElementById("genericConfirmModal"),
+  );
+  const okBtn = document.getElementById("genericConfirmOkBtn");
+
+  // ป้องกันการทำงานซ้ำซ้อนของปุ่ม OK
+  const newOkBtn = okBtn.cloneNode(true);
+  okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+
+  newOkBtn.addEventListener("click", () => {
+    modal.hide();
+    if (onConfirm) onConfirm();
+  });
+  modal.show();
+}
+
+// 🔴 อัปเดต Preview & Summary เป็น 2 ภาษา
 function updatePreviewAndList() {
+  const lang = localStorage.getItem("app_lang") || "th";
+  const t = translations[lang];
+
   let grid = document.getElementById("weekPreviewGrid");
   let summary = document.getElementById("weekRemarksSummary");
   grid.innerHTML = "";
@@ -558,106 +621,45 @@ function updatePreviewAndList() {
 
   for (let i = 0; i < 52; i++) {
     let d = tempWeekData[i];
-    grid.innerHTML += `<div class="preview-box" onclick="removePlanWeek(${i})" style="cursor:pointer;" title="คลิกเพื่อล้างข้อมูลสัปดาห์นี้">W${i + 1}${getTriangleSVGOnly(d)}</div>`;
+    grid.innerHTML += `<div class="preview-box" onclick="removePlanWeek(${i})" style="cursor:pointer;" title="ลบข้อมูล">W${i + 1}${getTriangleSVGOnly(d)}</div>`;
 
     if (d.remark && d.remark.trim() !== "") {
       hasRemarks = true;
-      // ฟอร์แมต Week X : ทำอะไร
-      summary.innerHTML += `<div class="mb-2 border-bottom pb-1"><span class="fw-bold text-primary">Week ${i + 1}</span> : ${escapeHTML(d.remark)}</div>`;
+      summary.innerHTML += `<div class="mb-2 border-bottom pb-1"><span class="fw-bold text-primary">${t.week_prefix || "Week"} ${i + 1}</span> : ${escapeHTML(d.remark)}</div>`;
     }
   }
+  // ถ้าไม่มีงาน ให้ดึงคำแปลมาโชว์
   if (!hasRemarks)
-    summary.innerHTML =
-      '<span class="text-muted fst-italic">ไม่มีงานระบุในสัปดาห์ใดๆ</span>';
+    summary.innerHTML = `<span class="text-muted fst-italic">${t.no_task_week || "ไม่มีงานระบุในสัปดาห์ใดๆ"}</span>`;
 }
 
-function parseWeeks(inputStr) {
-  let weeks = new Set();
-  let parts = inputStr.split(",");
-  for (let part of parts) {
-    part = part.trim();
-    if (part.includes("-")) {
-      let range = part.split("-");
-      let start = parseInt(range[0]);
-      let end = parseInt(range[1]);
-      if (!isNaN(start) && !isNaN(end) && start <= end) {
-        for (let w = start; w <= end; w++)
-          if (w >= 1 && w <= 52) weeks.add(w - 1);
-      }
-    } else {
-      let w = parseInt(part);
-      if (!isNaN(w) && w >= 1 && w <= 52) weeks.add(w - 1);
-    }
-  }
-  return Array.from(weeks).sort((a, b) => a - b);
-}
-
-function addPlanEntry() {
-  if (
-    !smartColorState.t &&
-    !smartColorState.b &&
-    !smartColorState.l &&
-    !smartColorState.r
-  ) {
-    showModalAlert(
-      "ข้อมูลไม่ครบ",
-      "กรุณาแตะเลือกประเภทงาน (สี) ที่รูปสามเหลี่ยมอย่างน้อย 1 ข้อครับ",
-      true,
-    );
-    return;
-  }
-  let targetWeeksIndex = parseWeeks(
-    document.getElementById("inputWeeks").value,
-  );
-  if (targetWeeksIndex.length === 0) {
-    showModalAlert("ข้อมูลไม่ครบ", "กรุณาระบุสัปดาห์ให้ถูกต้อง (1-52)", true);
-    return;
-  }
-
-  // ประกอบข้อความหมายเหตุตามสีที่เลือก
-  let taskTxt = document.getElementById("inputTaskText").value.trim();
-  let ewoTxt = document.getElementById("inputEwoText").value.trim();
-  let notes = [];
-  if (smartColorState.b && taskTxt) notes.push(`Task: ${taskTxt}`);
-  if (smartColorState.r && ewoTxt) notes.push(`EWO: ${ewoTxt}`);
-  let newRemark = notes.join(" | ");
-
-  targetWeeksIndex.forEach((idx) => {
-    if (smartColorState.t) tempWeekData[idx].t = 1;
-    if (smartColorState.b) tempWeekData[idx].b = 1;
-    if (smartColorState.l) tempWeekData[idx].l = 1;
-    if (smartColorState.r) tempWeekData[idx].r = 1;
-    if (newRemark) {
-      // ถีามีงานเดิมอยู่แล้วให้ใส่ลูกน้ำคั่น
-      tempWeekData[idx].remark = tempWeekData[idx].remark
-        ? tempWeekData[idx].remark + ", " + newRemark
-        : newRemark;
-    }
-  });
-
-  document.getElementById("inputWeeks").value = "";
-  document.getElementById("inputTaskText").value = "";
-  document.getElementById("inputEwoText").value = "";
-  resetSmartColorSelector();
-  updatePreviewAndList();
-}
-
+// 🔴 อัปเดตตอนกดลบรายสัปดาห์ (เรียก Modal แทน Confirm ดำ)
 function removePlanWeek(idx) {
-  if (confirm(`ต้องการลบข้อมูลแผนงานของ Week ${idx + 1} ใช่หรือไม่?`)) {
+  const lang = localStorage.getItem("app_lang") || "th";
+  const t = translations[lang];
+  const msg = (t.confirm_delete_week || "").replace("{week}", idx + 1);
+
+  showModalConfirm(t.alert_title_confirm || "Confirm", msg, () => {
     tempWeekData[idx] = { t: 0, r: 0, b: 0, l: 0, remark: "" };
     updatePreviewAndList();
-  }
+  });
 }
 
+// 🔴 อัปเดตตอนกดล้างข้อมูลทั้งหมด (เรียก Modal แทน Confirm ดำ)
 function clearAllPlans() {
-  if (
-    confirm("ยืนยันที่จะล้างข้อมูล 52 สัปดาห์ทั้งหมดของชิ้นส่วนนี้หรือไม่?")
-  ) {
-    tempWeekData = Array(52)
-      .fill()
-      .map(() => ({ t: 0, r: 0, b: 0, l: 0, remark: "" }));
-    updatePreviewAndList();
-  }
+  const lang = localStorage.getItem("app_lang") || "th";
+  const t = translations[lang];
+
+  showModalConfirm(
+    t.alert_title_confirm || "Confirm",
+    t.confirm_clear_all,
+    () => {
+      tempWeekData = Array(52)
+        .fill()
+        .map(() => ({ t: 0, r: 0, b: 0, l: 0, remark: "" }));
+      updatePreviewAndList();
+    },
+  );
 }
 
 function syncModalToCompact() {
@@ -675,67 +677,97 @@ function getBase64(imgElement) {
   return "";
 }
 
+// ================= 7. ระบบแบบร่าง (Draft Auto-Save) =================
+// ทำงานทุกครั้งที่พิมพ์ข้อมูลในหน้าฟอร์ม
+document.addEventListener("input", () => {
+  let formView = document.getElementById("view-form");
+  if (formView && formView.classList.contains("active")) {
+    let draftData = {
+      lineName: document.getElementById("f_lineName")?.value || "",
+      machineName: document.getElementById("f_machineName")?.value || "",
+      updatedBy: document.getElementById("f_updatedBy")?.value || "",
+      time: new Date().toLocaleString("th-TH"),
+    };
+    localStorage.setItem("bpc_draft", JSON.stringify(draftData));
+    document.getElementById("fabDraftBtn").style.display = "flex";
+  }
+});
+
+function checkDraftStatus() {
+  if (localStorage.getItem("bpc_draft")) {
+    document.getElementById("fabDraftBtn").style.display = "flex";
+  }
+}
+
+function restoreDraftData() {
+  let draft = safeJSONParse(localStorage.getItem("bpc_draft"));
+  if (draft.time) {
+    if (
+      confirm(
+        `พบข้อมูลที่เคยพิมพ์ค้างไว้เมื่อ: ${draft.time}\nคุณต้องการกู้คืนมาแก้ไขต่อหรือไม่?`,
+      )
+    ) {
+      openAddFormContext();
+      document.getElementById("f_lineName").value = draft.lineName || "";
+      document.getElementById("f_machineName").value = draft.machineName || "";
+      document.getElementById("f_updatedBy").value = draft.updatedBy || "";
+    }
+  }
+}
+
+// อัปเดตฟังก์ชัน submitFormViaAPI ให้ใช้ showModalAlert แทน alert()
 async function submitFormViaAPI() {
-  // เช็คฟอร์มเบื้องต้น (Required Fields)
   if (!document.getElementById("ledgerForm").checkValidity()) {
     document.getElementById("ledgerForm").reportValidity();
     return;
   }
 
-  // 🔴 ป้องกันข้อมูลเท็จ (Data Integrity & Spam Protection)
   let f_line = document.getElementById("f_lineName").value.trim();
   let f_mach = document.getElementById("f_machineName").value.trim();
-  let f_updatedBy = document.getElementById("f_updatedBy").value.trim();
 
-  if (f_line.length < 2 || f_mach.length < 2 || f_updatedBy.length < 2) {
-    alert(
-      "❌ ข้อมูลไม่สมบูรณ์: กรุณากรอกชื่อไลน์, ชื่อเครื่องจักร และชื่อผู้แก้ไข ให้มีความยาวอย่างน้อย 2 ตัวอักษร",
+  if (f_line.length < 2 || f_mach.length < 2) {
+    showModalAlert(
+      "ข้อมูลไม่สมบูรณ์",
+      "กรุณากรอกชื่อไลน์และชื่อเครื่องจักรให้ชัดเจน",
+      true,
     );
     return;
   }
-  // ป้องกันพิมพ์อักขระพิเศษแปลกๆ ในชื่อเครื่อง
   if (!/^[a-zA-Z0-9ก-๙\s\-_()\[\]]+$/.test(f_mach)) {
-    alert(
-      "❌ ข้อมูลไม่ถูกต้อง: ชื่อเครื่องจักรมีอักขระพิเศษที่ไม่ได้รับอนุญาต",
+    showModalAlert(
+      "ข้อมูลไม่ถูกต้อง",
+      "ชื่อเครื่องจักรมีอักขระพิเศษที่ไม่ได้รับอนุญาต",
+      true,
     );
     return;
   }
 
   let subCards = document.querySelectorAll(".sub-system-card");
   if (subCards.length === 0) {
-    alert(
-      "❌ ข้อมูลไม่สมบูรณ์: ต้องมี 'ระบบย่อย (Sub-system)' อย่างน้อย 1 ระบบ",
+    showModalAlert(
+      "ข้อมูลไม่ครบ",
+      "ต้องมี 'ระบบย่อย (Sub-system)' อย่างน้อย 1 ระบบ",
+      true,
     );
     return;
   }
 
-  let hasComponent = false;
-  subCards.forEach((card) => {
-    if (card.querySelectorAll(".part-item").length > 0) hasComponent = true;
-  });
-  if (!hasComponent) {
-    alert(
-      "❌ ข้อมูลไม่สมบูรณ์: ต้องมี 'ชิ้นส่วนอะไหล่ (Component)' อย่างน้อย 1 ชิ้นในระบบย่อย",
-    );
-    return;
-  }
-
-  // ถามยืนยันอีกครั้งก่อนส่ง
+  // แจ้งยืนยัน
   if (
     !confirm(
       `ระบบกำลังจะบันทึกข้อมูลเครื่องจักร: ${f_mach}\nคุณตรวจสอบข้อมูลถูกต้องแล้วใช่หรือไม่?`,
     )
-  ) {
+  )
     return;
-  }
 
   document.getElementById("loadingOverlay").style.display = "flex";
 
+  // สร้าง Payload (โค้ดดึงค่าเหมือนเดิม)
   let payload = {
     data: {
       lineName: f_line,
       machineName: f_mach,
-      updatedBy: f_updatedBy,
+      updatedBy: document.getElementById("f_updatedBy").value.trim(),
       imgMachine: getBase64(
         document
           .getElementById("f_machineName")
@@ -746,29 +778,22 @@ async function submitFormViaAPI() {
     },
   };
 
-  document.querySelectorAll(".sub-system-card").forEach((subCard) => {
+  subCards.forEach((subCard) => {
     let riskActive = [];
     subCard
       .querySelectorAll(".risk-grid .icon-checkbox:not(.not-used)")
-      .forEach((chk) => {
-        riskActive.push(chk.getAttribute("data-val"));
-      });
-
+      .forEach((chk) => riskActive.push(chk.getAttribute("data-val")));
     let subData = {
       subName: subCard.querySelector(".input-subname").value,
       imgSub: getBase64(subCard.querySelector(".box_imgSub .preview-img")),
       risks: riskActive.join(", "),
       components: [],
     };
-
     subCard.querySelectorAll(".part-item").forEach((pCard) => {
       let ppeActive = [];
       pCard
         .querySelectorAll(".ppe-grid .icon-checkbox:not(.not-used)")
-        .forEach((chk) => {
-          ppeActive.push(chk.getAttribute("data-val"));
-        });
-
+        .forEach((chk) => ppeActive.push(chk.getAttribute("data-val")));
       subData.components.push({
         compName: pCard.querySelector(".input-compname").value,
         task: pCard.querySelector(".input-task").value,
@@ -792,149 +817,13 @@ async function submitFormViaAPI() {
   try {
     const result = await ApiService.saveLedger(payload.data);
     if (result.success) {
-      alert("✅ บันทึกข้อมูลสำเร็จ!");
-      await loadDataFromDatabase();
-      handleRouting(); // ใช้แทน window.history.back() เพื่อความเสถียร
-    } else {
-      alert("❌ เกิดข้อผิดพลาด: " + result.message);
-    }
-  } catch (error) {
-    alert("❌ Error: " + error.message);
-  } finally {
-    document.getElementById("loadingOverlay").style.display = "none";
-  }
-}
-
-let passwordModalResolver = null;
-function openPasswordModalAsync() {
-  return new Promise((resolve) => {
-    passwordModalResolver = resolve;
-    document.getElementById("modalApiKeyInput").value = "";
-    new bootstrap.Modal(document.getElementById("passwordModal")).show();
-  });
-}
-function submitPasswordModal() {
-  let val = document.getElementById("modalApiKeyInput").value.trim();
-  bootstrap.Modal.getInstance(document.getElementById("passwordModal")).hide();
-  if (passwordModalResolver) passwordModalResolver(val);
-}
-function resolvePasswordModal(val) {
-  bootstrap.Modal.getInstance(document.getElementById("passwordModal")).hide();
-  if (passwordModalResolver) passwordModalResolver(val);
-}
-
-// ================= 7. ระบบแบบร่าง (Draft Auto-Save) =================
-// ทำงานทุกครั้งที่พิมพ์ข้อมูลในหน้าฟอร์ม
-document.addEventListener("input", () => {
-  let formView = document.getElementById("view-form");
-  if (formView && formView.classList.contains("active")) {
-    let draftData = {
-      lineName: document.getElementById("f_lineName")?.value || "",
-      machineName: document.getElementById("f_machineName")?.value || "",
-      updatedBy: document.getElementById("f_updatedBy")?.value || "",
-      time: new Date().toLocaleString("th-TH")
-    };
-    localStorage.setItem("bpc_draft", JSON.stringify(draftData));
-    document.getElementById("fabDraftBtn").style.display = "flex";
-  }
-});
-
-function checkDraftStatus() {
-  if(localStorage.getItem("bpc_draft")) {
-    document.getElementById("fabDraftBtn").style.display = "flex";
-  }
-}
-
-function restoreDraftData() {
-  let draft = safeJSONParse(localStorage.getItem("bpc_draft"));
-  if (draft.time) {
-    if(confirm(`พบข้อมูลที่เคยพิมพ์ค้างไว้เมื่อ: ${draft.time}\nคุณต้องการกู้คืนมาแก้ไขต่อหรือไม่?`)) {
-      openAddFormContext();
-      document.getElementById("f_lineName").value = draft.lineName || "";
-      document.getElementById("f_machineName").value = draft.machineName || "";
-      document.getElementById("f_updatedBy").value = draft.updatedBy || "";
-    }
-  }
-}
-
-// อัปเดตฟังก์ชัน submitFormViaAPI ให้ใช้ showModalAlert แทน alert()
-async function submitFormViaAPI() {
-  if (!document.getElementById("ledgerForm").checkValidity()) {
-    document.getElementById("ledgerForm").reportValidity(); return;
-  }
-  
-  let f_line = document.getElementById("f_lineName").value.trim();
-  let f_mach = document.getElementById("f_machineName").value.trim();
-  
-  if (f_line.length < 2 || f_mach.length < 2) {
-    showModalAlert("ข้อมูลไม่สมบูรณ์", "กรุณากรอกชื่อไลน์และชื่อเครื่องจักรให้ชัดเจน", true);
-    return;
-  }
-  if (!/^[a-zA-Z0-9ก-๙\s\-_()\[\]]+$/.test(f_mach)) {
-    showModalAlert("ข้อมูลไม่ถูกต้อง", "ชื่อเครื่องจักรมีอักขระพิเศษที่ไม่ได้รับอนุญาต", true);
-    return;
-  }
-  
-  let subCards = document.querySelectorAll(".sub-system-card");
-  if (subCards.length === 0) {
-    showModalAlert("ข้อมูลไม่ครบ", "ต้องมี 'ระบบย่อย (Sub-system)' อย่างน้อย 1 ระบบ", true); return;
-  }
-
-  // แจ้งยืนยัน
-  if(!confirm(`ระบบกำลังจะบันทึกข้อมูลเครื่องจักร: ${f_mach}\nคุณตรวจสอบข้อมูลถูกต้องแล้วใช่หรือไม่?`)) return;
-
-  document.getElementById("loadingOverlay").style.display = "flex";
-
-  // สร้าง Payload (โค้ดดึงค่าเหมือนเดิม)
-  let payload = {
-    data: {
-      lineName: f_line,
-      machineName: f_mach,
-      updatedBy: document.getElementById("f_updatedBy").value.trim(),
-      imgMachine: getBase64(document.getElementById("f_machineName").closest(".card-std")?.querySelector(".preview-img")),
-      subSystems: [],
-    },
-  };
-
-  subCards.forEach((subCard) => {
-    let riskActive = [];
-    subCard.querySelectorAll(".risk-grid .icon-checkbox:not(.not-used)").forEach((chk) => riskActive.push(chk.getAttribute("data-val")));
-    let subData = {
-      subName: subCard.querySelector(".input-subname").value,
-      imgSub: getBase64(subCard.querySelector(".box_imgSub .preview-img")),
-      risks: riskActive.join(", "),
-      components: [],
-    };
-    subCard.querySelectorAll(".part-item").forEach((pCard) => {
-      let ppeActive = [];
-      pCard.querySelectorAll(".ppe-grid .icon-checkbox:not(.not-used)").forEach((chk) => ppeActive.push(chk.getAttribute("data-val")));
-      subData.components.push({
-        compName: pCard.querySelector(".input-compname").value,
-        task: pCard.querySelector(".input-task").value,
-        spareClass: pCard.querySelector(".input-class").value,
-        pmStd: pCard.querySelector(".input-pmstd").value,
-        status: pCard.querySelector(".input-status").value,
-        stdTime: pCard.querySelector(".input-time").value,
-        remarkEwo: pCard.querySelector(".input-remark").value,
-        risk: pCard.querySelector(".input-risk").checked,
-        ppe: ppeActive.join(", "),
-        imgComp: getBase64(pCard.querySelector(".box_imgComp .preview-img")),
-        weeks: safeJSONParse(pCard.querySelector(".week-data-input").value, Array(52).fill({t:0,r:0,b:0,l:0})),
-      });
-    });
-    payload.data.subSystems.push(subData);
-  });
-
-  try {
-    const result = await ApiService.saveLedger(payload.data);
-    if (result.success) {
       // 🔴 เคลียร์แบบร่างทิ้งเมื่อบันทึกสำเร็จ
       localStorage.removeItem("bpc_draft");
       document.getElementById("fabDraftBtn").style.display = "none";
 
       showModalAlert("สำเร็จ!", "บันทึกข้อมูลเข้าสู่ระบบเรียบร้อยแล้ว");
       await loadDataFromDatabase();
-      handleRouting(); 
+      handleRouting();
     } else {
       showModalAlert("เกิดข้อผิดพลาด", result.message, true);
     }
@@ -944,3 +833,259 @@ async function submitFormViaAPI() {
     document.getElementById("loadingOverlay").style.display = "none";
   }
 }
+
+// ==========================================
+// ระบบแปลภาษา (i18n: Internationalization)
+// ==========================================
+
+// 1. สร้างพจนานุกรมคำแปล (เพิ่มคำศัพท์สำหรับการ์ดเข้าไป)
+const translations = {
+  th: {
+    select_line: "เลือกไลน์ผลิต (Lines)",
+    back_to_line: "กลับหน้าไลน์ผลิต",
+    form_title: "ฟอร์มบันทึกข้อมูล",
+    cancel: "ยกเลิก",
+    working_in: "กำลังปฏิบัติงานใน",
+    general_info: "ส่วนที่ 1: ข้อมูลเครื่องจักรหลัก (General Info)",
+    label_line_name: "ไลน์ผลิต (Line Name)",
+    label_machine_name: "ชื่อเครื่องจักร (Machine Name)",
+    label_updated_by: "ชื่อผู้บันทึกข้อมูล / ผู้แก้ไข",
+    placeholder_updated_by: "เช่น นายสมชาย",
+    main_image: "ภาพถ่ายเครื่องจักร (Main Image)",
+    tap_to_upload: "แตะเพื่อถ่ายรูป หรือ เลือกจากอัลบั้ม",
+    add_subsystem: "เพิ่มระบบย่อยใหม่ (Add Sub-system)",
+    btn_save: "ยืนยันและบันทึกข้อมูลทั้งหมด",
+    back_bpc: "กลับ BPC Hub",
+
+    // คำศัพท์สำหรับการ์ดหน้าแรก
+    has_machine: "มี",
+    unit_machine: "เครื่องจักร",
+    view_machine: "ดูเครื่องจักร",
+    has_sub: "มี",
+    unit_sub: "ระบบย่อย",
+    view_sub: "ดูระบบย่อย",
+    has_comp: "มี",
+    unit_comp: "ชิ้นส่วน",
+    view_comp: "ดูตาราง Component",
+    no_data: "ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ",
+
+    // ฟอร์มระบบย่อย (Subsystem)
+    subassembly: "ระบบย่อย (Subassembly)",
+    delete_subassembly: "ลบระบบย่อย",
+    label_sub_name: "ชื่อระบบย่อย",
+    placeholder_sub_name: "ระบุชื่อระบบย่อย",
+    sub_image: "ภาพระบบย่อย",
+    risk_assessment: "ประเมินความเสี่ยง",
+    risk_desc: "ค่าเริ่มต้นคือมีความเสี่ยงทั้งหมด แตะ ❌ หากไม่มี",
+    components_title: "ชิ้นส่วนอะไหล่ (Components)",
+    add_component: "เพิ่ม Component",
+    risk_1: "จุดหนีบ",
+    risk_2: "อุปกรณ์",
+    risk_3: "ยกด้วยมือ",
+    risk_4: "ที่สูง",
+    risk_5: "สารเคมี",
+    risk_6: "เสียงดัง",
+    risk_7: "โฟล์คลิฟต์",
+
+    // ฟอร์ม Component
+    comp_image: "ภาพอะไหล่",
+    label_comp_name: "ชื่อ Component",
+    label_time_min: "เวลา(นาที)",
+    label_remark: "หมายเหตุ (ถ้ามี)",
+    placeholder_remark: "ระบุหมายเหตุเพิ่มเติม",
+    high_risk: "เสี่ยงสูง (Work Permit)",
+    ppe_desc: "อุปกรณ์ PPE ที่จำเป็น (แตะ ❌ หากไม่ใช้)",
+    ppe_1: "ถุงมือ",
+    ppe_2: "หมวกนิรภัย",
+    ppe_3: "แว่นตา",
+    ppe_4: "หน้ากาก",
+    ppe_5: "ที่อุดหู",
+    ppe_6: "รองเท้า",
+    ppe_7: "กันตกที่สูง",
+    ppe_8: "สะท้อนแสง",
+    ppe_9: "LOTO",
+    plan_52_weeks: "แผน 52 สัปดาห์",
+    manage: "จัดการ",
+
+    // Modal 52 สัปดาห์
+    modal_52_title: "กำหนดแผนงาน 52 สัปดาห์",
+    modal_52_subtitle1: "กำหนดค่างานรายสัปดาห์",
+    modal_52_step1: "1. แตะเลือกประเภทงาน (เลือกได้หลายข้อ)",
+    modal_52_step2: "2. ระบุสัปดาห์ (1-52)",
+    placeholder_weeks: "เช่น 25, 30, 35 หรือ 10-15",
+    modal_52_task: "ระบุ Task (งานที่ต้องทำ):",
+    placeholder_task: "เช่น Lube, Inspect",
+    modal_52_ewo: "รหัส EWO (กรณี Breakdown):",
+    placeholder_ewo: "เช่น EWO-12345",
+    add_task_week: "เพิ่มงานลงในสัปดาห์",
+    clear_all_52: "ล้างข้อมูล 52 สัปดาห์ทั้งหมด",
+    update_preview: "อัปเดตผลลัพธ์ (Preview)",
+    week_details: "รายละเอียดงานแต่ละสัปดาห์",
+    close_window: "ปิดหน้าต่าง",
+    save_plan: "บันทึกแผนงาน",
+
+    // Modals (Alert / Cancel)
+    alert_title_warning: "แจ้งเตือน",
+    alert_btn_ok: "ตกลง (OK)",
+    confirm_cancel_title: "ยืนยันการย้อนกลับ",
+    confirm_cancel_desc:
+      "ข้อมูลที่คุณกำลังกรอกไว้จะไม่ถูกบันทึก<br />คุณต้องการย้อนกลับใช่หรือไม่?",
+    btn_no_continue: "ไม่, พิมพ์ต่อ",
+    btn_yes_back: "ใช่, ย้อนกลับ",
+
+    no_task_week: "ไม่มีงานระบุในสัปดาห์ใดๆ",
+    week_prefix: "Week",
+    confirm_delete_week: "ต้องการลบข้อมูลแผนงานของ Week {week} ใช่หรือไม่?",
+    confirm_clear_all: "ยืนยันที่จะล้างข้อมูล 52 สัปดาห์ทั้งหมดหรือไม่?",
+    btn_confirm: "ตกลง (Confirm)",
+    btn_cancel: "ยกเลิก (Cancel)",
+    alert_title_confirm: "ยืนยันการทำรายการ",
+  },
+  en: {
+    select_line: "Select Production Line",
+    back_to_line: "Back to Lines",
+    form_title: "Data Entry Form",
+    cancel: "Cancel",
+    working_in: "Working in",
+    general_info: "Part 1: General Machine Info",
+    label_line_name: "Line Name",
+    label_machine_name: "Machine Name",
+    label_updated_by: "Updated By / Recorder",
+    placeholder_updated_by: "e.g. John Doe",
+    main_image: "Main Machine Image",
+    tap_to_upload: "Tap to take a photo or select from album",
+    add_subsystem: "Add Sub-system",
+    btn_save: "Confirm and Save All Data",
+    back_bpc: "Back to BPC Hub",
+
+    // คำศัพท์สำหรับการ์ดหน้าแรก
+    has_machine: "Contains",
+    unit_machine: "Machines",
+    view_machine: "View Machines",
+    has_sub: "Contains",
+    unit_sub: "Subassemblies",
+    view_sub: "View Subassemblies",
+    has_comp: "Contains",
+    unit_comp: "Components",
+    view_comp: "View Components Table",
+    no_data: "No data available. Click + to create a new one.",
+
+    // ฟอร์มระบบย่อย (Subsystem)
+    subassembly: "Subassembly",
+    delete_subassembly: "Delete",
+    label_sub_name: "Subassembly Name",
+    placeholder_sub_name: "Enter subassembly name",
+    sub_image: "Subassembly Image",
+    risk_assessment: "Risk Assessment",
+    risk_desc: "Default is all risks apply. Tap ❌ if not.",
+    components_title: "Components",
+    add_component: "Add Component",
+    risk_1: "Pinch Point",
+    risk_2: "Tools",
+    risk_3: "Manual Lift",
+    risk_4: "High Ground",
+    risk_5: "Chemical",
+    risk_6: "Loud Noise",
+    risk_7: "Forklift",
+
+    // ฟอร์ม Component
+    comp_image: "Component Image",
+    label_comp_name: "Component Name",
+    label_time_min: "Time (mins)",
+    label_remark: "Remark (if any)",
+    placeholder_remark: "Enter additional remarks",
+    high_risk: "High Risk (Work Permit)",
+    ppe_desc: "Required PPE (Tap ❌ if not used)",
+    ppe_1: "Gloves",
+    ppe_2: "Helmet",
+    ppe_3: "Glasses",
+    ppe_4: "Mask",
+    ppe_5: "Earplugs",
+    ppe_6: "Safety Shoes",
+    ppe_7: "Harness",
+    ppe_8: "Hi-Vis",
+    ppe_9: "LOTO",
+    plan_52_weeks: "52-Week Plan",
+    manage: "Manage",
+
+    // Modal 52 สัปดาห์
+    modal_52_title: "Set 52-Week Plan",
+    modal_52_subtitle1: "Weekly Task Settings",
+    modal_52_step1: "1. Select task types (Multiple)",
+    modal_52_step2: "2. Specify weeks (1-52)",
+    placeholder_weeks: "e.g. 25, 30, 35 or 10-15",
+    modal_52_task: "Specify Task:",
+    placeholder_task: "e.g. Lube, Inspect",
+    modal_52_ewo: "EWO Code (Breakdown):",
+    placeholder_ewo: "e.g. EWO-12345",
+    add_task_week: "Add task to week(s)",
+    clear_all_52: "Clear all 52-week data",
+    update_preview: "Update Preview",
+    week_details: "Weekly Task Details",
+    close_window: "Close",
+    save_plan: "Save Plan",
+
+    // Modals (Alert / Cancel)
+    alert_title_warning: "Notification",
+    alert_btn_ok: "OK",
+    confirm_cancel_title: "Confirm Go Back",
+    confirm_cancel_desc:
+      "Unsaved changes will be lost.<br />Do you want to go back?",
+    btn_no_continue: "No, Continue Editing",
+    btn_yes_back: "Yes, Go Back",
+    no_task_week: "No tasks specified in any week",
+    week_prefix: "Week",
+    confirm_delete_week: "Do you want to delete the plan for Week {week}?",
+    confirm_clear_all: "Are you sure you want to clear all 52-week data?",
+    btn_confirm: "Confirm",
+    btn_cancel: "Cancel",
+    alert_title_confirm: "Confirmation",
+  },
+};
+// 2. ฟังก์ชันเปลี่ยนภาษา (อัปเดตให้ Re-render หน้าจอ และ สลับสีปุ่ม)
+window.changeLanguage = function (lang) {
+  localStorage.setItem("app_lang", lang);
+
+  // สลับสีปุ่ม TH / EN ให้แสดงว่ากำลังเลือกภาษาไหนอยู่
+  const btnTH = document.getElementById("btn-lang-th");
+  const btnEN = document.getElementById("btn-lang-en");
+  if (btnTH && btnEN) {
+    if (lang === "th") {
+      btnTH.className = "btn btn-sm btn-light fw-bold text-dark shadow-sm"; // ปุ่มทึบ
+      btnEN.className =
+        "btn btn-sm btn-outline-light fw-bold shadow-sm text-white"; // ปุ่มโปร่งใส
+    } else {
+      btnEN.className = "btn btn-sm btn-light fw-bold text-dark shadow-sm"; // ปุ่มทึบ
+      btnTH.className =
+        "btn btn-sm btn-outline-light fw-bold shadow-sm text-white"; // ปุ่มโปร่งใส
+    }
+  }
+
+  // เปลี่ยนข้อความ (Inner Text) สำหรับแท็กที่มี data-i18n
+  document.querySelectorAll("[data-i18n]").forEach((element) => {
+    const key = element.getAttribute("data-i18n");
+    if (translations[lang] && translations[lang][key]) {
+      element.innerHTML = translations[lang][key];
+    }
+  });
+
+  // เปลี่ยน Placeholder สำหรับช่องกรอกข้อมูล
+  document.querySelectorAll("[data-i18n-placeholder]").forEach((element) => {
+    const key = element.getAttribute("data-i18n-placeholder");
+    if (translations[lang] && translations[lang][key]) {
+      element.placeholder = translations[lang][key];
+    }
+  });
+
+  // เช็คว่าถ้า "ไม่ได้" อยู่ในหน้าฟอร์ม (view-form) ถึงจะยอมให้จัดหน้าใหม่ (Re-render)
+  const formView = document.getElementById("view-form");
+  if (formView && !formView.classList.contains("active")) {
+    handleRouting();
+  }
+};
+
+// โหลดภาษาตั้งต้นเมื่อเปิดเว็บ
+document.addEventListener("DOMContentLoaded", () => {
+  const savedLang = localStorage.getItem("app_lang") || "th";
+  window.changeLanguage(savedLang);
+});

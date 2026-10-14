@@ -1,6 +1,6 @@
 :root {
   /* 🔴 สีหลักของ Unilever (Deep Royal Blue) */
-  --primary: #0F0E9A;
+  --primary: #0f0e9a;
   --secondary: #005eb8;
   --bg: #f8fafc;
   --text-main: #1e293b;
@@ -103,12 +103,14 @@ body {
   bottom: 0;
 }
 
-.card-std {
-  border: 1px solid var(--border);
-  border-radius: 16px;
-  background: var(--card-bg);
+.card-std,
+.sub-system-card {
+  background: #ffffff;
   padding: 25px;
-  margin-bottom: 20px;
+  border-radius: 16px;
+  box-shadow: 0 10px 25px rgba(0, 31, 91, 0.08); /* shadow-md แบบ SMP */
+  border: 1px solid rgba(0, 94, 184, 0.05);
+  margin-bottom: 25px;
 }
 .form-label {
   font-weight: 600;
@@ -118,22 +120,17 @@ body {
 }
 .form-control,
 .form-select {
+  background-color: #f8fafc; /* พื้นหลังเทาอ่อน */
   border-radius: 10px;
-  padding: 10px;
-  font-size: 14px;
-  background: #f8fafc;
-  border: 1.5px solid var(--border);
+  padding: 12px 16px;
+  border: 1.5px solid #e2e8f0;
+  transition: all 0.3s ease;
 }
 .form-control:focus,
 .form-select:focus {
-  border-color: var(--secondary);
-  box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.1);
-  background: #fff;
-}
-.form-control:disabled,
-.form-control[readonly] {
-  background-color: #e2e8f0;
-  opacity: 0.8;
+  background-color: #ffffff;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 4px rgba(0, 94, 184, 0.1);
 }
 
 /* Image Upload UI */
@@ -263,35 +260,6 @@ body {
   margin-left: auto;
   margin-right: auto;
 }
-.tri-part {
-  stroke: #cbd5e1;
-  stroke-width: 1;
-  cursor: pointer;
-  transition: 0.2s;
-}
-.tri-part:hover {
-  stroke: #000;
-  stroke-width: 1.5;
-}
-.tri-top.active {
-  fill: #fde047;
-  stroke: #854d0e;
-}
-.tri-right.active {
-  fill: #4ade80;
-  stroke: #14532d;
-}
-.tri-bottom.active {
-  fill: #60a5fa;
-  stroke: #1e3a8a;
-}
-.tri-left.active {
-  fill: #f87171;
-  stroke: #7f1d1d;
-}
-.tri-part.inactive {
-  fill: #f8fafc;
-}
 
 .fab-main {
   position: fixed;
@@ -317,13 +285,27 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(0, 31, 91, 0.85);
+  background: rgba(244, 247, 249, 0.85); /* สีสว่างขึ้น */
+  backdrop-filter: blur(8px); /* เบลอพื้นหลัง */
   z-index: 9999;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  backdrop-filter: blur(5px);
+}
+.modern-spinner {
+  width: 60px;
+  height: 60px;
+  border: 6px solid rgba(0, 94, 184, 0.15);
+  border-top: 6px solid var(--primary); /* หรือ var(--secondary) */
+  border-radius: 50%;
+  animation: spin 1s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  margin-bottom: 20px;
+}
+.loading-pulse {
+  color: var(--primary);
+  font-weight: 600;
+  animation: pulse 1.5s ease-in-out infinite alternate;
 }
 
 @media print {
@@ -376,22 +358,40 @@ body {
    ========================================================= */
 
 /* กำหนดสีของสามเหลี่ยมตาม Requirement ใหม่ */
+/* กำหนดเส้นขอบสีขาวเพื่อแบ่งแยกชิ้นส่วนให้ดูมีมิติ */
+.tri-part {
+  stroke: #ffffff;
+  stroke-width: 1.2;
+  transition: all 0.2s ease;
+}
+
+/* --- สีตอนที่ถูกเลือกใช้งาน (Active - เข้ม) --- */
 .tri-top.active {
   fill: #000000;
-  stroke: #333333;
 } /* สีดำ: Planned Maintenance Executed */
 .tri-left.active {
   fill: #2563eb;
-  stroke: #1e3a8a;
 } /* สีน้ำเงิน: Unplanned Extra Maintenance */
 .tri-bottom.active {
   fill: #eab308;
-  stroke: #ca8a04;
 } /* สีเหลือง: Planned Maintenance */
 .tri-right.active {
   fill: #dc2626;
-  stroke: #991b1b;
 } /* สีแดง: Breakdown Maintenance */
+
+/* --- สีตอนที่ยังไม่ได้เลือก (Inactive - จางๆ ตามสีหลัก) --- */
+.tri-top.inactive {
+  fill: #f3f4f6;
+} /* สีดำจาง (เทาอ่อน) */
+.tri-left.inactive {
+  fill: #eff6ff;
+} /* สีน้ำเงินจาง */
+.tri-bottom.inactive {
+  fill: #fefce8;
+} /* สีเหลืองจาง */
+.tri-right.inactive {
+  fill: #fef2f2;
+} /* สีแดงจาง */
 
 /* สีของป้ายกำกับ (Legend) */
 .legend-top {
@@ -436,30 +436,42 @@ body {
   border-color: #dc2626;
 }
 
-/* Grid แสดงผล 52 สัปดาห์ขนาดเล็กใน Modal */
+/* Grid แสดงผล 52 สัปดาห์ใน Modal */
 .week-preview-grid {
   display: grid;
-  grid-template-columns: repeat(13, 1fr);
-  gap: 4px;
+  /* บังคับขนาดขั้นต่ำ 36px ป้องกันกล่องบีบจนเบี้ยว */
+  grid-template-columns: repeat(13, minmax(36px, 1fr));
+  gap: 5px;
+  overflow-x: auto; /* ถ้าจอเล็กเกินไป จะปัดซ้ายขวาได้นิดหน่อย ทำให้เลย์เอาต์ไม่พัง */
+  padding-bottom: 8px;
 }
+
 @media (max-width: 768px) {
   .week-preview-grid {
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(7, minmax(36px, 1fr));
   }
 }
+
 .preview-box {
   border: 1px solid #e2e8f0;
-  border-radius: 4px;
+  border-radius: 6px;
   text-align: center;
-  font-size: 10px;
+  font-size: 11px;
+  font-weight: 600;
   background: white;
-  padding: 2px;
+  padding: 5px 2px;
+  /* ใช้ Flexbox ล็อคให้ข้อความและไอคอนเรียงกลางเสมอ */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
 }
+
 .preview-box svg {
   width: 24px;
   height: 24px;
+  margin-top: 4px;
   display: block;
-  margin: auto;
 }
 
 /* =========================================================
@@ -542,3 +554,427 @@ body {
 #tri-l.active {
   fill: #2563eb;
 } /* น้ำเงิน */
+
+/* =========================================================
+   SMP Form Style 
+   ========================================================= */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04);
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid #e2e8f0;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  border-bottom: 2px solid #e2e8f0;
+  padding-bottom: 12px;
+}
+.form-row {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+.form-group {
+  flex: 1;
+  min-width: 220px;
+  display: flex;
+  flex-direction: column;
+}
+.form-group label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 8px;
+}
+.required-star {
+  color: #e53e3e;
+  margin-left: 3px;
+  font-weight: bold;
+}
+.form-control,
+.form-select {
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  background: #f8fafc;
+  transition: all 0.2s;
+  box-shadow: none;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(15, 14, 154, 0.1);
+  outline: none;
+}
+
+/* Upload Box Style */
+.upload-box-smp {
+  border: 2px dashed #cbd5e1;
+  padding: 20px;
+  border-radius: 12px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.upload-box-smp:hover {
+  border-color: var(--primary);
+  background: #f0f7ff;
+}
+
+/* Custom Buttons */
+.btn-add-sub {
+  background: transparent;
+  border: 2px dashed var(--primary);
+  color: var(--primary);
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-family: "Prompt";
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: 0.2s;
+}
+.btn-add-sub:hover {
+  background: #f0f7ff;
+}
+.btn-add-comp {
+  background: #38a169;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-family: "Prompt";
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.2s;
+  font-size: 13.5px;
+}
+.btn-add-comp:hover {
+  background: #2f855a;
+  box-shadow: 0 4px 10px rgba(56, 161, 105, 0.3);
+}
+.btn-submit-main {
+  background: var(--primary);
+  color: white;
+  border: none;
+  padding: 16px 24px;
+  border-radius: 12px;
+  font-family: "Prompt";
+  font-weight: 700;
+  font-size: 16px;
+  cursor: pointer;
+  width: 100%;
+  transition: 0.2s;
+  box-shadow: 0 4px 15px rgba(15, 14, 154, 0.3);
+}
+.btn-submit-main:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(15, 14, 154, 0.4);
+}
+
+/* =========================================================
+   Responsive Form Professional UI (Mobile Friendly)
+   ========================================================= */
+.card {
+  background: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  padding: 24px;
+  margin-bottom: 20px;
+  border: 1px solid #e2e8f0;
+}
+.card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 2px solid #f1f5f9;
+  padding-bottom: 12px;
+}
+.form-row {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+.form-group {
+  flex: 1;
+  min-width: 100%; /* เปลี่ยนเป็น 100% เป็นค่าเริ่มต้นสำหรับมือถือ */
+  display: flex;
+  flex-direction: column;
+}
+.form-group label {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: #4a5568;
+  margin-bottom: 6px;
+}
+.required-star {
+  color: #e53e3e;
+  margin-left: 3px;
+}
+
+.form-control,
+.form-select {
+  border: 1px solid #cbd5e0;
+  border-radius: 8px;
+  padding: 10px 14px;
+  font-size: 14px;
+  background: #f8fafc;
+  transition: all 0.2s;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--primary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(15, 14, 154, 0.1);
+  outline: none;
+}
+
+/* Upload Box Style */
+.upload-box-smp {
+  border: 2px dashed #cbd5e1;
+  padding: 20px 10px;
+  border-radius: 12px;
+  text-align: center;
+  background: #f8fafc;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.upload-box-smp:hover {
+  border-color: var(--primary);
+  background: #f0f7ff;
+}
+
+/* Desktop & Tablet Adjustments */
+@media (min-width: 768px) {
+  .form-group {
+    min-width: 220px;
+  } /* กลับมาแบ่งคอลัมน์บนจอใหญ่ */
+  .card {
+    padding: 30px;
+  }
+}
+
+/* Mobile Specific Adjustments */
+@media (max-width: 767px) {
+  .card {
+    padding: 15px;
+    border-radius: 10px;
+  }
+  .card-title {
+    font-size: 15px;
+  }
+  .upload-box-smp {
+    padding: 15px 10px;
+  }
+  .btn-submit-main {
+    font-size: 15px;
+    padding: 14px 20px;
+  }
+  .form-row {
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+}
+
+/* =========================================================
+   Unified SMP Design System (Mobile-First)
+   ========================================================= */
+:root {
+  --primary: #001f5b;
+  --secondary: #005eb8;
+  --accent: #00a5d9;
+  --bg: #f4f7f9;
+  --card-bg: #ffffff;
+  --text-main: #1a202c;
+  --text-muted: #718096;
+  --border: #e2e8f0;
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 10px 25px rgba(0, 31, 91, 0.08);
+}
+
+.card {
+  background: var(--card-bg);
+  padding: 25px;
+  border-radius: 16px;
+  box-shadow: var(--shadow-md);
+  margin-bottom: 25px;
+  border: 1px solid rgba(0, 94, 184, 0.05);
+}
+.card-title {
+  color: var(--primary);
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 12px;
+}
+.card-title .material-symbols-rounded {
+  color: var(--secondary);
+  font-size: 20px;
+}
+
+.form-row {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+  margin-bottom: 15px;
+}
+.form-group {
+  flex: 1;
+  min-width: 100%;
+  margin-bottom: 15px;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  font-size: 13.5px;
+  color: var(--primary);
+}
+.required-star {
+  color: #e53e3e;
+}
+
+.form-control,
+.form-select {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  font-size: 14.5px;
+  background-color: #f8fafc;
+  transition: all 0.3s;
+  color: var(--text-main);
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--secondary);
+  background: #fff;
+  box-shadow: 0 0 0 3px rgba(0, 94, 184, 0.1);
+  outline: none;
+}
+
+/* Upload Box */
+.upload-box-smp {
+  border: 1.5px dashed #cbd5e0;
+  padding: 20px 15px;
+  border-radius: 12px;
+  background: #f8fafc;
+  transition: 0.3s;
+  text-align: center;
+  cursor: pointer;
+}
+.upload-box-smp:hover {
+  border-color: var(--secondary);
+  background: #f0f7ff;
+}
+
+/* Custom Buttons matching SMP */
+.btn-primary-smp {
+  background: var(--secondary);
+  color: white;
+  border: none;
+  padding: 15px;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
+  transition: 0.2s;
+  box-shadow: var(--shadow-md);
+}
+.btn-primary-smp:active {
+  transform: scale(0.98);
+}
+.btn-outline-primary-smp {
+  background: transparent;
+  border: 2px dashed var(--secondary);
+  color: var(--secondary);
+  padding: 14px 24px;
+  border-radius: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  width: 100%;
+  transition: 0.2s;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.btn-outline-primary-smp:hover {
+  background: #f0f7ff;
+}
+
+/* Desktop & Tablet Adjustments */
+@media (min-width: 768px) {
+  .form-group {
+    min-width: 200px;
+  }
+}
+
+/* Mobile Specific Adjustments */
+@media (max-width: 767px) {
+  .card {
+    padding: 15px;
+    border-radius: 12px;
+    margin-bottom: 15px;
+  }
+  .card-title {
+    font-size: 15px;
+    padding-bottom: 10px;
+  }
+  .upload-box-smp {
+    padding: 15px 10px;
+  }
+  .btn-primary-smp {
+    font-size: 15px;
+    padding: 12px;
+  }
+}
+
+/* =========================================================
+   Animations (สำหรับ Loading Screen)
+   ========================================================= */
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+    transform: scale(0.98);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1.02);
+  }
+}
