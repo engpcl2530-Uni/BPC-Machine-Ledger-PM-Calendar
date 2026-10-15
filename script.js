@@ -252,19 +252,33 @@ function renderLines() {
 function renderMachs(deptName, lineName) {
   let grid = document.getElementById("machGrid");
   grid.innerHTML = "";
+
+  // 🔴 ป้องกัน Error กรณีที่แผนกหรือไลน์ไม่มีข้อมูลในฐานข้อมูล
+  if (!dbData[deptName] || !dbData[deptName][lineName]) {
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">ยังไม่มีข้อมูลเครื่องจักรในไลน์นี้ กดปุ่ม + มุมขวาล่างเพื่อเพิ่มได้เลยครับ</div>`;
+    return;
+  }
+
   let line = dbData[deptName][lineName];
-  if (!line) return;
   const lang = getCurrentLang();
   const t = translations[lang];
 
+  // 🔴 เช็คว่ามี object machines หรือไม่
+  if (!line.machines || Object.keys(line.machines).length === 0) {
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">ยังไม่มีข้อมูลเครื่องจักรในไลน์นี้ กดปุ่ม + มุมขวาล่างเพื่อเพิ่มได้เลยครับ</div>`;
+    return;
+  }
+
   for (let machName in line.machines) {
     let safeMachName = escapeHTML(machName);
-    let sCount = Object.keys(line.machines[machName].subassemblies).length;
+    let sCount = line.machines[machName].subassemblies
+      ? Object.keys(line.machines[machName].subassemblies).length
+      : 0;
     let isUpcoming = hasUpcomingTasks(line.machines[machName], false);
     let highlightClass = isUpcoming ? "upcoming-task" : "";
 
     grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card ${highlightClass}" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${safeMachName}')">
-      <img src="${line.machines[machName].image}" class="card-img-top">
+      <img src="${line.machines[machName].image || "https://via.placeholder.com/400x200?text=No+Image"}" class="card-img-top">
       <div class="p-3">
         <h5 class="fw-bold text-dark mb-1">${safeMachName}</h5>
         <div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">account_tree</span> ${t.has_sub} ${sCount} ${t.unit_sub}</div>
