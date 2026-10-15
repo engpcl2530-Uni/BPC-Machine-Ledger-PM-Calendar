@@ -244,6 +244,17 @@ function handleRouting() {
     .forEach((v) => v.classList.remove("active"));
   toggleFabMode(false);
 
+  // 🔴 ควบคุมการโชว์ปุ่ม FAB สีฟ้า (ปุ่มทดสอบส่งงาน)
+  let fabTest = document.getElementById("fabTestExecutionBtn");
+  if (fabTest) {
+    // ให้ปุ่มโผล่เฉพาะเมื่อผู้ใช้อยู่ลึกถึงระดับ "เครื่องจักร" และไม่ได้อยู่ในโหมด Execute
+    if (currentDept && currentLine && currentMach && mode !== "execute") {
+      fabTest.style.display = "flex";
+    } else {
+      fabTest.style.display = "none";
+    }
+  }
+
   let breadcrumb = "Dashboard";
   // 🔴 1. ถ้า URL เป็นโหมด Execute (ส่งงาน)
   if (mode === "execute" && currentDept && currentLine && currentMach) {
@@ -433,18 +444,16 @@ function renderLines() {
       hasResult = true;
       let safeDept = escapeHTML(deptName);
       let safeLine = escapeHTML(lineName);
-      let mCount = lineData.machines ? Object.keys(lineData.machines).length : 0;
-      
-      // 🔴 ดึงรายชื่อเครื่องจักรทั้งหมดมาต่อกันเพื่อทำเป็น Tooltip เมื่อเอาเมาส์ชี้
-      let machListNames = lineData.machines ? Object.keys(lineData.machines).join("\n• ") : "";
-      let hoverTooltip = machListNames ? `รายชื่อเครื่องจักร:\n• ${machListNames}` : "ยังไม่มีเครื่องจักรในไลน์นี้";
-      // ---------------------------------------------------------
+      let mCount = lineData.machines
+        ? Object.keys(lineData.machines).length
+        : 0;
+
       let safeLastUpdated = escapeHTML(lineData.lastUpdated || "-");
       let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
 
       // 🔴 สแกนงานล่วงหน้า 2 สัปดาห์อัตโนมัติ
       let isUpcoming = hasUpcomingTasks(lineData, true);
-      if (isUpcoming) hasAnyUpcoming = true; // บันทึกสถานะว่าเจอ
+      if (isUpcoming) hasAnyUpcoming = true;
       let highlightClass = isUpcoming ? "upcoming-task" : "";
 
       let imageUrl = lineData.image;
@@ -453,9 +462,22 @@ function renderLines() {
           "https://via.placeholder.com/400x200?text=No+Image+Available";
       }
 
+      // ดึงรายชื่อเครื่องจักรเพื่อสร้างเป็น List แบบมี Scroll ใน Overlay
+      let machListHtml = "";
+      if (lineData.machines && Object.keys(lineData.machines).length > 0) {
+        machListHtml = `<ul class="m-0 ps-3 mt-2" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">`;
+        for (let mName in lineData.machines) {
+          machListHtml += `<li>${escapeHTML(mName)}</li>`;
+        }
+        machListHtml += `</ul>`;
+      } else {
+        machListHtml = `<div class="text-center text-white-50 mt-3" style="font-size: 12px;">ยังไม่มีเครื่องจักรในไลน์นี้</div>`;
+      }
+
+      // 🔴 สร้างการ์ดเพียง 1 ครั้ง พร้อม Overlay สีน้ำเงิน
       grid.innerHTML += `
         <div class="col-md-6 col-lg-4">
-          <div class="hover-card ${highlightClass} d-flex flex-column h-100" title="${hoverTooltip}" onclick="navigateTo('${safeDept}', '${safeLine}')">
+          <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
             <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
             <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
               <div class="mb-2"><span class="badge bg-secondary">${safeDept}</span></div>
@@ -472,12 +494,18 @@ function renderLines() {
                  </div>
               </div>
             </div>
-            <div class="card-overlay">
-              <h5 class="fw-bold text-warning mb-2">${safeDept} - ${safeLine}</h5>
+            
+            <div class="card-overlay" style="justify-content: flex-start; padding-top: 25px;">
+              <h5 class="fw-bold text-warning mb-1">${safeDept} - ${safeLine}</h5>
+              <div style="font-size: 12px; color: #94a3b8; font-weight: 600;">รายชื่อเครื่องจักร:</div>
+              <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 15px;">
+                ${machListHtml}
+              </div>
               <div class="mt-auto text-center w-100">
                 <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span>
               </div>
             </div>
+
           </div>
         </div>`;
     }
@@ -1995,15 +2023,26 @@ async function submitExecutionTask(btnElement) {
   );
 }
 // ==========================================
-// ฟังก์ชันสำหรับกดทดสอบเข้าโหมดส่งงาน PM ของช่าง
+// ฟังก์ชันสำหรับทดสอบเข้า/ออก โหมดส่งงาน PM ของช่าง
 // ==========================================
 function testExecutionMode() {
   if (currentDept && currentLine && currentMach) {
     let url = new URL(window.location);
-    url.searchParams.set("mode", "execute"); // สั่งเปลี่ยนโหมด
+    url.searchParams.set("mode", "execute"); // สั่งเปลี่ยนเป็นโหมด execute
     window.history.pushState({}, "", url);
     handleRouting(); // รีเฟรชหน้าจอ
   } else {
-    showModalAlert("แจ้งเตือน", "ไม่สามารถเข้าโหมดส่งงานได้ กรุณารีเฟรชหน้าเว็บ", true);
+    showModalAlert(
+      "แจ้งเตือน",
+      "กรุณาเลือกเครื่องจักรให้เรียบร้อยก่อนเข้าสู่โหมดส่งงาน",
+      true,
+    );
   }
+}
+
+function exitExecutionMode() {
+  let url = new URL(window.location);
+  url.searchParams.delete("mode"); // ลบพารามิเตอร์ mode ออก (กลับสู่หน้าปกติ)
+  window.history.pushState({}, "", url);
+  handleRouting(); // รีเฟรชหน้าจอ
 }
