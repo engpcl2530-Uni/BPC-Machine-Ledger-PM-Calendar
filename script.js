@@ -232,6 +232,7 @@ function navigateTo(dept = null, line = null, mach = null, sub = null) {
 // 🔴 1. อัปเดต handleRouting() ให้เปลี่ยนข้อความส่วนหัวให้ชัดเจน
 function handleRouting() {
   let params = new URLSearchParams(window.location.search);
+  let mode = params.get("mode");
   currentDept = params.get("dept");
   currentLine = params.get("line");
   currentMach = params.get("mach");
@@ -241,8 +242,16 @@ function handleRouting() {
   document
     .querySelectorAll(".view-section")
     .forEach((v) => v.classList.remove("active"));
-  let breadcrumb = "Dashboard";
   toggleFabMode(false);
+
+  let breadcrumb = "Dashboard";
+  // 🔴 1. ถ้า URL เป็นโหมด Execute (ส่งงาน)
+  if (mode === "execute" && currentDept && currentLine && currentMach) {
+    renderExecutionMode(currentDept, currentLine, currentMach);
+    document.getElementById("view-execution").classList.add("active");
+    window.scrollTo(0, 0);
+    return;
+  }
 
   if (!dbData || Object.keys(dbData).length === 0) {
     document.getElementById("view-lines").classList.add("active");
@@ -277,6 +286,96 @@ function handleRouting() {
 
   document.getElementById("headerBreadcrumb").innerText = breadcrumb;
   window.scrollTo(0, 0);
+}
+
+// 🔴 2. ฟังก์ชันวาดการ์ดส่งงานสำหรับช่าง
+function renderExecutionMode(dept, line, mach) {
+  let container = document.getElementById("execTasksContainer");
+  container.innerHTML = "";
+
+  document.getElementById("execHeaderDesc").innerText =
+    `แผนก: ${dept} > ไลน์: ${line} > เครื่อง: ${mach}`;
+
+  let currWeek = getCurrentWeekNumber();
+  document.getElementById("execCurrentWeek").innerText = currWeek;
+
+  if (
+    !dbData[dept] ||
+    !dbData[dept][line] ||
+    !dbData[dept][line].machines[mach]
+  ) {
+    container.innerHTML = `<div class="col-12 text-center text-danger p-4 fw-bold">ไม่พบข้อมูลเครื่องจักรนี้</div>`;
+    return;
+  }
+
+  let machData = dbData[dept][line].machines[mach];
+  let hasTasks = false;
+
+  for (let subName in machData.subassemblies) {
+    let comps = machData.subassemblies[subName].components;
+
+    comps.forEach((comp) => {
+      // ค้นหางานในช่วง +/- 4 สัปดาห์
+      for (
+        let i = Math.max(0, currWeek - 5);
+        i <= Math.min(51, currWeek + 3);
+        i++
+      ) {
+        let w = comp.weeks[i];
+        if (w && (w.t === 1 || w.b === 1 || w.r === 1 || w.l === 1)) {
+          hasTasks = true;
+          let clone = document
+            .getElementById("execTaskTemplate")
+            .content.cloneNode(true);
+          let card = clone.querySelector(".card");
+
+          clone.querySelector(".exec-week-badge").innerText = `Week ${i + 1}`;
+          clone.querySelector(".exec-comp-name").innerText =
+            `[${subName}] ${comp.name}`;
+          clone.querySelector(".exec-task-name").innerText =
+            `Task: ${w.remark || "Check/Inspect"}`;
+          clone.querySelector(".exec-ppe").innerText = comp.ppe || "-";
+          clone.querySelector(".exec-risk").innerText = comp.risk
+            ? "เสี่ยงสูง (Work Permit)"
+            : "ปกติ";
+
+          if (comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1) {
+            clone.querySelector(".exec-comp-img").src = comp.imgComp;
+          }
+
+          // ซ่อนข้อมูลจำเป็นไว้ใน Data Attribute เพื่อใช้ตอนกดส่ง
+          card.dataset.sub = subName;
+          card.dataset.comp = comp.name;
+          card.dataset.weekIndex = i;
+
+          container.appendChild(clone);
+        }
+      }
+    });
+  }
+
+  if (!hasTasks) {
+    container.innerHTML = `<div class="col-12 text-center text-muted p-5">
+        <span class="material-symbols-rounded fs-1 d-block mb-3">check_circle</span>
+        <h6 class="fw-bold">ไม่มีแผนงาน PM</h6>
+        <p class="small">ไม่พบแผนงานในช่วง +/- 4 สัปดาห์นี้ครับ</p>
+      </div>`;
+  }
+}
+
+function toggleDefectFields(selectElement) {
+  let defectBox = selectElement
+    .closest(".exec-form-block")
+    .querySelector(".exec-defect-box");
+  if (
+    selectElement.value === "DEFECT" ||
+    selectElement.value === "WAITING" ||
+    selectElement.value === "BREAKDOWN"
+  ) {
+    defectBox.classList.remove("d-none");
+  } else {
+    defectBox.classList.add("d-none");
+  }
 }
 
 // =========================================================
@@ -519,23 +618,61 @@ function renderSubs(deptName, lineName, machName) {
   }
 }
 
+// =========================================================
+// 🔴 ฟังก์ชันวาดตาราง Component (อัปเดต: คืนรูปภาพ, ดึง Task จาก 52 วีคมาโชว์)
+// =========================================================
 function renderComponentTable() {
   let tbody = document.getElementById("componentTableBody");
   tbody.innerHTML = "";
+
+  // ให้แน่ใจว่าคอลัมน์รูปไม่ถูกซ่อน
+  let tableHead = document.querySelector(".table-ledger thead tr");
+  if (tableHead && tableHead.cells[0].style.display === "none") {
+    tableHead.cells[0].style.display = "";
+  }
+
   let comps =
     dbData[currentDept][currentLine].machines[currentMach].subassemblies[
       currentSub
     ].components;
-  // ... (ฟังก์ชันตัวในตารางเหมือนเดิม ไม่ต้องเปลี่ยน)
+
   comps.forEach((c) => {
     let weeksHtml = "";
-    c.weeks.forEach((w) => {
+    let taskList = [];
+
+    c.weeks.forEach((w, idx) => {
       weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`;
+      // ดึง Task (remark) ออกมาโชว์ถ้ายอมใส่ไว้ (ฟอร์แมต Week X : Task)
+      if (w.remark && w.remark.trim() !== "") {
+        taskList.push(
+          `<div style="white-space: nowrap;"><span class="badge bg-light text-dark border me-1">Week ${idx + 1}</span> : ${escapeHTML(w.remark)}</div>`,
+        );
+      }
     });
+
     let safeName = escapeHTML(c.name);
-    let safeTask = escapeHTML(c.task || "-");
+    let displayTask = taskList.length > 0 ? taskList.join("") : "-";
     let safeRemark = escapeHTML(c.remarkEwo || "-");
-    tbody.innerHTML += `<tr><td class="text-center"><i class="bi bi-image text-muted fs-3"></i></td><td class="fw-bold text-primary">${safeName}</td><td>${safeTask}</td><td class="text-center">${c.class || "-"}</td><td class="text-center">${c.std || "-"}</td><td class="text-center"><span class="badge bg-success">${c.stat || "Run"}</span></td><td class="text-center fw-bold text-danger">${c.time || "-"}</td><td class="text-center" style="font-size:10px;">${c.ppe || "-"}</td>${weeksHtml}<td class="text-muted fw-bold" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td></tr>`;
+
+    // ดึงรูปภาพอะไหล่มาแสดงผล (สามารถคลิกเพื่อดูรูปเต็มได้)
+    let imgHtml =
+      c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
+        ? `<img src="${c.imgComp}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: zoom-in;" onclick="window.open('${c.imgComp}')">`
+        : `<span class="material-symbols-rounded text-muted" style="font-size:28px;">image_not_supported</span>`;
+
+    tbody.innerHTML += `
+      <tr>
+        <td class="text-center align-middle">${imgHtml}</td>
+        <td class="fw-bold text-primary align-middle">${safeName}</td>
+        <td style="font-size: 11px;" class="align-middle">${displayTask}</td>
+        <td class="text-center align-middle">${c.class || "-"}</td>
+        <td class="text-center align-middle">${c.std || "-"}</td>
+        <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
+        <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
+        <td class="text-center align-middle" style="font-size:10px;">${c.ppe || "-"}</td>
+        ${weeksHtml}
+        <td class="text-muted fw-bold align-middle" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
+      </tr>`;
   });
 }
 
@@ -600,40 +737,35 @@ function executeImportData() {
     return;
   }
 
-  // นำค่าไปใส่ในฟอร์ม (เวอร์ชันรองรับ Select + Custom)
+  let [deptName, lineName, machName] = val.split("|");
+  let machData =
+    dbData[deptName] &&
+    dbData[deptName][lineName] &&
+    dbData[deptName][lineName].machines[machName];
+  if (!machData) return;
+
   document.getElementById("f_department").value = deptName;
 
   let lineSelect = document.getElementById("f_lineSelect");
   let lineCustom = document.getElementById("f_lineCustom");
 
-  // เช็คว่าชื่อไลน์ที่ Import มา มีอยู่ในตัวเลือกหรือเปล่า
   let optionExists = Array.from(lineSelect.options).some(
     (opt) => opt.value === lineName,
   );
 
   if (optionExists) {
     lineSelect.value = lineName;
-    toggleCustomLineInput(); // สั่งซ่อนกล่อง
+    toggleCustomLineInput();
   } else if (lineName.toUpperCase().includes("MIX")) {
     lineSelect.value = "MIXING_CUSTOM";
-    toggleCustomLineInput(); // สั่งเปิดกล่อง
-    lineCustom.value = lineName;
+    toggleCustomLineInput();
+    if (lineCustom) lineCustom.value = lineName;
   } else {
     lineSelect.value = "OTHER_CUSTOM";
-    toggleCustomLineInput(); // สั่งเปิดกล่อง
-    lineCustom.value = lineName;
+    toggleCustomLineInput();
+    if (lineCustom) lineCustom.value = lineName;
   }
 
-  document.getElementById("f_machineName").value = machName + " (Copy)";
-  document.getElementById("subSystemsContainer").innerHTML = "";
-
-  let [deptName, lineName, machName] = val.split("|");
-  let machData = dbData[deptName][lineName].machines[machName];
-  if (!machData) return;
-
-  // นำค่าไปใส่ในฟอร์ม
-  document.getElementById("f_department").value = deptName;
-  document.getElementById("f_lineName").value = lineName;
   document.getElementById("f_machineName").value = machName + " (Copy)";
   document.getElementById("subSystemsContainer").innerHTML = "";
 
@@ -648,8 +780,8 @@ function executeImportData() {
 
     let importedRisks = subInfo.risks || "";
     subCard.querySelectorAll(".risk-grid .icon-checkbox").forEach((chk) => {
-      let val = chk.getAttribute("data-val");
-      if (importedRisks.includes(val)) chk.classList.remove("not-used");
+      let v = chk.getAttribute("data-val");
+      if (importedRisks.includes(v)) chk.classList.remove("not-used");
       else chk.classList.add("not-used");
     });
 
@@ -668,8 +800,8 @@ function executeImportData() {
 
       let importedPPE = comp.ppe || "";
       compCard.querySelectorAll(".ppe-grid .icon-checkbox").forEach((chk) => {
-        let val = chk.getAttribute("data-val");
-        if (importedPPE.includes(val)) chk.classList.remove("not-used");
+        let v = chk.getAttribute("data-val");
+        if (importedPPE.includes(v)) chk.classList.remove("not-used");
         else chk.classList.add("not-used");
       });
 
@@ -1672,30 +1804,6 @@ function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
   });
 }
 
-// ================= 1. ดึงข้อมูลจากฐานข้อมูล =================
-async function loadDataFromDatabase() {
-  document.getElementById("loadingOverlay").style.display = "flex";
-  try {
-    // โหลดข้อมูลมาจาก API
-    const result = await ApiService.request("get_all_data");
-    dbData = result.data;
-
-    // 🔴 แก้ตรงนี้: ให้ระบบ Routing จัดการวาดหน้าจอที่ถูกต้องทันที
-    handleRouting();
-
-    // เช็คว่ามีแบบร่างค้างไว้ไหม
-    checkDraftStatus();
-  } catch (err) {
-    showModalAlert(
-      "โหลดข้อมูลล้มเหลว",
-      "ไม่สามารถเชื่อมต่อฐานข้อมูลได้: " + err.message,
-      true,
-    );
-  } finally {
-    document.getElementById("loadingOverlay").style.display = "none";
-  }
-}
-
 // =========================================================
 // 🔴 ฟังก์ชันดึงข้อมูลเดิมกลับมาแก้ไข (Edit Mode)
 // =========================================================
@@ -1821,4 +1929,65 @@ function editSubassembly() {
   }
 
   window.scrollTo(0, 0);
+}
+
+async function submitExecutionTask(btnElement) {
+  let card = btnElement.closest(".card");
+  let formBlock = card.querySelector(".exec-form-block");
+  let status = formBlock.querySelector(".exec-status").value;
+  let imgBeforeInput = formBlock.querySelector(".exec-img-before");
+  let imgAfterInput = formBlock.querySelector(".exec-img-after");
+  let imgBeforePreview = imgBeforeInput.nextElementSibling;
+  let imgAfterPreview = imgAfterInput.nextElementSibling;
+  let actualTime = formBlock.querySelector(".exec-actual-time").value;
+  let mechanicId = formBlock.querySelector(".exec-mechanic-id").value;
+  let remark = formBlock.querySelector(".exec-remark").value;
+
+  if (!mechanicId) {
+    showModalAlert(
+      "ข้อมูลไม่ครบ",
+      "กรุณาระบุรหัสพนักงานหรือชื่อผู้ส่งงาน",
+      true,
+    );
+    return;
+  }
+
+  let payloadData = {
+    dept: currentDept,
+    line: currentLine,
+    mach: currentMach,
+    subName: card.dataset.sub,
+    compName: card.dataset.comp,
+    weekIndex: parseInt(card.dataset.weekIndex),
+    status: status,
+    actualTime: actualTime,
+    mechanicId: mechanicId,
+    remark: remark,
+    imgBefore: getBase64(imgBeforePreview),
+    imgAfter: getBase64(imgAfterPreview),
+  };
+
+  showModalConfirm(
+    "ยืนยันการส่งงาน",
+    `คุณต้องการส่งงาน PM สำหรับ <b>${card.dataset.comp}</b> ใช่หรือไม่?`,
+    async () => {
+      document.getElementById("loadingOverlay").style.display = "flex";
+      try {
+        const result = await ApiService.request("submit_execution", {
+          data: payloadData,
+        });
+        if (result.success) {
+          showModalAlert("สำเร็จ!", "บันทึกและส่งงาน PM เรียบร้อยแล้ว");
+          await loadDataFromDatabase();
+          handleRouting();
+        } else {
+          showModalAlert("เกิดข้อผิดพลาด", result.message, true);
+        }
+      } catch (err) {
+        showModalAlert("เชื่อมต่อล้มเหลว", err.message, true);
+      } finally {
+        document.getElementById("loadingOverlay").style.display = "none";
+      }
+    },
+  );
 }

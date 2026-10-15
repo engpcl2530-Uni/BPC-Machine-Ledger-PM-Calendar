@@ -571,6 +571,236 @@
         </form>
       </div>
 
+      <!-- ================= VIEW 6: Execution Mode (โหมดส่งงานผ่านมือถือ) ================= -->
+      <div id="view-execution" class="view-section">
+        <div
+          class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"
+        >
+          <div>
+            <h4 class="fw-bold text-primary mb-1">
+              <i class="bi bi-tools"></i> ส่งงาน PM
+            </h4>
+            <div id="execHeaderDesc" class="text-muted small fw-bold"></div>
+          </div>
+          <button
+            class="btn btn-outline-secondary btn-sm fw-bold"
+            onclick="navigateTo()"
+          >
+            <span class="material-symbols-rounded align-middle fs-6">home</span>
+            หน้าหลัก
+          </button>
+        </div>
+
+        <!-- แบนเนอร์สัปดาห์ปัจจุบัน -->
+        <div
+          class="alert alert-info shadow-sm py-2 px-3 mb-4 d-flex justify-content-between align-items-center"
+          style="border-radius: 12px; border-left: 5px solid #0dcaf0"
+        >
+          <span class="fw-bold text-dark"
+            >สัปดาห์ปัจจุบัน:
+            <span id="execCurrentWeek" class="text-primary fs-5"></span
+          ></span>
+          <span class="badge bg-white text-info border"
+            >แสดงงาน +/- 4 สัปดาห์</span
+          >
+        </div>
+
+        <!-- พื้นที่แสดงการ์ดงานที่ต้องทำ -->
+        <div id="execTasksContainer" class="row g-3"></div>
+      </div>
+
+      <!-- ================= Template: Execution Task Card ================= -->
+      <template id="execTaskTemplate">
+        <div class="col-12">
+          <div
+            class="card shadow-sm border-0 mb-3"
+            style="
+              border-radius: 16px;
+              border-left: 6px solid #eab308 !important;
+            "
+          >
+            <div class="p-3">
+              <!-- ข้อมูลอะไหล่และงาน (Read-only) -->
+              <div
+                class="d-flex justify-content-between align-items-start mb-2 border-bottom pb-2"
+              >
+                <div>
+                  <span class="badge bg-dark mb-1 exec-week-badge"
+                    >Week XX</span
+                  >
+                  <h6 class="fw-bold text-primary mb-1 exec-comp-name">
+                    Component Name
+                  </h6>
+                  <div class="text-danger fw-bold small exec-task-name">
+                    Task: Lube & Inspect
+                  </div>
+                </div>
+                <img
+                  class="exec-comp-img shadow-sm"
+                  src=""
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    object-fit: cover;
+                    border-radius: 8px;
+                    cursor: pointer;
+                  "
+                  onerror="this.style.display = 'none'"
+                />
+              </div>
+
+              <div class="mb-3 bg-light p-2 rounded small">
+                <span class="fw-bold text-success"
+                  ><i class="bi bi-shield-check"></i> PPE:</span
+                >
+                <span class="exec-ppe"></span><br />
+                <span class="fw-bold text-danger"
+                  ><i class="bi bi-exclamation-triangle"></i> Risk:</span
+                >
+                <span class="exec-risk"></span>
+              </div>
+
+              <!-- ฟอร์มส่งงาน (Input) -->
+              <div class="exec-form-block">
+                <label class="form-label fw-bold small text-muted mb-2"
+                  >1. สถานะการทำงาน <span class="text-danger">*</span></label
+                >
+                <select
+                  class="form-select form-select-sm mb-3 exec-status"
+                  onchange="toggleDefectFields(this)"
+                >
+                  <option value="NORMAL" selected>
+                    ✅ ปกติ (ทำ PM เรียบร้อย)
+                  </option>
+                  <option value="DEFECT">
+                    ⚠️ พบอะไหล่ชำรุด (เปลี่ยนทันที)
+                  </option>
+                  <option value="WAITING">
+                    🛑 พบอะไหล่ชำรุด (รออะไหล่ / เปิด WO)
+                  </option>
+                  <option value="BREAKDOWN">🚨 เครื่องเสีย (Breakdown)</option>
+                </select>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <div
+                      class="upload-box-smp text-center p-2 rounded"
+                      onclick="this.nextElementSibling.click()"
+                      style="
+                        border: 2px dashed #cbd5e1;
+                        background: #f8fafc;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        class="material-symbols-rounded text-muted"
+                        style="font-size: 24px"
+                        >add_a_photo</span
+                      ><br />
+                      <span
+                        style="font-size: 10px; font-weight: 600"
+                        class="text-muted"
+                        >ก่อนทำ (Before)</span
+                      >
+                    </div>
+                    <input
+                      type="file"
+                      class="d-none exec-img-before"
+                      accept="image/*"
+                      onchange="previewDynamicFile(this)"
+                    />
+                    <img
+                      class="preview-img mt-1 w-100 rounded shadow-sm"
+                      style="height: 80px; object-fit: cover; display: none"
+                      onclick="this.previousElementSibling.click()"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <div
+                      class="upload-box-smp text-center p-2 rounded"
+                      onclick="this.nextElementSibling.click()"
+                      style="
+                        border: 2px dashed #cbd5e1;
+                        background: #f8fafc;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        class="material-symbols-rounded text-muted"
+                        style="font-size: 24px"
+                        >add_a_photo</span
+                      ><br />
+                      <span
+                        style="font-size: 10px; font-weight: 600"
+                        class="text-muted"
+                        >หลังทำ (After)</span
+                      >
+                    </div>
+                    <input
+                      type="file"
+                      class="d-none exec-img-after"
+                      accept="image/*"
+                      onchange="previewDynamicFile(this)"
+                    />
+                    <img
+                      class="preview-img mt-1 w-100 rounded shadow-sm"
+                      style="height: 80px; object-fit: cover; display: none"
+                      onclick="this.previousElementSibling.click()"
+                    />
+                  </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label fw-bold small text-muted"
+                      >เวลาจริง (นาที)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control form-control-sm exec-actual-time"
+                      placeholder="เช่น 15"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fw-bold small text-muted"
+                      >รหัสพนักงาน</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control form-control-sm exec-mechanic-id"
+                      placeholder="รหัส / ชื่อ"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  class="exec-defect-box d-none mb-3 p-2 bg-warning bg-opacity-10 border border-warning rounded"
+                >
+                  <label class="form-label fw-bold small text-danger"
+                    >รายละเอียดปัญหา / หมายเหตุ (WO)</label
+                  >
+                  <textarea
+                    class="form-control form-control-sm exec-remark"
+                    rows="2"
+                    placeholder="ระบุอาการชำรุด หรือรหัสใบสั่งงาน..."
+                  ></textarea>
+                </div>
+
+                <button
+                  class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm"
+                  onclick="submitExecutionTask(this)"
+                >
+                  <span class="material-symbols-rounded align-middle fs-6 me-1"
+                    >send</span
+                  >
+                  ส่งงาน PM
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
       <!-- ================= Template: Subassembly Card ================= -->
       <template id="subSystemTemplate">
         <div
@@ -834,18 +1064,25 @@
           </button>
 
           <div class="row g-3 mt-1">
-            <!-- Image Upload Column -->
-            <div
-              class="col-md-3 box_imgComp d-flex flex-column align-items-center justify-content-start"
-            >
+            <!-- Image Upload Column (อัปเดตแก้รูปเบี้ยว) -->
+            <div class="col-md-3 box_imgComp text-center">
+              <label
+                class="form-label text-muted fw-bold d-block mb-2"
+                data-i18n="comp_image"
+                >ภาพอะไหล่</label
+              >
+
               <div
-                class="upload-box-smp w-100 d-flex flex-column justify-content-center"
+                class="upload-box-smp mx-auto"
                 onclick="this.nextElementSibling.click()"
                 style="
-                  padding: 10px;
-                  min-height: 160px;
-                  height: 100%;
+                  height: 140px;
                   border-style: dashed;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  cursor: pointer;
                 "
               >
                 <span
@@ -853,13 +1090,7 @@
                   style="font-size: 32px"
                   >photo_camera</span
                 >
-                <div
-                  class="text-muted-sm"
-                  style="font-weight: 600; margin-top: 8px"
-                  data-i18n="comp_image"
-                >
-                  ภาพอะไหล่
-                </div>
+                <span class="text-muted-sm fw-bold mt-2">แตะเพื่ออัปโหลด</span>
               </div>
               <input
                 type="file"
@@ -867,15 +1098,18 @@
                 accept="image/*"
                 onchange="previewDynamicFile(this)"
               />
+
+              <!-- รูปพรีวิว (ตอนมีรูป จะซ่อนกล่องด้านบน แล้วโชว์ตัวนี้แทน) -->
               <img
-                class="preview-img mt-2 shadow-sm border w-100"
+                class="preview-img mt-2 shadow-sm border mx-auto w-100"
                 onclick="this.previousElementSibling.click()"
                 style="
-                  max-height: 200px;
+                  height: 140px;
                   object-fit: contain;
                   border-radius: 10px;
                   display: none;
                   cursor: pointer;
+                  background: white;
                 "
               />
             </div>
