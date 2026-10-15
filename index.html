@@ -107,32 +107,59 @@
         <div class="premium-filter-card mb-4">
           <!-- บรรทัดที่ 1: ช่องค้นหา (เด่นที่สุด) -->
           <div class="position-relative mb-4">
-            <span class="material-symbols-rounded search-icon-inside">search</span>
-            <input type="text" id="filterSearch" class="form-control search-bar-lg" placeholder="ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่..." onkeyup="handleRouting()">
+            <span class="material-symbols-rounded search-icon-inside"
+              >search</span
+            >
+            <input
+              type="text"
+              id="filterSearch"
+              class="form-control search-bar-lg"
+              placeholder="ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่..."
+              onkeyup="handleRouting()"
+            />
           </div>
 
           <!-- บรรทัดที่ 2: ตัวกรองแบบ Smart Dropdown -->
           <div class="row g-3">
             <div class="col-md-4">
-              <label class="form-label text-muted fw-bold small mb-2"><i class="bi bi-building"></i> แผนก (Department)</label>
-              <select id="filterDept" class="form-select filter-select" onchange="updateLineDropdown()">
+              <label class="form-label text-muted fw-bold small mb-2"
+                ><i class="bi bi-building"></i> แผนก (Department)</label
+              >
+              <select
+                id="filterDept"
+                class="form-select filter-select"
+                onchange="updateLineDropdown()"
+              >
                 <option value="ALL">รวมทุกแผนก</option>
                 <option value="CO">CO</option>
                 <option value="PCL">PCL</option>
                 <option value="OTHER">อื่นๆ (Others)</option>
               </select>
             </div>
-            
+
             <div class="col-md-4">
-              <label class="form-label text-muted fw-bold small mb-2"><i class="bi bi-diagram-3"></i> ไลน์ผลิต (Line)</label>
-              <select id="filterLine" class="form-select filter-select" onchange="handleRouting()" disabled>
+              <label class="form-label text-muted fw-bold small mb-2"
+                ><i class="bi bi-diagram-3"></i> ไลน์ผลิต (Line)</label
+              >
+              <select
+                id="filterLine"
+                class="form-select filter-select"
+                onchange="handleRouting()"
+                disabled
+              >
                 <option value="ALL">รวมทุกไลน์</option>
               </select>
             </div>
 
             <div class="col-md-4">
-              <label class="form-label text-muted fw-bold small mb-2"><i class="bi bi-star"></i> ระดับความสำคัญ (Class)</label>
-              <select id="filterClass" class="form-select filter-select" onchange="handleRouting()">
+              <label class="form-label text-muted fw-bold small mb-2"
+                ><i class="bi bi-star"></i> ระดับความสำคัญ (Class)</label
+              >
+              <select
+                id="filterClass"
+                class="form-select filter-select"
+                onchange="handleRouting()"
+              >
                 <option value="ALL">ทุกระดับ Class</option>
                 <option value="AA">Class AA (สำคัญสูงสุด)</option>
                 <option value="A">Class A</option>
@@ -144,16 +171,43 @@
         </div>
 
         <!-- 🔴 แบนเนอร์แจ้งเตือนงานล่วงหน้า 2 สัปดาห์ (แสดงอัตโนมัติเมื่อระบบสแกนเจอ) -->
-        <div id="upcomingAlertBanner" class="d-none alert shadow-sm mb-4" style="background: #fff5f5; border: 1px solid #fc8181; border-radius: 12px;">
-           <div class="d-flex align-items-center">
-              <div style="width: 48px; height: 48px; background: #fee2e2; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-right: 15px;">
-                 <span class="material-symbols-rounded fs-3 text-danger">campaign</span>
-              </div>
-              <div>
-                 <h6 class="fw-bold mb-1 text-danger" style="font-size: 16px;">ประกาศ: มีแผนงาน PM ที่ต้องดำเนินการในอีก 2 สัปดาห์ข้างหน้า!</h6>
-                 <span class="small text-dark fw-bold">ระบบได้สแกนและไฮไลต์การ์ดด้วยกรอบสีแดง <span class="text-danger">🔥</span> ไว้ให้แล้ว กรุณาตรวจสอบเพื่อเตรียมแผนงานครับ</span>
-              </div>
-           </div>
+        <div
+          id="upcomingAlertBanner"
+          class="d-none alert shadow-sm mb-4"
+          style="
+            background: #fff5f5;
+            border: 1px solid #fc8181;
+            border-radius: 12px;
+          "
+        >
+          <div class="d-flex align-items-center">
+            <div
+              style="
+                width: 48px;
+                height: 48px;
+                background: #fee2e2;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 15px;
+              "
+            >
+              <span class="material-symbols-rounded fs-3 text-danger"
+                >campaign</span
+              >
+            </div>
+            <div>
+              <h6 class="fw-bold mb-1 text-danger" style="font-size: 16px">
+                ประกาศ: มีแผนงาน PM ที่ต้องดำเนินการในอีก 2 สัปดาห์ข้างหน้า!
+              </h6>
+              <span class="small text-dark fw-bold"
+                >ระบบได้สแกนและไฮไลต์การ์ดด้วยกรอบสีแดง
+                <span class="text-danger">🔥</span> ไว้ให้แล้ว
+                กรุณาตรวจสอบเพื่อเตรียมแผนงานครับ</span
+              >
+            </div>
+          </div>
         </div>
 
         <h4 class="fw-bold mb-4 text-dark">
@@ -780,11 +834,18 @@
 
           <div class="row g-3 mt-1">
             <!-- Image Upload Column -->
-            <div class="col-md-3 box_imgComp text-center">
+            <div
+              class="col-md-3 box_imgComp d-flex flex-column align-items-center justify-content-start"
+            >
               <div
-                class="upload-box-smp h-100 d-flex flex-column justify-content-center"
+                class="upload-box-smp w-100 d-flex flex-column justify-content-center"
                 onclick="this.nextElementSibling.click()"
-                style="padding: 10px; min-height: 120px"
+                style="
+                  padding: 10px;
+                  min-height: 160px;
+                  height: 100%;
+                  border-style: dashed;
+                "
               >
                 <span
                   class="material-symbols-rounded text-muted"
@@ -806,14 +867,14 @@
                 onchange="previewDynamicFile(this)"
               />
               <img
-                class="preview-img mt-2 shadow-sm border"
+                class="preview-img mt-2 shadow-sm border w-100"
                 onclick="this.previousElementSibling.click()"
                 style="
-                  width: 100%;
-                  height: 120px;
-                  object-fit: cover;
+                  max-height: 200px;
+                  object-fit: contain;
                   border-radius: 10px;
                   display: none;
+                  cursor: pointer;
                 "
               />
             </div>

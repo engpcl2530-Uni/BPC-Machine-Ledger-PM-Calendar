@@ -1019,6 +1019,82 @@ function showModalConfirm(title, message, onConfirm) {
   modal.show();
 }
 
+// =========================================================
+// 🔴 ฟังก์ชันเพิ่มงานลง 52 สัปดาห์ (addPlanEntry)
+// =========================================================
+function parseWeeks(str) {
+  let weeks = [];
+  let parts = str.split(",");
+  for (let part of parts) {
+    part = part.trim();
+    if (part.includes("-")) {
+      let [start, end] = part.split("-");
+      start = parseInt(start);
+      end = parseInt(end);
+      if (!isNaN(start) && !isNaN(end)) {
+        for (let i = start; i <= end; i++) weeks.push(i);
+      }
+    } else {
+      let w = parseInt(part);
+      if (!isNaN(w)) weeks.push(w);
+    }
+  }
+  return weeks;
+}
+
+function addPlanEntry() {
+  let weekStr = document.getElementById("inputWeeks").value;
+  if (!weekStr) {
+    showModalAlert(
+      "แจ้งเตือน",
+      "กรุณาระบุสัปดาห์ที่ต้องการเพิ่มงาน (เช่น 1, 5, 10-15)",
+      true,
+    );
+    return;
+  }
+
+  let weeks = parseWeeks(weekStr);
+  let taskText = document.getElementById("inputTaskText").value.trim();
+  let ewoText = document.getElementById("inputEwoText").value.trim();
+
+  let remarkArr = [];
+  if (taskText) remarkArr.push(`Task: ${taskText}`);
+  if (ewoText) remarkArr.push(`EWO: ${ewoText}`);
+  let finalRemark = remarkArr.join(" | ");
+
+  let added = false;
+  weeks.forEach((w) => {
+    let idx = w - 1; // สัปดาห์ที่ 1 คือ index 0
+    if (idx >= 0 && idx < 52) {
+      tempWeekData[idx].t = smartColorState.t ? 1 : tempWeekData[idx].t;
+      tempWeekData[idx].r = smartColorState.r ? 1 : tempWeekData[idx].r;
+      tempWeekData[idx].b = smartColorState.b ? 1 : tempWeekData[idx].b;
+      tempWeekData[idx].l = smartColorState.l ? 1 : tempWeekData[idx].l;
+
+      if (finalRemark) {
+        tempWeekData[idx].remark = tempWeekData[idx].remark
+          ? tempWeekData[idx].remark + " \n " + finalRemark
+          : finalRemark;
+      }
+      added = true;
+    }
+  });
+
+  if (added) {
+    updatePreviewAndList();
+    document.getElementById("inputWeeks").value = "";
+    document.getElementById("inputTaskText").value = "";
+    document.getElementById("inputEwoText").value = "";
+    resetSmartColorSelector();
+  } else {
+    showModalAlert(
+      "แจ้งเตือน",
+      "รูปแบบสัปดาห์ไม่ถูกต้อง (ต้องเป็นเลข 1-52)",
+      true,
+    );
+  }
+}
+
 // 🔴 อัปเดต Preview & Summary เป็น 2 ภาษา
 function updatePreviewAndList() {
   const lang = localStorage.getItem("app_lang") || "th";
@@ -1081,10 +1157,16 @@ function syncModalToCompact() {
   bootstrap.Modal.getInstance(document.getElementById("weekModal")).hide();
 }
 
-// ================= 6. Submit API =================
+// 🔴 อัปเดตให้รองรับทั้งรูปใหม่ (Base64) และรูปเก่าจากฐานข้อมูล (http)
 function getBase64(imgElement) {
-  if (imgElement && imgElement.src && imgElement.src.startsWith("data:image"))
-    return imgElement.src;
+  if (imgElement && imgElement.src) {
+    if (
+      imgElement.src.startsWith("data:image") ||
+      imgElement.src.startsWith("http")
+    ) {
+      return imgElement.src;
+    }
+  }
   return "";
 }
 
@@ -1131,14 +1213,15 @@ function restoreDraftData() {
   }
 }
 
-// อัปเดตฟังก์ชัน submitFormViaAPI ให้ใช้ showModalAlert แทน alert()
+// =========================================================
+// 🔴 ฟังก์ชันบันทึกข้อมูล (อัปเดตเป็น UI แจ้งเตือนใหม่)
+// =========================================================
 async function submitFormViaAPI() {
   if (!document.getElementById("ledgerForm").checkValidity()) {
     document.getElementById("ledgerForm").reportValidity();
     return;
   }
 
-  // ดึงค่าไลน์แบบใหม่ (เช็คว่ากรอกเอง หรือ เลือกจาก Dropdown)
   let f_line_select = document.getElementById("f_lineSelect").value;
   let f_line = f_line_select;
   if (f_line_select === "MIXING_CUSTOM" || f_line_select === "OTHER_CUSTOM") {
@@ -1173,86 +1256,90 @@ async function submitFormViaAPI() {
     return;
   }
 
-  // แจ้งยืนยัน
-  if (
-    !confirm(
-      `ระบบกำลังจะบันทึกข้อมูลเครื่องจักร: ${f_mach}\nคุณตรวจสอบข้อมูลถูกต้องแล้วใช่หรือไม่?`,
-    )
-  )
-    return;
+  // 🔴 แจ้งยืนยันด้วย UI Modal สวยงามแทน alert
+  showModalConfirm(
+    "ยืนยันการบันทึกข้อมูล",
+    `ระบบกำลังจะบันทึกข้อมูลเครื่องจักร: <b>${f_mach}</b><br/>คุณตรวจสอบข้อมูลครบถ้วนและต้องการบันทึกเลยหรือไม่?`,
+    async () => {
+      document.getElementById("loadingOverlay").style.display = "flex";
 
-  document.getElementById("loadingOverlay").style.display = "flex";
+      let payload = {
+        data: {
+          department: document.getElementById("f_department").value,
+          lineName: f_line,
+          machineName: f_mach,
+          updatedBy: document.getElementById("f_updatedBy").value.trim(),
+          // 🔴 อัปเดตการดึงรูปภาพเครื่องจักรให้แม่นยำขึ้น
+          imgMachine: getBase64(
+            document.querySelector("#cardStructure .file-img")
+              .nextElementSibling,
+          ),
+          subSystems: [],
+        },
+      };
 
-  let payload = {
-    data: {
-      department: document.getElementById("f_department").value, // 🔴 เพิ่มฟิลด์แผนก
-      lineName: f_line,
-      machineName: f_mach,
-      updatedBy: document.getElementById("f_updatedBy").value.trim(),
-      imgMachine: getBase64(
-        document
-          .getElementById("f_machineName")
-          .closest(".card-std")
-          ?.querySelector(".preview-img"),
-      ),
-      subSystems: [],
-    },
-  };
+      subCards.forEach((subCard) => {
+        let riskActive = [];
+        subCard
+          .querySelectorAll(".risk-grid .icon-checkbox:not(.not-used)")
+          .forEach((chk) => riskActive.push(chk.getAttribute("data-val")));
 
-  subCards.forEach((subCard) => {
-    let riskActive = [];
-    subCard
-      .querySelectorAll(".risk-grid .icon-checkbox:not(.not-used)")
-      .forEach((chk) => riskActive.push(chk.getAttribute("data-val")));
-    let subData = {
-      subName: subCard.querySelector(".input-subname").value,
-      imgSub: getBase64(subCard.querySelector(".box_imgSub .preview-img")),
-      risks: riskActive.join(", "),
-      components: [],
-    };
-    subCard.querySelectorAll(".part-item").forEach((pCard) => {
-      let ppeActive = [];
-      pCard
-        .querySelectorAll(".ppe-grid .icon-checkbox:not(.not-used)")
-        .forEach((chk) => ppeActive.push(chk.getAttribute("data-val")));
-      subData.components.push({
-        compName: pCard.querySelector(".input-compname").value,
-        task: pCard.querySelector(".input-task").value,
-        spareClass: pCard.querySelector(".input-class").value,
-        pmStd: pCard.querySelector(".input-pmstd").value,
-        status: pCard.querySelector(".input-status").value,
-        stdTime: pCard.querySelector(".input-time").value,
-        remarkEwo: pCard.querySelector(".input-remark").value,
-        risk: pCard.querySelector(".input-risk").checked,
-        ppe: ppeActive.join(", "),
-        imgComp: getBase64(pCard.querySelector(".box_imgComp .preview-img")),
-        weeks: safeJSONParse(
-          pCard.querySelector(".week-data-input").value,
-          Array(52).fill({ t: 0, r: 0, b: 0, l: 0 }),
-        ),
+        let subData = {
+          subName: subCard.querySelector(".input-subname").value,
+          // 🔴 อัปเดตการดึงรูประบบย่อย (Subassembly) ให้แม่นยำขึ้น
+          imgSub: getBase64(
+            subCard.querySelector(".file-sub-img").nextElementSibling,
+          ),
+          risks: riskActive.join(", "),
+          components: [],
+        };
+
+        subCard.querySelectorAll(".part-item").forEach((pCard) => {
+          let ppeActive = [];
+          pCard
+            .querySelectorAll(".ppe-grid .icon-checkbox:not(.not-used)")
+            .forEach((chk) => ppeActive.push(chk.getAttribute("data-val")));
+          subData.components.push({
+            compName: pCard.querySelector(".input-compname").value,
+            task: pCard.querySelector(".input-task").value,
+            spareClass: pCard.querySelector(".input-class").value,
+            pmStd: pCard.querySelector(".input-pmstd").value,
+            status: pCard.querySelector(".input-status").value,
+            stdTime: pCard.querySelector(".input-time").value,
+            remarkEwo: pCard.querySelector(".input-remark").value,
+            risk: pCard.querySelector(".input-risk").checked,
+            ppe: ppeActive.join(", "),
+            // 🔴 การดึงรูปอะไหล่
+            imgComp: getBase64(
+              pCard.querySelector(".file-comp-img").nextElementSibling,
+            ),
+            weeks: safeJSONParse(
+              pCard.querySelector(".week-data-input").value,
+              Array(52).fill({ t: 0, r: 0, b: 0, l: 0 }),
+            ),
+          });
+        });
+        payload.data.subSystems.push(subData);
       });
-    });
-    payload.data.subSystems.push(subData);
-  });
 
-  try {
-    const result = await ApiService.saveLedger(payload.data);
-    if (result.success) {
-      // 🔴 เคลียร์แบบร่างทิ้งเมื่อบันทึกสำเร็จ
-      localStorage.removeItem("bpc_draft");
-      document.getElementById("fabDraftBtn").style.display = "none";
-
-      showModalAlert("สำเร็จ!", "บันทึกข้อมูลเข้าสู่ระบบเรียบร้อยแล้ว");
-      await loadDataFromDatabase();
-      handleRouting();
-    } else {
-      showModalAlert("เกิดข้อผิดพลาด", result.message, true);
-    }
-  } catch (error) {
-    showModalAlert("เชื่อมต่อล้มเหลว", error.message, true);
-  } finally {
-    document.getElementById("loadingOverlay").style.display = "none";
-  }
+      try {
+        const result = await ApiService.saveLedger(payload.data);
+        if (result.success) {
+          localStorage.removeItem("bpc_draft");
+          document.getElementById("fabDraftBtn").style.display = "none";
+          showModalAlert("สำเร็จ!", "บันทึกข้อมูลเข้าสู่ระบบเรียบร้อยแล้ว");
+          await loadDataFromDatabase();
+          handleRouting();
+        } else {
+          showModalAlert("เกิดข้อผิดพลาด", result.message, true);
+        }
+      } catch (error) {
+        showModalAlert("เชื่อมต่อล้มเหลว", error.message, true);
+      } finally {
+        document.getElementById("loadingOverlay").style.display = "none";
+      }
+    },
+  );
 }
 
 // ==========================================
