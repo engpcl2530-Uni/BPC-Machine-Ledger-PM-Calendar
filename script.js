@@ -1695,3 +1695,130 @@ async function loadDataFromDatabase() {
     document.getElementById("loadingOverlay").style.display = "none";
   }
 }
+
+// =========================================================
+// 🔴 ฟังก์ชันดึงข้อมูลเดิมกลับมาแก้ไข (Edit Mode)
+// =========================================================
+function editSubassembly() {
+  if (!currentDept || !currentLine || !currentMach) return;
+
+  let machData = dbData[currentDept][currentLine].machines[currentMach];
+  if (!machData) {
+    showModalAlert("ข้อผิดพลาด", "ไม่พบข้อมูลเครื่องจักรนี้ในระบบ", true);
+    return;
+  }
+
+  // 1. เคลียร์ฟอร์มให้ว่าง และซ่อนปุ่ม FAB (+)
+  document.getElementById("ledgerForm").reset();
+  document.getElementById("subSystemsContainer").innerHTML = "";
+  toggleFabMode(true);
+
+  // 2. ใส่ข้อมูลส่วนบน (แผนก, ไลน์, เครื่องจักร)
+  document.getElementById("f_department").value = currentDept;
+  autoSetLineDropdown(currentLine);
+  document.getElementById("f_machineName").value = currentMach;
+
+  // 🔴 ล็อกชื่อเครื่องจักรไว้ไม่ให้แก้ (ป้องกันการเกิดไฟล์ชีตซ้ำซ้อนเวลาเซฟ)
+  document.getElementById("f_machineName").readOnly = true;
+
+  // ดึงรูประดับเครื่องจักรมาพรีวิว
+  let machImgPreview = document.querySelector("#cardStructure .preview-img");
+  let machImgUploadBox = document.getElementById("box_imgMach");
+  if (machData.image && machData.image.indexOf("NO+IMAGE") === -1) {
+    machImgPreview.src = machData.image;
+    machImgPreview.style.display = "block";
+    if (machImgUploadBox) machImgUploadBox.style.display = "none";
+  } else {
+    machImgPreview.src = "";
+    machImgPreview.style.display = "none";
+    if (machImgUploadBox) machImgUploadBox.style.display = "flex";
+  }
+
+  // 3. วนลูปสร้างการ์ดระบบย่อย (Subassemblies)
+  for (let subName in machData.subassemblies) {
+    let subInfo = machData.subassemblies[subName];
+
+    addSubsystemCard(); // สร้างการ์ดระบบย่อยเปล่าๆ ขึ้นมา 1 ใบ
+    let subCard = document.getElementById(
+      "subSystemsContainer",
+    ).lastElementChild;
+    subCard.querySelector(".input-subname").value = subName;
+
+    // ดึงรูประบบย่อย
+    let subImgPreview = subCard.querySelector(".preview-img");
+    let subImgBox = subCard.querySelector(".box_imgSub");
+    if (subInfo.image && subInfo.image.indexOf("NO+IMAGE") === -1) {
+      subImgPreview.src = subInfo.image;
+      subImgPreview.style.display = "block";
+      if (subImgBox) subImgBox.style.display = "none";
+    }
+
+    // ติ๊กประเมินความเสี่ยงตามข้อมูลเดิม
+    let importedRisks = subInfo.risks || "";
+    subCard.querySelectorAll(".risk-grid .icon-checkbox").forEach((chk) => {
+      let val = chk.getAttribute("data-val");
+      if (importedRisks.includes(val)) chk.classList.remove("not-used");
+      else chk.classList.add("not-used");
+    });
+
+    // ลบการ์ดอะไหล่ (Component) ที่แถมมากับ Subassembly ทิ้งไปก่อน
+    subCard.querySelector(".parts-container").innerHTML = "";
+
+    // 4. วนลูปสร้างการ์ดอะไหล่ (Components)
+    subInfo.components.forEach((comp) => {
+      addComponentCard(subCard.querySelector(".parts-container"));
+      let compCard = subCard.querySelector(".parts-container").lastElementChild;
+
+      // เติมข้อมูล Text
+      compCard.querySelector(".input-compname").value = comp.name || "";
+      compCard.querySelector(".input-task").value = comp.task || "";
+      compCard.querySelector(".input-class").value = comp.class || "A";
+      compCard.querySelector(".input-pmstd").value = comp.std || "CBM";
+      compCard.querySelector(".input-status").value = comp.stat || "Run";
+      compCard.querySelector(".input-time").value = comp.time || "";
+      compCard.querySelector(".input-risk").checked = comp.risk;
+      compCard.querySelector(".input-remark").value = comp.remarkEwo || "";
+
+      // ติ๊ก PPE ตามข้อมูลเดิม
+      let importedPPE = comp.ppe || "";
+      compCard.querySelectorAll(".ppe-grid .icon-checkbox").forEach((chk) => {
+        let val = chk.getAttribute("data-val");
+        if (importedPPE.includes(val)) chk.classList.remove("not-used");
+        else chk.classList.add("not-used");
+      });
+
+      // ดึงรูปอะไหล่
+      let compImgPreview = compCard.querySelector(".box_imgComp .preview-img");
+      let compImgBox = compCard.querySelector(".box_imgComp .upload-box-smp");
+      if (comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1) {
+        compImgPreview.src = comp.imgComp;
+        compImgPreview.style.display = "block";
+        if (compImgBox) compImgBox.style.display = "none";
+      }
+
+      // โหลดข้อมูลแผน 52 สัปดาห์
+      compCard.querySelector(".week-data-input").value = JSON.stringify(
+        comp.weeks,
+      );
+      renderCompactGrid(
+        compCard.querySelector(".week-compact-grid"),
+        comp.weeks,
+      );
+    });
+  }
+
+  // 5. สลับหน้าจอไปยังฟอร์มแก้ไข และโชว์แบนเนอร์
+  document
+    .querySelectorAll(".view-section")
+    .forEach((v) => v.classList.remove("active"));
+  document.getElementById("view-form").classList.add("active");
+
+  let banner = document.getElementById("formContextBanner");
+  let bannerText = document.getElementById("formContextText");
+  if (banner && bannerText) {
+    banner.classList.remove("d-none");
+    bannerText.innerText = `โหมดแก้ไข: ${currentMach}`;
+  }
+
+  window.scrollTo(0, 0);
+}
