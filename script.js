@@ -193,60 +193,110 @@ function handleRouting() {
   window.scrollTo(0, 0);
 }
 
+// 🟢 สร้างการ์ด ไลน์ผลิต ในหน้าแรกสุด (อัปเดตให้รองรับ Last Updated & Updated By)
 function renderLines() {
   let grid = document.getElementById("lineGrid");
   grid.innerHTML = "";
   const lang = getCurrentLang();
   const t = translations[lang];
 
-  // ดึงค่าจาก Filter
+  // ดึงค่าจาก Filter หน้าเว็บ
   const filterDept = document.getElementById("filterDept").value;
-  const filterSearch = document
-    .getElementById("filterSearch")
-    .value.toLowerCase();
+  const filterSearch = document.getElementById("filterSearch").value.toLowerCase();
   const filterUpcoming = document.getElementById("filterUpcoming").checked;
 
   let hasResult = false;
 
   for (let deptName in dbData) {
-    // กรองแผนก
-    if (filterDept !== "ALL" && deptName !== filterDept) continue;
+    // กรองตาม Dropdown แผนก
+    // ถ้า Filter เป็น ALL ให้แสดงหมด, ถ้า Filter เป็น Other ให้แสดงแผนกที่ไม่ใช่ PCL, CO
+    if (filterDept !== "ALL") {
+       if (filterDept === "OTHER_CUSTOM") {
+          if (deptName === "PCL" || deptName === "CO" || deptName === "PCL_MIX" || deptName === "CO_MIX") continue;
+       } else if (deptName !== filterDept) {
+          continue;
+       }
+    }
 
     for (let lineName in dbData[deptName]) {
-      // กรองคำค้นหา
-      if (
-        filterSearch &&
-        !lineName.toLowerCase().includes(filterSearch) &&
-        !deptName.toLowerCase().includes(filterSearch)
-      )
-        continue;
+      // กรองคำค้นหา (ชื่อไลน์ หรือ ชื่อเครื่องจักร)
+      let lineMatch = lineName.toLowerCase().includes(filterSearch);
+      let deptMatch = deptName.toLowerCase().includes(filterSearch);
+      
+      // ค้นหาในชื่อเครื่องจักรด้วย
+      let machMatch = false;
+      if (filterSearch && dbData[deptName][lineName].machines) {
+          machMatch = Object.keys(dbData[deptName][lineName].machines).some(mach => mach.toLowerCase().includes(filterSearch));
+      }
+
+      if (filterSearch && !lineMatch && !deptMatch && !machMatch) continue;
 
       let isUpcoming = hasUpcomingTasks(dbData[deptName][lineName], true);
-      // กรองเฉพาะงานที่มีใกล้ถึง
+      // กรองเฉพาะงานที่มีใกล้ถึง (ถ้าติ๊ก)
       if (filterUpcoming && !isUpcoming) continue;
 
       hasResult = true;
       let safeDept = escapeHTML(deptName);
       let safeLine = escapeHTML(lineName);
-      let mCount = Object.keys(dbData[deptName][lineName].machines).length;
+      let lineData = dbData[deptName][lineName];
+      let mCount = lineData.machines ? Object.keys(lineData.machines).length : 0;
       let highlightClass = isUpcoming ? "upcoming-task" : "";
+      
+      // ข้อมูลอัปเดตล่าสุด
+      let safeLastUpdated = escapeHTML(lineData.lastUpdated || "ไม่มีข้อมูล");
+      let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
 
-      grid.innerHTML += `<div class="col-md-6 col-lg-4"><div class="hover-card ${highlightClass}" onclick="navigateTo('${safeDept}', '${safeLine}')">
-        <img src="${dbData[deptName][lineName].image}" class="card-img-top">
-        <div class="p-3">
-          <span class="badge bg-secondary mb-2">${safeDept}</span>
-          <h5 class="fw-bold text-primary mb-1">${safeLine}</h5>
-          <div class="text-muted small"><span class="material-symbols-rounded align-middle" style="font-size: 16px;">dns</span> ${t.has_machine} ${mCount} ${t.unit_machine}</div>
-        </div>
-        <div class="card-overlay">
-          <h5 class="fw-bold text-warning mb-3">${safeLine}</h5>
-          <div class="mt-auto text-center w-100"><span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span></div>
-        </div></div></div>`;
+      grid.innerHTML += `
+        <div class="col-md-6 col-lg-4">
+          <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
+            <!-- รูปลักษณ์ด้านบน -->
+            <img src="${lineData.image}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=NO+IMAGE'">
+            
+            <div class="p-3 d-flex flex-column flex-grow-1">
+              <div class="d-flex justify-content-between align-items-start mb-2">
+                 <span class="badge bg-secondary">${safeDept}</span>
+              </div>
+              <h5 class="fw-bold text-primary mb-1">${safeDept} - ${safeLine}</h5>
+              
+              <!-- รายละเอียดจำนวนเครื่องจักร -->
+              <div class="text-dark small fw-bold mt-2 mb-3">
+                <span class="material-symbols-rounded align-middle text-warning" style="font-size: 18px;">dns</span> 
+                มีเครื่องจักรทั้งหมด ${mCount} เครื่องในไลน์
+              </div>
+              
+              <!-- ข้อมูลอัปเดต (ดันไปอยู่ด้านล่างสุดของการ์ดเสมอ) -->
+              <div class="mt-auto pt-3 border-top text-muted" style="font-size: 11px;">
+                 <div class="d-flex justify-content-between mb-1">
+                    <span><i class="bi bi-clock me-1"></i>อัปเดตล่าสุด:</span>
+                    <span class="fw-bold text-dark">${safeLastUpdated}</span>
+                 </div>
+                 <div class="d-flex justify-content-between">
+                    <span><i class="bi bi-person me-1"></i>ผู้แก้ไข:</span>
+                    <span class="fw-bold text-dark">${safeUpdatedBy}</span>
+                 </div>
+              </div>
+            </div>
+
+            <!-- Overlay ตอนนำเมาส์ไปชี้ -->
+            <div class="card-overlay">
+              <h5 class="fw-bold text-warning mb-2">${safeDept} - ${safeLine}</h5>
+              <p class="small mb-4">คลิกเพื่อดูรายละเอียดเครื่องจักรทั้ง ${mCount} เครื่องในไลน์นี้</p>
+              <div class="mt-auto text-center w-100">
+                <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
+                  ${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>`;
     }
   }
 
   if (!hasResult)
-    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">ไม่พบข้อมูลที่ตรงกับเงื่อนไขการค้นหา</div>`;
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
+      <span class="material-symbols-rounded text-secondary mb-3" style="font-size:48px;">search_off</span><br>
+      ไม่พบข้อมูลไลน์ผลิตที่ตรงกับเงื่อนไข หรือยังไม่มีการเพิ่มข้อมูลครับ
+    </div>`;
 }
 
 function renderMachs(deptName, lineName) {
