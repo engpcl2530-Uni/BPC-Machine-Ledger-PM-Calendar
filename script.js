@@ -82,7 +82,6 @@ async function loadDataFromDatabase() {
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }
-
 }
 
 // =========================================================
@@ -93,48 +92,57 @@ async function loadDataFromDatabase() {
 function initFilters() {
   const deptSelect = document.getElementById("filterDept");
   deptSelect.innerHTML = '<option value="ALL">รวมทุกแผนก</option>';
-  
+
   for (let dept in dbData) {
-     deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`;
+    deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`;
   }
 }
 
-// อัปเดตช่องเลือกไลน์ เมื่อมีการเปลี่ยนแผนก (Cascading Dropdown)
+// อัปเดตช่องเลือกไลน์ เมื่อมีการเปลี่ยนแผนก
 function updateLineDropdown() {
   const dept = document.getElementById("filterDept").value;
   const lineSelect = document.getElementById("filterLine");
-  
-  lineSelect.innerHTML = '<option value="ALL">รวมทุกไลน์ในแผนกนี้</option>';
-  
-  if (dept !== "ALL" && dbData[dept]) {
-      for (let line in dbData[dept]) {
-          lineSelect.innerHTML += `<option value="${line}">${line}</option>`;
-      }
-      lineSelect.disabled = false;
+
+  lineSelect.innerHTML = '<option value="ALL">รวมทุกไลน์</option>';
+
+  if (dept === "ALL") {
+    lineSelect.disabled = true;
   } else {
-      lineSelect.disabled = true;
+    // ดึงรายชื่อไลน์ตามแผนกที่เลือก
+    if (dept === "OTHER") {
+      for (let d in dbData) {
+        if (d !== "CO" && d !== "PCL") {
+          for (let line in dbData[d]) {
+            lineSelect.innerHTML += `<option value="${line}">${line}</option>`;
+          }
+        }
+      }
+    } else if (dbData[dept]) {
+      for (let line in dbData[dept]) {
+        lineSelect.innerHTML += `<option value="${line}">${line}</option>`;
+      }
+    }
+    lineSelect.disabled = false;
   }
   handleRouting(); // วาดหน้าจอใหม่ทันที
 }
-
 // สวิตช์ปุ่มแคปซูล 2 สัปดาห์
 function toggleUpcomingFilter() {
   const btn = document.getElementById("btnFilterUpcoming");
   const icon = document.getElementById("iconUpcoming");
   btn.classList.toggle("active");
-  
-  if(btn.classList.contains("active")) {
-      icon.innerText = "local_fire_department"; // เปลี่ยนเป็นรูปไฟ
+
+  if (btn.classList.contains("active")) {
+    icon.innerText = "local_fire_department"; // เปลี่ยนเป็นรูปไฟ
   } else {
-      icon.innerText = "notifications"; // กลับเป็นกระดิ่ง
+    icon.innerText = "notifications"; // กลับเป็นกระดิ่ง
   }
   handleRouting();
 }
 
-// เช็คว่าไลน์/เครื่องจักรนี้ มีอะไหล่ตรงกับ Class ที่ค้นหาหรือไม่
+// เช็ค Class ของอะไหล่ในเครื่องจักร
 function hasClassTarget(entityData, targetClass, isLine = false) {
   if (targetClass === "ALL") return true;
-  
   const checkCompClass = (comp) => comp.class === targetClass;
 
   if (isLine) {
@@ -172,17 +180,17 @@ function getCurrentWeekNumber() {
   return Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
 }
 
-// ฟังก์ชันเช็คว่าเครื่องจักร/ไลน์นี้ มีงานในสัปดาห์นี้หรือสัปดาห์หน้าหรือไม่?
+// ฟังก์ชันสแกนหางานล่วงหน้า 2 สัปดาห์
 function hasUpcomingTasks(entityData, isLine = false) {
-  const currentWeekIndex = getCurrentWeekNumber() - 1; // index ใน array 0-51
-  let found = false;
+  const currentWeekIndex = getCurrentWeekNumber() - 1; // สัปดาห์ปัจจุบัน
 
   const checkComponent = (comp) => {
-    // เช็คสัปดาห์ปัจจุบัน (w) และ สัปดาห์หน้า (w+1)
+    // เช็คสัปดาห์ปัจจุบัน และ สัปดาห์หน้า (รวม 2 วีคล่วงหน้า)
     for (let i = currentWeekIndex; i <= currentWeekIndex + 1; i++) {
       if (i < 52 && comp.weeks[i]) {
         let w = comp.weeks[i];
-        if (w.t === 1 || w.r === 1 || w.b === 1 || w.l === 1) return true;
+        // ตรวจจับเฉพาะงาน PM (t=ดำ, b=เหลือง) หรือ Breakdown (r=แดง)
+        if (w.t === 1 || w.b === 1 || w.r === 1) return true;
       }
     }
     return false;
@@ -197,7 +205,6 @@ function hasUpcomingTasks(entityData, isLine = false) {
       }
     }
   } else {
-    // เช็คระดับเครื่องจักร
     for (let s in entityData.subassemblies) {
       for (let c of entityData.subassemblies[s].components) {
         if (checkComponent(c)) return true;
@@ -276,66 +283,77 @@ function handleRouting() {
 // 🟢 อัปเดตฟังก์ชัน Render ต่างๆ ให้ตรงกับ CSS (.hover-card, .card-overlay)
 // =========================================================
 
-// อัปเดต renderLines() ให้รองรับตัวกรองทั้งหมด
+// อัปเดต renderLines() ให้สแกนและโชว์แบนเนอร์แจ้งเตือนทันที
 function renderLines() {
   let grid = document.getElementById("lineGrid");
   grid.innerHTML = "";
   const lang = getCurrentLang();
   const t = translations[lang];
 
-  // 🔴 ดึงค่าจากตัวกรองแบบพรีเมียม
   const filterDept = document.getElementById("filterDept").value;
   const filterLine = document.getElementById("filterLine").value;
   const filterClass = document.getElementById("filterClass").value;
-  const filterSearch = document.getElementById("filterSearch").value.toLowerCase();
-  const filterUpcoming = document.getElementById("btnFilterUpcoming").classList.contains("active");
+  const filterSearch = document
+    .getElementById("filterSearch")
+    .value.toLowerCase();
 
   let hasResult = false;
+  let hasAnyUpcoming = false; // ตัวแปรเช็คว่าเจองานด่วนหรือไม่
 
   for (let deptName in dbData) {
-    if (filterDept !== "ALL" && deptName !== filterDept) continue;
+    // กรองแผนก
+    if (filterDept !== "ALL") {
+      if (filterDept === "OTHER") {
+        if (deptName === "CO" || deptName === "PCL") continue;
+      } else if (deptName !== filterDept) {
+        continue;
+      }
+    }
 
     for (let lineName in dbData[deptName]) {
-      // 🔴 กรองด้วย Dropdown ไลน์
+      // กรองไลน์ผลิต
       if (filterLine !== "ALL" && lineName !== filterLine) continue;
 
       let lineData = dbData[deptName][lineName];
-      
-      // กรองคำค้นหา (ชื่อไลน์, แผนก, เครื่องจักร)
+
+      // กรองคำค้นหา
       let lineMatch = lineName.toLowerCase().includes(filterSearch);
       let deptMatch = deptName.toLowerCase().includes(filterSearch);
       let machMatch = false;
       if (filterSearch && lineData.machines) {
-          machMatch = Object.keys(lineData.machines).some(mach => mach.toLowerCase().includes(filterSearch));
+        machMatch = Object.keys(lineData.machines).some((mach) =>
+          mach.toLowerCase().includes(filterSearch),
+        );
       }
       if (filterSearch && !lineMatch && !deptMatch && !machMatch) continue;
 
-      // 🔴 กรองงานด่วน (2 สัปดาห์)
-      let isUpcoming = hasUpcomingTasks(lineData, true);
-      if (filterUpcoming && !isUpcoming) continue;
-      
-      // 🔴 กรองตาม Class (ถ้ามีอะไหล่ Class นั้นอยู่ จะโชว์ขึ้นมา)
-      if (filterClass !== "ALL" && !hasClassTarget(lineData, filterClass, true)) continue;
+      // กรองตาม Class
+      if (filterClass !== "ALL" && !hasClassTarget(lineData, filterClass, true))
+        continue;
 
       hasResult = true;
       let safeDept = escapeHTML(deptName);
       let safeLine = escapeHTML(lineName);
-      let mCount = lineData.machines ? Object.keys(lineData.machines).length : 0;
-      let highlightClass = isUpcoming ? "upcoming-task" : "";
+      let mCount = lineData.machines
+        ? Object.keys(lineData.machines).length
+        : 0;
       let safeLastUpdated = escapeHTML(lineData.lastUpdated || "-");
       let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
-      
+
+      // 🔴 สแกนงานล่วงหน้า 2 สัปดาห์อัตโนมัติ
+      let isUpcoming = hasUpcomingTasks(lineData, true);
+      if (isUpcoming) hasAnyUpcoming = true; // บันทึกสถานะว่าเจอ
+      let highlightClass = isUpcoming ? "upcoming-task" : "";
+
       let imageUrl = lineData.image;
       if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-          imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
+        imageUrl =
+          "https://via.placeholder.com/400x200?text=No+Image+Available";
       }
 
-      // วาดการ์ดเหมือนเดิม (ใช้โค้ดวาดการ์ดจากคำตอบที่แล้วได้เลยครับ...)
-      // โครงสร้าง HTML ที่ตรงกับ CSS ของคุณ (.hover-card, .card-overlay)
       grid.innerHTML += `
         <div class="col-md-6 col-lg-4">
           <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
-            <!-- (โค้ดวาดการ์ดเหมือนที่เพิ่งแก้ไปล่าสุดครับ) -->
             <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
             <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
               <div class="mb-2"><span class="badge bg-secondary">${safeDept}</span></div>
@@ -360,6 +378,16 @@ function renderLines() {
             </div>
           </div>
         </div>`;
+    }
+  }
+
+  // 🔴 ควบคุมการแสดงผลแบนเนอร์เตือนงานอัตโนมัติ
+  let alertBanner = document.getElementById("upcomingAlertBanner");
+  if (alertBanner) {
+    if (hasAnyUpcoming) {
+      alertBanner.classList.remove("d-none");
+    } else {
+      alertBanner.classList.add("d-none");
     }
   }
 
