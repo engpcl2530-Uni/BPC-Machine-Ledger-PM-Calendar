@@ -195,6 +195,140 @@ function handleRouting() {
   window.scrollTo(0, 0);
 }
 
+// =========================================================
+// 🟢 อัปเดตฟังก์ชัน Render ต่างๆ ให้ตรงกับ CSS (.hover-card, .card-overlay)
+// =========================================================
+
+function renderLines() {
+  let grid = document.getElementById("lineGrid");
+  grid.innerHTML = "";
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
+  // ดึงค่าจาก Filter หน้าเว็บ
+  const filterDept = document.getElementById("filterDept").value;
+  const filterSearch = document
+    .getElementById("filterSearch")
+    .value.toLowerCase();
+  const filterUpcoming = document.getElementById("filterUpcoming").checked;
+
+  let hasResult = false;
+
+  for (let deptName in dbData) {
+    // กรองตาม Dropdown แผนก
+    if (filterDept !== "ALL") {
+      if (filterDept === "OTHER_CUSTOM") {
+        if (
+          deptName === "PCL" ||
+          deptName === "CO" ||
+          deptName === "PCL_MIX" ||
+          deptName === "CO_MIX"
+        )
+          continue;
+      } else if (deptName !== filterDept) {
+        continue;
+      }
+    }
+
+    for (let lineName in dbData[deptName]) {
+      // กรองคำค้นหา (ชื่อไลน์ หรือ ชื่อแผนก)
+      let lineMatch = lineName.toLowerCase().includes(filterSearch);
+      let deptMatch = deptName.toLowerCase().includes(filterSearch);
+
+      // ค้นหาในชื่อเครื่องจักรด้วย
+      let machMatch = false;
+      if (filterSearch && dbData[deptName][lineName].machines) {
+        machMatch = Object.keys(dbData[deptName][lineName].machines).some(
+          (mach) => mach.toLowerCase().includes(filterSearch),
+        );
+      }
+
+      if (filterSearch && !lineMatch && !deptMatch && !machMatch) continue;
+
+      let lineData = dbData[deptName][lineName];
+      let isUpcoming = hasUpcomingTasks(lineData, true);
+
+      // กรองเฉพาะงานที่มีใกล้ถึง (ถ้าติ๊กเปิด)
+      if (filterUpcoming && !isUpcoming) continue;
+
+      hasResult = true;
+      let safeDept = escapeHTML(deptName);
+      let safeLine = escapeHTML(lineName);
+      let mCount = lineData.machines
+        ? Object.keys(lineData.machines).length
+        : 0;
+
+      // คลาสไฮไลต์ถ้ามีงานใกล้ถึง
+      let highlightClass = isUpcoming ? "upcoming-task" : "";
+
+      // ข้อมูลอัปเดตล่าสุด
+      let safeLastUpdated = escapeHTML(lineData.lastUpdated || "-");
+      let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
+
+      // รูปภาพ (ถ้าหาไม่ได้ให้ใช้รูป Placeholder แทนชั่วคราว)
+      let imageUrl = lineData.image;
+      if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
+        imageUrl =
+          "https://via.placeholder.com/400x200?text=No+Image+Available";
+      }
+
+      // โครงสร้าง HTML ที่ตรงกับ CSS ของคุณ
+      grid.innerHTML += `
+        <div class="col-md-6 col-lg-4">
+          <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
+            
+            <!-- รูปภาพด้านบน -->
+            <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
+            
+            <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
+              <div class="mb-2">
+                 <span class="badge bg-secondary">${safeDept}</span>
+              </div>
+              <h5 class="fw-bold text-primary mb-1">${safeDept} - ${safeLine}</h5>
+              
+              <!-- รายละเอียดจำนวนเครื่องจักร -->
+              <div class="text-muted small fw-bold mt-2">
+                <span class="material-symbols-rounded align-middle text-secondary" style="font-size: 18px;">dns</span> 
+                มีเครื่องจักรทั้งหมด ${mCount} เครื่อง
+              </div>
+              
+              <!-- ข้อมูลอัปเดต ดันไปอยู่ด้านล่าง -->
+              <div class="mt-auto pt-3 border-top mt-3" style="font-size: 11px;">
+                 <div class="d-flex justify-content-between mb-1 text-muted">
+                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">schedule</span>อัปเดต:</span>
+                    <span class="fw-bold text-dark">${safeLastUpdated}</span>
+                 </div>
+                 <div class="d-flex justify-content-between text-muted">
+                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">person</span>ผู้แก้ไข:</span>
+                    <span class="fw-bold text-dark">${safeUpdatedBy}</span>
+                 </div>
+              </div>
+            </div>
+
+            <!-- Overlay ตอนนำเมาส์ไปชี้ -->
+            <div class="card-overlay">
+              <h5 class="fw-bold text-warning mb-2">${safeDept} - ${safeLine}</h5>
+              <div class="mt-auto text-center w-100">
+                <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
+                  ${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
+                </span>
+              </div>
+            </div>
+            
+          </div>
+        </div>`;
+    }
+  }
+
+  if (!hasResult) {
+    grid.innerHTML = `
+      <div class="col-12 text-center text-muted p-5">
+        <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">search_off</span>
+        ไม่พบข้อมูลที่ตรงกับเงื่อนไข หรือยังไม่มีข้อมูลในระบบครับ
+      </div>`;
+  }
+}
+
 // 🔴 2. อัปเดต renderMachs ให้แสดงข้อความเวลาว่างเปล่าได้ชัดเจน
 function renderMachs(deptName, lineName) {
   let grid = document.getElementById("machGrid");
