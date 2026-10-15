@@ -205,7 +205,9 @@ function renderLines() {
 
   // ดึงค่าจาก Filter หน้าเว็บ
   const filterDept = document.getElementById("filterDept").value;
-  const filterSearch = document.getElementById("filterSearch").value.toLowerCase();
+  const filterSearch = document
+    .getElementById("filterSearch")
+    .value.toLowerCase();
   const filterUpcoming = document.getElementById("filterUpcoming").checked;
 
   let hasResult = false;
@@ -213,48 +215,59 @@ function renderLines() {
   for (let deptName in dbData) {
     // กรองตาม Dropdown แผนก
     if (filterDept !== "ALL") {
-       if (filterDept === "OTHER_CUSTOM") {
-          if (deptName === "PCL" || deptName === "CO" || deptName === "PCL_MIX" || deptName === "CO_MIX") continue;
-       } else if (deptName !== filterDept) {
+      if (filterDept === "OTHER_CUSTOM") {
+        if (
+          deptName === "PCL" ||
+          deptName === "CO" ||
+          deptName === "PCL_MIX" ||
+          deptName === "CO_MIX"
+        )
           continue;
-       }
+      } else if (deptName !== filterDept) {
+        continue;
+      }
     }
 
     for (let lineName in dbData[deptName]) {
       // กรองคำค้นหา (ชื่อไลน์ หรือ ชื่อแผนก)
       let lineMatch = lineName.toLowerCase().includes(filterSearch);
       let deptMatch = deptName.toLowerCase().includes(filterSearch);
-      
+
       // ค้นหาในชื่อเครื่องจักรด้วย
       let machMatch = false;
       if (filterSearch && dbData[deptName][lineName].machines) {
-          machMatch = Object.keys(dbData[deptName][lineName].machines).some(mach => mach.toLowerCase().includes(filterSearch));
+        machMatch = Object.keys(dbData[deptName][lineName].machines).some(
+          (mach) => mach.toLowerCase().includes(filterSearch),
+        );
       }
 
       if (filterSearch && !lineMatch && !deptMatch && !machMatch) continue;
 
       let lineData = dbData[deptName][lineName];
       let isUpcoming = hasUpcomingTasks(lineData, true);
-      
+
       // กรองเฉพาะงานที่มีใกล้ถึง (ถ้าติ๊กเปิด)
       if (filterUpcoming && !isUpcoming) continue;
 
       hasResult = true;
       let safeDept = escapeHTML(deptName);
       let safeLine = escapeHTML(lineName);
-      let mCount = lineData.machines ? Object.keys(lineData.machines).length : 0;
-      
+      let mCount = lineData.machines
+        ? Object.keys(lineData.machines).length
+        : 0;
+
       // คลาสไฮไลต์ถ้ามีงานใกล้ถึง
       let highlightClass = isUpcoming ? "upcoming-task" : "";
-      
+
       // ข้อมูลอัปเดตล่าสุด
       let safeLastUpdated = escapeHTML(lineData.lastUpdated || "-");
       let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
-      
+
       // รูปภาพ (ถ้าหาไม่ได้ให้ใช้รูป Placeholder แทนชั่วคราว)
       let imageUrl = lineData.image;
       if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-          imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
+        imageUrl =
+          "https://via.placeholder.com/400x200?text=No+Image+Available";
       }
 
       // โครงสร้าง HTML ที่ตรงกับ CSS ของคุณ
@@ -335,14 +348,16 @@ function renderMachs(deptName, lineName) {
   for (let machName in line.machines) {
     let safeMachName = escapeHTML(machName);
     let machData = line.machines[machName];
-    let sCount = machData.subassemblies ? Object.keys(machData.subassemblies).length : 0;
-    
+    let sCount = machData.subassemblies
+      ? Object.keys(machData.subassemblies).length
+      : 0;
+
     let isUpcoming = hasUpcomingTasks(machData, false);
     let highlightClass = isUpcoming ? "upcoming-task" : "";
-    
+
     let imageUrl = machData.image;
     if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-        imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
+      imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
     }
 
     grid.innerHTML += `
@@ -380,10 +395,14 @@ function renderMachs(deptName, lineName) {
 function renderSubs(deptName, lineName, machName) {
   let grid = document.getElementById("subGrid");
   grid.innerHTML = "";
-  
-  if (!dbData[deptName] || !dbData[deptName][lineName] || !dbData[deptName][lineName].machines[machName]) {
-     grid.innerHTML = `<div class="col-12 text-center text-muted p-5">ไม่พบข้อมูลระบบย่อย</div>`;
-     return;
+
+  if (
+    !dbData[deptName] ||
+    !dbData[deptName][lineName] ||
+    !dbData[deptName][lineName].machines[machName]
+  ) {
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">ไม่พบข้อมูลระบบย่อย</div>`;
+    return;
   }
 
   let mach = dbData[deptName][lineName].machines[machName];
@@ -394,10 +413,10 @@ function renderSubs(deptName, lineName, machName) {
     let safeSubName = escapeHTML(subName);
     let subData = mach.subassemblies[subName];
     let cCount = subData.components ? subData.components.length : 0;
-    
+
     let imageUrl = subData.image;
     if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-        imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
+      imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
     }
 
     grid.innerHTML += `
@@ -1497,16 +1516,19 @@ function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
   });
 }
 
-// ฟังก์ชันสำหรับเรียก API ไปดึงข้อมูลทั้งหมดจาก Main_Hub
+// ================= 1. ดึงข้อมูลจากฐานข้อมูล =================
 async function loadDataFromDatabase() {
   document.getElementById("loadingOverlay").style.display = "flex";
   try {
-    const result = await ApiService.request("get_all_data"); 
-    dbData = result.data; 
-    
-    // อัปเดตหน้าจอโดยเรียกฟังก์ชันวาดการ์ด
-    renderDepartmentsOrLines(); 
-    checkDraftStatus(); 
+    // โหลดข้อมูลมาจาก API
+    const result = await ApiService.request("get_all_data");
+    dbData = result.data;
+
+    // 🔴 แก้ตรงนี้: ให้ระบบ Routing จัดการวาดหน้าจอที่ถูกต้องทันที
+    handleRouting();
+
+    // เช็คว่ามีแบบร่างค้างไว้ไหม
+    checkDraftStatus();
   } catch (err) {
     showModalAlert(
       "โหลดข้อมูลล้มเหลว",
@@ -1518,19 +1540,3 @@ async function loadDataFromDatabase() {
   }
 }
 
-// สร้างฟังก์ชันที่จะวาดรายชื่อที่ได้มา ลงเป็น Card หรือ List บนหน้า HTML
-function renderDepartmentsOrLines() {
-  let grid = document.getElementById("lineGrid"); 
-  grid.innerHTML = ""; 
-
-  // สมมติว่าต้องการแสดงรายการทั้งหมดใน dbData ลงบนหน้าจอ
-  for (let deptName in dbData) {
-    for (let lineName in dbData[deptName]) {
-        // สามารถวาด HTML ใหม่ออกมาเป็นการ์ดได้ตรงนี้ 
-        grid.innerHTML += `<div class="card p-3 mb-2">
-            <h5>แผนก: ${deptName} - ไลน์: ${lineName}</h5>
-            <button onclick="openLineSheet('${deptName}', '${lineName}')">ดูเครื่องจักร</button>
-        </div>`;
-    }
-  }
-}
