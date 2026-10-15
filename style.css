@@ -1012,3 +1012,87 @@ body {
     box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
   }
 }
+
+/* =========================================================
+   Premium Floating Filter Card 
+   ========================================================= */
+.premium-filter-card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 10px 40px rgba(0, 31, 91, 0.08);
+  border: 1px solid rgba(0, 94, 184, 0.05);
+  padding: 30px;
+  position: relative;
+  z-index: 10;
+}
+
+.search-bar-lg {
+  border-radius: 14px;
+  padding: 16px 20px 16px 55px;
+  font-size: 16px;
+  font-weight: 500;
+  border: 2px solid #e2e8f0;
+  background-color: #f8fafc;
+  transition: all 0.3s ease;
+  color: #1e293b;
+}
+
+.search-bar-lg:focus {
+  border-color: var(--secondary);
+  background-color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(0, 94, 184, 0.15);
+}
+
+.search-bar-lg::placeholder {
+  color: #94a3b8;
+  font-weight: 400;
+}
+
+.search-icon-inside {
+  position: absolute;
+  left: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--secondary);
+  font-size: 26px;
+  z-index: 5;
+}
+
+.filter-select {
+  border-radius: 10px;
+  border: 1.5px solid #cbd5e1;
+  padding: 12px 15px;
+  font-weight: 600;
+  color: #334155;
+  background-color: #ffffff;
+  cursor: pointer;
+}
+
+/* ปุ่มแคปซูล (Pill Button) ไฮไลต์งาน */
+.btn-upcoming {
+  border-radius: 50px;
+  padding: 12px 20px;
+  font-weight: 700;
+  transition: all 0.3s;
+  border: 2px solid #e2e8f0;
+  background: #f8fafc;
+  color: #64748b;
+}
+
+.btn-upcoming:hover {
+  background: #f1f5f9;
+}
+
+.btn-upcoming.active {
+  background: #fff5f5;
+  border-color: #ef4444;
+  color: #ef4444;
+  box-shadow: 0 8px 20px rgba(239, 68, 68, 0.2);
+  animation: pulse-red 2s infinite;
+}
+
+@keyframes pulse-red {
+  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+}

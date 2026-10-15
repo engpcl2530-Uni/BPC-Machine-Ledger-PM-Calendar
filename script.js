@@ -66,8 +66,11 @@ let currentSub = null;
 // ================= 1. ดึงข้อมูลจากฐานข้อมูล =================
 async function loadDataFromDatabase() {
   document.getElementById("loadingOverlay").style.display = "flex";
+
   try {
+    const result = await ApiService.request("get_all_data");
     dbData = await ApiService.getAllData();
+    initFilters();
     handleRouting();
     checkDraftStatus(); // เช็คว่ามีแบบร่างค้างไว้ไหม
   } catch (err) {
@@ -79,7 +82,79 @@ async function loadDataFromDatabase() {
   } finally {
     document.getElementById("loadingOverlay").style.display = "none";
   }
+
 }
+
+// =========================================================
+// 🔴 ฟังก์ชันควบคุม Smart Filters
+// =========================================================
+
+// สร้างรายการแผนกจาก dbData อัตโนมัติ
+function initFilters() {
+  const deptSelect = document.getElementById("filterDept");
+  deptSelect.innerHTML = '<option value="ALL">รวมทุกแผนก</option>';
+  
+  for (let dept in dbData) {
+     deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`;
+  }
+}
+
+// อัปเดตช่องเลือกไลน์ เมื่อมีการเปลี่ยนแผนก (Cascading Dropdown)
+function updateLineDropdown() {
+  const dept = document.getElementById("filterDept").value;
+  const lineSelect = document.getElementById("filterLine");
+  
+  lineSelect.innerHTML = '<option value="ALL">รวมทุกไลน์ในแผนกนี้</option>';
+  
+  if (dept !== "ALL" && dbData[dept]) {
+      for (let line in dbData[dept]) {
+          lineSelect.innerHTML += `<option value="${line}">${line}</option>`;
+      }
+      lineSelect.disabled = false;
+  } else {
+      lineSelect.disabled = true;
+  }
+  handleRouting(); // วาดหน้าจอใหม่ทันที
+}
+
+// สวิตช์ปุ่มแคปซูล 2 สัปดาห์
+function toggleUpcomingFilter() {
+  const btn = document.getElementById("btnFilterUpcoming");
+  const icon = document.getElementById("iconUpcoming");
+  btn.classList.toggle("active");
+  
+  if(btn.classList.contains("active")) {
+      icon.innerText = "local_fire_department"; // เปลี่ยนเป็นรูปไฟ
+  } else {
+      icon.innerText = "notifications"; // กลับเป็นกระดิ่ง
+  }
+  handleRouting();
+}
+
+// เช็คว่าไลน์/เครื่องจักรนี้ มีอะไหล่ตรงกับ Class ที่ค้นหาหรือไม่
+function hasClassTarget(entityData, targetClass, isLine = false) {
+  if (targetClass === "ALL") return true;
+  
+  const checkCompClass = (comp) => comp.class === targetClass;
+
+  if (isLine) {
+    for (let m in entityData.machines) {
+      for (let s in entityData.machines[m].subassemblies) {
+        for (let c of entityData.machines[m].subassemblies[s].components) {
+          if (checkCompClass(c)) return true;
+        }
+      }
+    }
+  } else {
+    for (let s in entityData.subassemblies) {
+      for (let c of entityData.subassemblies[s].components) {
+        if (checkCompClass(c)) return true;
+      }
+    }
+  }
+  return false;
+}
+
 window.onload = () => {
   loadDataFromDatabase();
 };
@@ -156,7 +231,9 @@ function handleRouting() {
   currentSub = params.get("sub");
 
   const lang = getCurrentLang();
-  document.querySelectorAll(".view-section").forEach((v) => v.classList.remove("active"));
+  document
+    .querySelectorAll(".view-section")
+    .forEach((v) => v.classList.remove("active"));
   let breadcrumb = "Dashboard";
   toggleFabMode(false);
 
@@ -167,26 +244,26 @@ function handleRouting() {
 
   if (currentDept && currentLine && currentMach && currentSub) {
     // หน้า Component
-    document.getElementById("lbl-sub-title").innerHTML = `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept} > ไลน์: ${currentLine} > เครื่องจักร: ${currentMach}</span><br/>ระบบย่อย (Subassembly): <span class="text-primary">${currentSub}</span>`;
+    document.getElementById("lbl-sub-title").innerHTML =
+      `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept} > ไลน์: ${currentLine} > เครื่องจักร: ${currentMach}</span><br/>ระบบย่อย (Subassembly): <span class="text-primary">${currentSub}</span>`;
     renderComponentTable();
     document.getElementById("view-components").classList.add("active");
     breadcrumb = `${currentDept} > ${currentLine} > ${currentMach} > ${currentSub}`;
-  } 
-  else if (currentDept && currentLine && currentMach) {
+  } else if (currentDept && currentLine && currentMach) {
     // หน้าแสดงระบบย่อย
-    document.getElementById("lbl-mach-title").innerHTML = `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept} > ไลน์: ${currentLine}</span><br/>รายชื่อระบบย่อย (Subassemblies) ของเครื่องจักร: <span class="text-danger">${currentMach}</span>`;
+    document.getElementById("lbl-mach-title").innerHTML =
+      `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept} > ไลน์: ${currentLine}</span><br/>รายชื่อระบบย่อย (Subassemblies) ของเครื่องจักร: <span class="text-danger">${currentMach}</span>`;
     renderSubs(currentDept, currentLine, currentMach);
     document.getElementById("view-subs").classList.add("active");
     breadcrumb = `${currentDept} > ${currentLine} > ${currentMach}`;
-  } 
-  else if (currentDept && currentLine) {
+  } else if (currentDept && currentLine) {
     // หน้าแสดงเครื่องจักร
-    document.getElementById("lbl-line-title").innerHTML = `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept}</span><br/>รายชื่อเครื่องจักรทั้งหมดในไลน์ผลิต: <span class="text-primary">${currentLine}</span>`;
+    document.getElementById("lbl-line-title").innerHTML =
+      `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept}</span><br/>รายชื่อเครื่องจักรทั้งหมดในไลน์ผลิต: <span class="text-primary">${currentLine}</span>`;
     renderMachs(currentDept, currentLine);
     document.getElementById("view-machs").classList.add("active");
     breadcrumb = `${currentDept} > ${currentLine}`;
-  } 
-  else {
+  } else {
     renderLines();
     document.getElementById("view-lines").classList.add("active");
   }
@@ -199,130 +276,95 @@ function handleRouting() {
 // 🟢 อัปเดตฟังก์ชัน Render ต่างๆ ให้ตรงกับ CSS (.hover-card, .card-overlay)
 // =========================================================
 
+// อัปเดต renderLines() ให้รองรับตัวกรองทั้งหมด
 function renderLines() {
   let grid = document.getElementById("lineGrid");
   grid.innerHTML = "";
   const lang = getCurrentLang();
   const t = translations[lang];
 
-  // ดึงค่าจาก Filter หน้าเว็บ
+  // 🔴 ดึงค่าจากตัวกรองแบบพรีเมียม
   const filterDept = document.getElementById("filterDept").value;
-  const filterSearch = document
-    .getElementById("filterSearch")
-    .value.toLowerCase();
-  const filterUpcoming = document.getElementById("filterUpcoming").checked;
+  const filterLine = document.getElementById("filterLine").value;
+  const filterClass = document.getElementById("filterClass").value;
+  const filterSearch = document.getElementById("filterSearch").value.toLowerCase();
+  const filterUpcoming = document.getElementById("btnFilterUpcoming").classList.contains("active");
 
   let hasResult = false;
 
   for (let deptName in dbData) {
-    // กรองตาม Dropdown แผนก
-    if (filterDept !== "ALL") {
-      if (filterDept === "OTHER_CUSTOM") {
-        if (
-          deptName === "PCL" ||
-          deptName === "CO" ||
-          deptName === "PCL_MIX" ||
-          deptName === "CO_MIX"
-        )
-          continue;
-      } else if (deptName !== filterDept) {
-        continue;
-      }
-    }
+    if (filterDept !== "ALL" && deptName !== filterDept) continue;
 
     for (let lineName in dbData[deptName]) {
-      // กรองคำค้นหา (ชื่อไลน์ หรือ ชื่อแผนก)
-      let lineMatch = lineName.toLowerCase().includes(filterSearch);
-      let deptMatch = deptName.toLowerCase().includes(filterSearch);
-
-      // ค้นหาในชื่อเครื่องจักรด้วย
-      let machMatch = false;
-      if (filterSearch && dbData[deptName][lineName].machines) {
-        machMatch = Object.keys(dbData[deptName][lineName].machines).some(
-          (mach) => mach.toLowerCase().includes(filterSearch),
-        );
-      }
-
-      if (filterSearch && !lineMatch && !deptMatch && !machMatch) continue;
+      // 🔴 กรองด้วย Dropdown ไลน์
+      if (filterLine !== "ALL" && lineName !== filterLine) continue;
 
       let lineData = dbData[deptName][lineName];
-      let isUpcoming = hasUpcomingTasks(lineData, true);
+      
+      // กรองคำค้นหา (ชื่อไลน์, แผนก, เครื่องจักร)
+      let lineMatch = lineName.toLowerCase().includes(filterSearch);
+      let deptMatch = deptName.toLowerCase().includes(filterSearch);
+      let machMatch = false;
+      if (filterSearch && lineData.machines) {
+          machMatch = Object.keys(lineData.machines).some(mach => mach.toLowerCase().includes(filterSearch));
+      }
+      if (filterSearch && !lineMatch && !deptMatch && !machMatch) continue;
 
-      // กรองเฉพาะงานที่มีใกล้ถึง (ถ้าติ๊กเปิด)
+      // 🔴 กรองงานด่วน (2 สัปดาห์)
+      let isUpcoming = hasUpcomingTasks(lineData, true);
       if (filterUpcoming && !isUpcoming) continue;
+      
+      // 🔴 กรองตาม Class (ถ้ามีอะไหล่ Class นั้นอยู่ จะโชว์ขึ้นมา)
+      if (filterClass !== "ALL" && !hasClassTarget(lineData, filterClass, true)) continue;
 
       hasResult = true;
       let safeDept = escapeHTML(deptName);
       let safeLine = escapeHTML(lineName);
-      let mCount = lineData.machines
-        ? Object.keys(lineData.machines).length
-        : 0;
-
-      // คลาสไฮไลต์ถ้ามีงานใกล้ถึง
+      let mCount = lineData.machines ? Object.keys(lineData.machines).length : 0;
       let highlightClass = isUpcoming ? "upcoming-task" : "";
-
-      // ข้อมูลอัปเดตล่าสุด
       let safeLastUpdated = escapeHTML(lineData.lastUpdated || "-");
       let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
-
-      // รูปภาพ (ถ้าหาไม่ได้ให้ใช้รูป Placeholder แทนชั่วคราว)
+      
       let imageUrl = lineData.image;
       if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-        imageUrl =
-          "https://via.placeholder.com/400x200?text=No+Image+Available";
+          imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
       }
 
-      // โครงสร้าง HTML ที่ตรงกับ CSS ของคุณ
+      // วาดการ์ดเหมือนเดิม (ใช้โค้ดวาดการ์ดจากคำตอบที่แล้วได้เลยครับ...)
+      // โครงสร้าง HTML ที่ตรงกับ CSS ของคุณ (.hover-card, .card-overlay)
       grid.innerHTML += `
         <div class="col-md-6 col-lg-4">
           <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
-            
-            <!-- รูปภาพด้านบน -->
+            <!-- (โค้ดวาดการ์ดเหมือนที่เพิ่งแก้ไปล่าสุดครับ) -->
             <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
-            
             <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
-              <div class="mb-2">
-                 <span class="badge bg-secondary">${safeDept}</span>
-              </div>
+              <div class="mb-2"><span class="badge bg-secondary">${safeDept}</span></div>
               <h5 class="fw-bold text-primary mb-1">${safeDept} - ${safeLine}</h5>
-              
-              <!-- รายละเอียดจำนวนเครื่องจักร -->
               <div class="text-muted small fw-bold mt-2">
-                <span class="material-symbols-rounded align-middle text-secondary" style="font-size: 18px;">dns</span> 
-                มีเครื่องจักรทั้งหมด ${mCount} เครื่อง
+                <span class="material-symbols-rounded align-middle text-secondary" style="font-size: 18px;">dns</span> มีเครื่องจักรทั้งหมด ${mCount} เครื่อง
               </div>
-              
-              <!-- ข้อมูลอัปเดต ดันไปอยู่ด้านล่าง -->
               <div class="mt-auto pt-3 border-top mt-3" style="font-size: 11px;">
                  <div class="d-flex justify-content-between mb-1 text-muted">
-                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">schedule</span>อัปเดต:</span>
-                    <span class="fw-bold text-dark">${safeLastUpdated}</span>
+                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">schedule</span>อัปเดต:</span><span class="fw-bold text-dark">${safeLastUpdated}</span>
                  </div>
                  <div class="d-flex justify-content-between text-muted">
-                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">person</span>ผู้แก้ไข:</span>
-                    <span class="fw-bold text-dark">${safeUpdatedBy}</span>
+                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">person</span>ผู้แก้ไข:</span><span class="fw-bold text-dark">${safeUpdatedBy}</span>
                  </div>
               </div>
             </div>
-
-            <!-- Overlay ตอนนำเมาส์ไปชี้ -->
             <div class="card-overlay">
               <h5 class="fw-bold text-warning mb-2">${safeDept} - ${safeLine}</h5>
               <div class="mt-auto text-center w-100">
-                <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
-                  ${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
-                </span>
+                <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span>
               </div>
             </div>
-            
           </div>
         </div>`;
     }
   }
 
   if (!hasResult) {
-    grid.innerHTML = `
-      <div class="col-12 text-center text-muted p-5">
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
         <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">search_off</span>
         ไม่พบข้อมูลที่ตรงกับเงื่อนไข หรือยังไม่มีข้อมูลในระบบครับ
       </div>`;
@@ -334,7 +376,12 @@ function renderMachs(deptName, lineName) {
   let grid = document.getElementById("machGrid");
   grid.innerHTML = "";
 
-  if (!dbData[deptName] || !dbData[deptName][lineName] || !dbData[deptName][lineName].machines || Object.keys(dbData[deptName][lineName].machines).length === 0) {
+  if (
+    !dbData[deptName] ||
+    !dbData[deptName][lineName] ||
+    !dbData[deptName][lineName].machines ||
+    Object.keys(dbData[deptName][lineName].machines).length === 0
+  ) {
     grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
        <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">precision_manufacturing</span>
        <h5>หน้าเครื่องจักรนี้ แผนก <span class="text-dark">${escapeHTML(deptName)}</span> ไลน์ <span class="text-dark">${escapeHTML(lineName)}</span></h5>
@@ -350,14 +397,16 @@ function renderMachs(deptName, lineName) {
   for (let machName in line.machines) {
     let safeMachName = escapeHTML(machName);
     let machData = line.machines[machName];
-    let sCount = machData.subassemblies ? Object.keys(machData.subassemblies).length : 0;
-    
+    let sCount = machData.subassemblies
+      ? Object.keys(machData.subassemblies).length
+      : 0;
+
     let isUpcoming = hasUpcomingTasks(machData, false);
     let highlightClass = isUpcoming ? "upcoming-task" : "";
-    
+
     let imageUrl = machData.image;
     if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-        imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
+      imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
     }
 
     grid.innerHTML += `
@@ -389,14 +438,20 @@ function renderMachs(deptName, lineName) {
 function renderSubs(deptName, lineName, machName) {
   let grid = document.getElementById("subGrid");
   grid.innerHTML = "";
-  
-  if (!dbData[deptName] || !dbData[deptName][lineName] || !dbData[deptName][lineName].machines[machName] || Object.keys(dbData[deptName][lineName].machines[machName].subassemblies).length === 0) {
-     grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
+
+  if (
+    !dbData[deptName] ||
+    !dbData[deptName][lineName] ||
+    !dbData[deptName][lineName].machines[machName] ||
+    Object.keys(dbData[deptName][lineName].machines[machName].subassemblies)
+      .length === 0
+  ) {
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
        <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">account_tree</span>
        <h5>เครื่องจักร <span class="text-danger">${escapeHTML(machName)}</span></h5>
        <p>ยังไม่มีข้อมูลระบบย่อย (Subassembly) ครับ</p>
      </div>`;
-     return;
+    return;
   }
 
   let mach = dbData[deptName][lineName].machines[machName];
@@ -405,10 +460,10 @@ function renderSubs(deptName, lineName, machName) {
     let safeSubName = escapeHTML(subName);
     let subData = mach.subassemblies[subName];
     let cCount = subData.components ? subData.components.length : 0;
-    
+
     let imageUrl = subData.image;
     if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-        imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
+      imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
     }
 
     grid.innerHTML += `
@@ -1525,4 +1580,3 @@ async function loadDataFromDatabase() {
     document.getElementById("loadingOverlay").style.display = "none";
   }
 }
-

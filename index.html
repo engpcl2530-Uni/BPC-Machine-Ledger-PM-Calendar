@@ -103,59 +103,49 @@
     <div class="container mt-3 mb-5 pb-5">
       <!-- View 1: Lines -->
       <div id="view-lines" class="view-section active">
-        <!-- แถบเครื่องมือ Filter & Search -->
-        <div class="filter-bar bg-white p-3 rounded-3 shadow-sm border mb-4">
-          <div class="row g-3 align-items-center">
-            <div class="col-md-4">
-              <label class="form-label text-muted small mb-1 fw-bold"
-                >กรองตามแผนก (Department)</label
-              >
-              <select
-                id="filterDept"
-                class="form-select"
-                onchange="handleRouting()"
-              >
-                <option value="ALL">รวมทุกแผนก (All Departments)</option>
-                <option value="PCL">PCL</option>
-                <option value="CO">CO</option>
-                <option value="PCL_MIX">PCL_MIX</option>
-                <option value="CO_MIX">CO_MIX</option>
+        <!-- 🔴 แถบเครื่องมือ Filter & Search (Premium Floating Card) -->
+        <div class="premium-filter-card mb-5">
+          <!-- บรรทัดที่ 1: ช่องค้นหา (เด่นที่สุด) -->
+          <div class="position-relative mb-4">
+            <span class="material-symbols-rounded search-icon-inside">search</span>
+            <input type="text" id="filterSearch" class="form-control search-bar-lg" placeholder="ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่..." onkeyup="handleRouting()">
+          </div>
+
+          <!-- บรรทัดที่ 2: ตัวกรองแบบ Smart Dropdown และไฮไลต์ 2 สัปดาห์ -->
+          <div class="row g-3 align-items-end">
+            <div class="col-md-3">
+              <label class="form-label text-muted fw-bold small mb-2"><i class="bi bi-building"></i> แผนก (Department)</label>
+              <select id="filterDept" class="form-select filter-select" onchange="updateLineDropdown()">
+                <option value="ALL">รวมทุกแผนก</option>
+                <!-- ตัวเลือกจะถูกสร้างอัตโนมัติจากฐานข้อมูล -->
               </select>
             </div>
-            <div class="col-md-5">
-              <label class="form-label text-muted small mb-1 fw-bold"
-                >ค้นหาชื่อไลน์ / เครื่องจักร</label
-              >
-              <div class="input-group">
-                <span class="input-group-text bg-light"
-                  ><span class="material-symbols-rounded">search</span></span
-                >
-                <input
-                  type="text"
-                  id="filterSearch"
-                  class="form-control"
-                  placeholder="พิมพ์คำค้นหา..."
-                  onkeyup="handleRouting()"
-                />
-              </div>
-            </div>
+            
             <div class="col-md-3">
-              <div class="form-check form-switch mt-md-4 pt-md-1">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  id="filterUpcoming"
-                  onchange="handleRouting()"
-                  style="transform: scale(1.3); cursor: pointer"
-                />
-                <label
-                  class="form-check-label ms-2 fw-bold text-danger"
-                  for="filterUpcoming"
-                  style="cursor: pointer"
-                >
-                  🔥 ไฮไลท์งานใกล้ถึง (Upcoming)
-                </label>
-              </div>
+              <label class="form-label text-muted fw-bold small mb-2"><i class="bi bi-diagram-3"></i> ไลน์ผลิต (Line)</label>
+              <select id="filterLine" class="form-select filter-select" onchange="handleRouting()" disabled>
+                <option value="ALL">รวมทุกไลน์</option>
+                <!-- ตัวเลือกจะเปลี่ยนไปตามแผนกที่เลือก -->
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <label class="form-label text-muted fw-bold small mb-2"><i class="bi bi-star"></i> ระดับความสำคัญ (Class)</label>
+              <select id="filterClass" class="form-select filter-select" onchange="handleRouting()">
+                <option value="ALL">ทุกระดับ Class</option>
+                <option value="AA">Class AA (สำคัญสูงสุด)</option>
+                <option value="A">Class A</option>
+                <option value="B">Class B</option>
+                <option value="C">Class C</option>
+              </select>
+            </div>
+
+            <div class="col-md-3">
+              <!-- ปุ่มแคปซูลไฮไลต์งาน (Pill Button) -->
+              <button id="btnFilterUpcoming" class="btn btn-upcoming w-100 d-flex justify-content-center align-items-center" onclick="toggleUpcomingFilter()">
+                <span class="material-symbols-rounded me-2" id="iconUpcoming">notifications</span>
+                <span>งาน PM ในอีก 2 สัปดาห์</span>
+              </button>
             </div>
           </div>
         </div>
