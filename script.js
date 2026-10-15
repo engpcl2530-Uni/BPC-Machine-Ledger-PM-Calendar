@@ -1380,3 +1380,41 @@ function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
     reader.onerror = (error) => reject(error);
   });
 }
+
+// ฟังก์ชันสำหรับเรียก API ไปดึงข้อมูลทั้งหมดจาก Main_Hub
+async function loadDataFromDatabase() {
+  document.getElementById("loadingOverlay").style.display = "flex";
+  try {
+    const result = await ApiService.request("get_all_data"); 
+    dbData = result.data; 
+    
+    // อัปเดตหน้าจอโดยเรียกฟังก์ชันวาดการ์ด
+    renderDepartmentsOrLines(); 
+    checkDraftStatus(); 
+  } catch (err) {
+    showModalAlert(
+      "โหลดข้อมูลล้มเหลว",
+      "ไม่สามารถเชื่อมต่อฐานข้อมูลได้: " + err.message,
+      true,
+    );
+  } finally {
+    document.getElementById("loadingOverlay").style.display = "none";
+  }
+}
+
+// สร้างฟังก์ชันที่จะวาดรายชื่อที่ได้มา ลงเป็น Card หรือ List บนหน้า HTML
+function renderDepartmentsOrLines() {
+  let grid = document.getElementById("lineGrid"); 
+  grid.innerHTML = ""; 
+
+  // สมมติว่าต้องการแสดงรายการทั้งหมดใน dbData ลงบนหน้าจอ
+  for (let deptName in dbData) {
+    for (let lineName in dbData[deptName]) {
+        // สามารถวาด HTML ใหม่ออกมาเป็นการ์ดได้ตรงนี้ 
+        grid.innerHTML += `<div class="card p-3 mb-2">
+            <h5>แผนก: ${deptName} - ไลน์: ${lineName}</h5>
+            <button onclick="openLineSheet('${deptName}', '${lineName}')">ดูเครื่องจักร</button>
+        </div>`;
+    }
+  }
+}
