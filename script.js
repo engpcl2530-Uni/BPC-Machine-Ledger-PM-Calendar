@@ -433,9 +433,12 @@ function renderLines() {
       hasResult = true;
       let safeDept = escapeHTML(deptName);
       let safeLine = escapeHTML(lineName);
-      let mCount = lineData.machines
-        ? Object.keys(lineData.machines).length
-        : 0;
+      let mCount = lineData.machines ? Object.keys(lineData.machines).length : 0;
+      
+      // 🔴 ดึงรายชื่อเครื่องจักรทั้งหมดมาต่อกันเพื่อทำเป็น Tooltip เมื่อเอาเมาส์ชี้
+      let machListNames = lineData.machines ? Object.keys(lineData.machines).join("\n• ") : "";
+      let hoverTooltip = machListNames ? `รายชื่อเครื่องจักร:\n• ${machListNames}` : "ยังไม่มีเครื่องจักรในไลน์นี้";
+      // ---------------------------------------------------------
       let safeLastUpdated = escapeHTML(lineData.lastUpdated || "-");
       let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
 
@@ -452,7 +455,7 @@ function renderLines() {
 
       grid.innerHTML += `
         <div class="col-md-6 col-lg-4">
-          <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
+          <div class="hover-card ${highlightClass} d-flex flex-column h-100" title="${hoverTooltip}" onclick="navigateTo('${safeDept}', '${safeLine}')">
             <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
             <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
               <div class="mb-2"><span class="badge bg-secondary">${safeDept}</span></div>
@@ -1990,4 +1993,17 @@ async function submitExecutionTask(btnElement) {
       }
     },
   );
+}
+// ==========================================
+// ฟังก์ชันสำหรับกดทดสอบเข้าโหมดส่งงาน PM ของช่าง
+// ==========================================
+function testExecutionMode() {
+  if (currentDept && currentLine && currentMach) {
+    let url = new URL(window.location);
+    url.searchParams.set("mode", "execute"); // สั่งเปลี่ยนโหมด
+    window.history.pushState({}, "", url);
+    handleRouting(); // รีเฟรชหน้าจอ
+  } else {
+    showModalAlert("แจ้งเตือน", "ไม่สามารถเข้าโหมดส่งงานได้ กรุณารีเฟรชหน้าเว็บ", true);
+  }
 }
