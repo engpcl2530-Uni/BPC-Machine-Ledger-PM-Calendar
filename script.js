@@ -782,7 +782,7 @@ function renderLines() {
   }
 }
 
-// 🔴 2. อัปเดต renderMachs ให้แสดงข้อความเวลาว่างเปล่าได้ชัดเจน
+// 🔴 2. อัปเดต renderMachs ให้แสดงรายชื่อ Subassembly และจำนวน Component เมื่อ Hover
 function renderMachs(deptName, lineName) {
   let grid = document.getElementById("machGrid");
   grid.innerHTML = "";
@@ -820,6 +820,23 @@ function renderMachs(deptName, lineName) {
       imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
     }
 
+    // 🔴 ดึงรายชื่อระบบย่อย และนับจำนวนชิ้นส่วน (Component) ด้านใน
+    let subListHtml = "";
+    if (
+      machData.subassemblies &&
+      Object.keys(machData.subassemblies).length > 0
+    ) {
+      subListHtml = `<ul class="m-0 ps-3 mt-2" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">`;
+      for (let subName in machData.subassemblies) {
+        let subInfo = machData.subassemblies[subName];
+        let cCount = subInfo.components ? subInfo.components.length : 0; // นับจำนวน Component
+        subListHtml += `<li>${escapeHTML(subName)} <span class="text-white opacity-75" style="font-size: 11px;">(${cCount} ชิ้น)</span></li>`;
+      }
+      subListHtml += `</ul>`;
+    } else {
+      subListHtml = `<div class="text-center text-white-50 mt-3" style="font-size: 12px;">ยังไม่มีระบบย่อย</div>`;
+    }
+
     grid.innerHTML += `
       <div class="col-md-6 col-lg-4">
         <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${safeMachName}')">
@@ -832,14 +849,24 @@ function renderMachs(deptName, lineName) {
             </div>
             <div class="mt-auto"></div> 
           </div>
-          <div class="card-overlay">
-            <h5 class="fw-bold text-warning mb-3 text-truncate" title="${safeMachName}">${safeMachName}</h5>
+          
+          <!-- 🔴 พื้นที่ Hover (Overlay) ที่อัปเดตใหม่ -->
+          <div class="card-overlay" style="justify-content: flex-start; padding-top: 25px;">
+            <h5 class="fw-bold text-warning mb-1 text-truncate" title="${safeMachName}">${safeMachName}</h5>
+            <div style="font-size: 12px; color: #94a3b8; font-weight: 600;">รายชื่อระบบย่อย:</div>
+            
+            <!-- ใส่ Scrollbar เผื่อกรณีมีระบบย่อยจำนวนมาก -->
+            <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 15px;">
+              ${subListHtml}
+            </div>
+            
             <div class="mt-auto text-center w-100">
               <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
                 ดูระบบย่อย <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
               </span>
             </div>
           </div>
+          
         </div>
       </div>`;
   }
