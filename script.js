@@ -217,10 +217,12 @@ function hasUpcomingTasks(entityData, isLine = false) {
 
 // ตัวแปรเก็บสถานะว่าผู้ใช้กดกรอง Dashboard โหมดไหนอยู่ ('PLAN', 'DONE', 'EWO', หรือ null)
 let currentDashFilter = null;
-
 function updateDashboardStats() {
+  const lang = getCurrentLang();
+  const t = translations[lang]; // 🔴 เรียกใช้แปลภาษา
+
   let currentWeekIndex = getCurrentWeekNumber() - 1;
-  let prevWeekIndex = currentWeekIndex - 1; // สัปดาห์ก่อนหน้า
+  let prevWeekIndex = currentWeekIndex - 1;
 
   let dashWeekEl = document.getElementById("dash-week");
   if (dashWeekEl) dashWeekEl.innerText = currentWeekIndex + 1;
@@ -234,7 +236,6 @@ function updateDashboardStats() {
     prevEwo: 0,
   };
 
-  // วนลูปนับงาน
   for (let dept in dbData) {
     for (let line in dbData[dept]) {
       if (!dbData[dept][line].machines) continue;
@@ -244,16 +245,13 @@ function updateDashboardStats() {
           let comps =
             dbData[dept][line].machines[mach].subassemblies[sub].components;
           if (!comps) continue;
-
           comps.forEach((comp) => {
-            // นับสัปดาห์ปัจจุบัน
             if (comp.weeks && comp.weeks[currentWeekIndex]) {
               let w = comp.weeks[currentWeekIndex];
               if (w.b === 1 || w.t === 1) stats.currTotal++;
               if (w.t === 1) stats.currDone++;
               if (w.r === 1) stats.currEwo++;
             }
-            // นับสัปดาห์ก่อนหน้า (ถ้ามี)
             if (prevWeekIndex >= 0 && comp.weeks && comp.weeks[prevWeekIndex]) {
               let w = comp.weeks[prevWeekIndex];
               if (w.b === 1 || w.t === 1) stats.prevTotal++;
@@ -275,22 +273,20 @@ function updateDashboardStats() {
       ? Math.round((stats.prevDone / stats.prevTotal) * 100)
       : 0;
 
-  // อัปเดตตัวเลขบนการ์ด
   if (document.getElementById("dash-total"))
     document.getElementById("dash-total").innerHTML =
-      `${stats.currTotal} <span class="fs-6 fw-normal">งาน</span>`;
+      `${stats.currTotal} <span class="fs-6 fw-normal">${t.dash_plan_unit}</span>`;
   if (document.getElementById("dash-completed"))
     document.getElementById("dash-completed").innerText = stats.currDone;
   if (document.getElementById("dash-percent"))
     document.getElementById("dash-percent").innerText = `(${currPercent}%)`;
   if (document.getElementById("dash-breakdown"))
     document.getElementById("dash-breakdown").innerHTML =
-      `${stats.currEwo} <span class="fs-6 fw-normal">รายการ</span>`;
+      `${stats.currEwo} <span class="fs-6 fw-normal">${t.dash_ewo_unit}</span>`;
   if (document.getElementById("dash-progress-bar"))
     document.getElementById("dash-progress-bar").style.width =
       `${currPercent}%`;
 
-  // อัปเดต Trend
   updateTrendUI(
     "dash-trend-total",
     stats.currTotal,
@@ -307,7 +303,6 @@ function updateDashboardStats() {
   updateTrendUI("dash-trend-ewo", stats.currEwo, stats.prevEwo, prevWeekIndex);
 }
 
-// ฟังก์ชันย่อยสำหรับวาด Trend (ลูกศรขึ้น/ลง)
 function updateTrendUI(
   elementId,
   currValue,
@@ -315,25 +310,26 @@ function updateTrendUI(
   prevWeekIndex,
   suffix = "",
 ) {
+  const lang = getCurrentLang();
+  const t = translations[lang]; // 🔴 เรียกใช้แปลภาษา
+
   let el = document.getElementById(elementId);
   if (!el) return;
 
   if (prevWeekIndex < 0) {
-    // สัปดาห์แรกของปี ไม่มีข้อมูลก่อนหน้าให้เทียบ (รองรับการดึงข้อมูลปีที่แล้วในอนาคต)
-    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">remove</span> ไม่มีข้อมูลก่อนหน้า`;
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">remove</span> ${t.trend_no_data}`;
     return;
   }
 
   let diff = currValue - prevValue;
   if (diff > 0) {
-    // EWO เพิ่มขึ้นให้เป็นสีแดง (ไม่ดี), งานเสร็จ/แผนงานเพิ่มให้เป็นสีสว่าง
     let icon = elementId.includes("ewo") ? "trending_up" : "trending_up";
-    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">${icon}</span> เพิ่มขึ้น ${diff}${suffix} (W${prevWeekIndex + 1})`;
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">${icon}</span> ${t.trend_increase} ${diff}${suffix} (W${prevWeekIndex + 1})`;
   } else if (diff < 0) {
     let icon = "trending_down";
-    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">${icon}</span> ลดลง ${Math.abs(diff)}${suffix} (W${prevWeekIndex + 1})`;
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">${icon}</span> ${t.trend_decrease} ${Math.abs(diff)}${suffix} (W${prevWeekIndex + 1})`;
   } else {
-    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">drag_handle</span> เท่ากับสัปดาห์ที่แล้ว`;
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">drag_handle</span> ${t.trend_equal}`;
   }
 }
 
@@ -409,6 +405,7 @@ function navigateTo(dept = null, line = null, mach = null, sub = null) {
 }
 
 // 🔴 1. อัปเดต handleRouting() ให้เปลี่ยนข้อความส่วนหัวให้ชัดเจน
+// 🔴 1. อัปเดต handleRouting() ให้เปลี่ยนข้อความส่วนหัวให้ชัดเจนและรองรับ 2 ภาษา
 function handleRouting() {
   let params = new URLSearchParams(window.location.search);
   let mode = params.get("mode");
@@ -418,15 +415,15 @@ function handleRouting() {
   currentSub = params.get("sub");
 
   const lang = getCurrentLang();
+  const t = translations[lang]; // ดึงดิกชันนารีมาใช้
+
   document
     .querySelectorAll(".view-section")
     .forEach((v) => v.classList.remove("active"));
   toggleFabMode(false);
 
-  // 🔴 ควบคุมการโชว์ปุ่ม FAB สีฟ้า (ปุ่มทดสอบส่งงาน)
   let fabTest = document.getElementById("fabTestExecutionBtn");
   if (fabTest) {
-    // ให้ปุ่มโผล่เฉพาะเมื่อผู้ใช้อยู่ลึกถึงระดับ "เครื่องจักร" และไม่ได้อยู่ในโหมด Execute
     if (currentDept && currentLine && currentMach && mode !== "execute") {
       fabTest.style.display = "flex";
     } else {
@@ -435,7 +432,7 @@ function handleRouting() {
   }
 
   let breadcrumb = "Dashboard";
-  // 🔴 1. ถ้า URL เป็นโหมด Execute (ส่งงาน)
+
   if (mode === "execute" && currentDept && currentLine && currentMach) {
     renderExecutionMode(currentDept, currentLine, currentMach);
     document.getElementById("view-execution").classList.add("active");
@@ -449,23 +446,20 @@ function handleRouting() {
   }
 
   if (currentDept && currentLine && currentMach && currentSub) {
-    // หน้า Component
     document.getElementById("lbl-sub-title").innerHTML =
-      `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept} > ไลน์: ${currentLine} > เครื่องจักร: ${currentMach}</span><br/>ระบบย่อย (Subassembly): <span class="text-primary">${currentSub}</span>`;
+      `<span class="badge bg-secondary mb-2" style="font-size:12px;">${t.nav_dept}: ${currentDept} > ${t.nav_line}: ${currentLine} > ${t.nav_mach}: ${currentMach}</span><br/>${t.nav_sub}: <span class="text-primary">${currentSub}</span>`;
     renderComponentTable();
     document.getElementById("view-components").classList.add("active");
     breadcrumb = `${currentDept} > ${currentLine} > ${currentMach} > ${currentSub}`;
   } else if (currentDept && currentLine && currentMach) {
-    // หน้าแสดงระบบย่อย
     document.getElementById("lbl-mach-title").innerHTML =
-      `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept} > ไลน์: ${currentLine}</span><br/>รายชื่อระบบย่อย (Subassemblies) ของเครื่องจักร: <span class="text-danger">${currentMach}</span>`;
+      `<span class="badge bg-secondary mb-2" style="font-size:12px;">${t.nav_dept}: ${currentDept} > ${t.nav_line}: ${currentLine}</span><br/>${t.nav_sub_list} <span class="text-danger">${currentMach}</span>`;
     renderSubs(currentDept, currentLine, currentMach);
     document.getElementById("view-subs").classList.add("active");
     breadcrumb = `${currentDept} > ${currentLine} > ${currentMach}`;
   } else if (currentDept && currentLine) {
-    // หน้าแสดงเครื่องจักร
     document.getElementById("lbl-line-title").innerHTML =
-      `<span class="badge bg-secondary mb-2" style="font-size:12px;">แผนก: ${currentDept}</span><br/>รายชื่อเครื่องจักรทั้งหมดในไลน์ผลิต: <span class="text-primary">${currentLine}</span>`;
+      `<span class="badge bg-secondary mb-2" style="font-size:12px;">${t.nav_dept}: ${currentDept}</span><br/>${t.nav_mach_list} <span class="text-primary">${currentLine}</span>`;
     renderMachs(currentDept, currentLine);
     document.getElementById("view-machs").classList.add("active");
     breadcrumb = `${currentDept} > ${currentLine}`;
@@ -478,13 +472,16 @@ function handleRouting() {
   window.scrollTo(0, 0);
 }
 
-// 🔴 2. ฟังก์ชันวาดการ์ดส่งงานสำหรับช่าง
+// 🔴 2. ฟังก์ชันวาดการ์ดส่งงานสำหรับช่าง (ดึงคำแปลมาใช้)
 function renderExecutionMode(dept, line, mach) {
   let container = document.getElementById("execTasksContainer");
   container.innerHTML = "";
 
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
   document.getElementById("execHeaderDesc").innerText =
-    `แผนก: ${dept} > ไลน์: ${line} > เครื่อง: ${mach}`;
+    `${t.nav_dept}: ${dept} > ${t.nav_line}: ${line} > ${t.nav_mach}: ${mach}`;
 
   let currWeek = getCurrentWeekNumber();
   document.getElementById("execCurrentWeek").innerText = currWeek;
@@ -494,7 +491,7 @@ function renderExecutionMode(dept, line, mach) {
     !dbData[dept][line] ||
     !dbData[dept][line].machines[mach]
   ) {
-    container.innerHTML = `<div class="col-12 text-center text-danger p-4 fw-bold">ไม่พบข้อมูลเครื่องจักรนี้</div>`;
+    container.innerHTML = `<div class="col-12 text-center text-danger p-4 fw-bold">${t.exec_not_found}</div>`;
     return;
   }
 
@@ -505,7 +502,6 @@ function renderExecutionMode(dept, line, mach) {
     let comps = machData.subassemblies[subName].components;
 
     comps.forEach((comp) => {
-      // ค้นหางานในช่วง +/- 4 สัปดาห์
       for (
         let i = Math.max(0, currWeek - 5);
         i <= Math.min(51, currWeek + 3);
@@ -525,15 +521,16 @@ function renderExecutionMode(dept, line, mach) {
           clone.querySelector(".exec-task-name").innerText =
             `Task: ${w.remark || "Check/Inspect"}`;
           clone.querySelector(".exec-ppe").innerText = comp.ppe || "-";
+
+          // ดึงภาษาแปลสำหรับค่าความเสี่ยง
           clone.querySelector(".exec-risk").innerText = comp.risk
-            ? "เสี่ยงสูง (Work Permit)"
-            : "ปกติ";
+            ? t.exec_risk_high
+            : t.exec_risk_normal;
 
           if (comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1) {
             clone.querySelector(".exec-comp-img").src = comp.imgComp;
           }
 
-          // ซ่อนข้อมูลจำเป็นไว้ใน Data Attribute เพื่อใช้ตอนกดส่ง
           card.dataset.sub = subName;
           card.dataset.comp = comp.name;
           card.dataset.weekIndex = i;
@@ -547,8 +544,8 @@ function renderExecutionMode(dept, line, mach) {
   if (!hasTasks) {
     container.innerHTML = `<div class="col-12 text-center text-muted p-5">
         <span class="material-symbols-rounded fs-1 d-block mb-3">check_circle</span>
-        <h6 class="fw-bold">ไม่มีแผนงาน PM</h6>
-        <p class="small">ไม่พบแผนงานในช่วง +/- 4 สัปดาห์นี้ครับ</p>
+        <h6 class="fw-bold">${t.exec_no_plan}</h6>
+        <p class="small">${t.exec_no_plan_desc}</p>
       </div>`;
   }
 }
@@ -587,9 +584,8 @@ function renderLines() {
     .value.toLowerCase();
 
   let hasResult = false;
-  let hasAnyUpcoming = false; // ตัวแปรเช็คว่าเจองานด่วนหรือไม่
+  let hasAnyUpcoming = false;
 
-  // 🔴 1. หากผู้ใช้กดกรองจาก Dashboard -> ให้โชว์การ์ดเครื่องจักร (ระดับ Machine) ที่ตรงเงื่อนไขแทนการโชว์ไลน์
   if (currentDashFilter) {
     let hasMachineResult = false;
     let currentWeekIndex = getCurrentWeekNumber() - 1;
@@ -603,11 +599,9 @@ function renderLines() {
           let machData = lineData.machines[machName];
           let isMatch = false;
 
-          // เช็คว่าเครื่องจักรนี้ตรงกับ Dashboard Filter ไหม
           for (let sub in machData.subassemblies) {
             let comps = machData.subassemblies[sub].components;
             if (!comps) continue;
-
             for (let c of comps) {
               if (c.weeks && c.weeks[currentWeekIndex]) {
                 let w = c.weeks[currentWeekIndex];
@@ -631,7 +625,6 @@ function renderLines() {
               ? Object.keys(machData.subassemblies).length
               : 0;
 
-            // วาดการ์ดเครื่องจักร (แนบ Badge แผนก/ไลน์ไว้ด้านบนให้ชัดเจน)
             grid.innerHTML += `
               <div class="col-md-6 col-lg-4">
                 <div class="hover-card d-flex flex-column h-100" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${safeMachName}')">
@@ -644,7 +637,7 @@ function renderLines() {
                     <h5 class="fw-bold text-dark mb-1 text-truncate" title="${safeMachName}">${safeMachName}</h5>
                     <div class="text-muted small fw-bold mt-2">
                       <span class="material-symbols-rounded align-middle text-primary" style="font-size: 18px;">account_tree</span> 
-                      มีระบบย่อย ${sCount} ระบบ
+                      ${t.has_sub_text} ${sCount} ${t.unit_sub_text}
                     </div>
                   </div>
                 </div>
@@ -657,29 +650,23 @@ function renderLines() {
     if (!hasMachineResult) {
       grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
            <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">check_circle</span>
-           <h5>ไม่มีเครื่องจักรที่ตรงกับสถานะนี้ในสัปดาห์นี้ครับ</h5>
+           <h5>${t.no_match_filter}</h5>
          </div>`;
     }
-    return; // 🔴 จบการทำงานของ renderLines ตรงนี้ ไม่ต้องวาดการ์ดไลน์แบบปกติ
+    return;
   }
 
   for (let deptName in dbData) {
-    // กรองแผนก
     if (filterDept !== "ALL") {
       if (filterDept === "OTHER") {
         if (deptName === "CO" || deptName === "PCL") continue;
-      } else if (deptName !== filterDept) {
-        continue;
-      }
+      } else if (deptName !== filterDept) continue;
     }
 
     for (let lineName in dbData[deptName]) {
-      // กรองไลน์ผลิต
       if (filterLine !== "ALL" && lineName !== filterLine) continue;
 
       let lineData = dbData[deptName][lineName];
-
-      // กรองคำค้นหา
       let lineMatch = lineName.toLowerCase().includes(filterSearch);
       let deptMatch = deptName.toLowerCase().includes(filterSearch);
       let machMatch = false;
@@ -689,8 +676,6 @@ function renderLines() {
         );
       }
       if (filterSearch && !lineMatch && !deptMatch && !machMatch) continue;
-
-      // กรองตาม Class
       if (filterClass !== "ALL" && !hasClassTarget(lineData, filterClass, true))
         continue;
 
@@ -700,11 +685,9 @@ function renderLines() {
       let mCount = lineData.machines
         ? Object.keys(lineData.machines).length
         : 0;
-
       let safeLastUpdated = escapeHTML(lineData.lastUpdated || "-");
       let safeUpdatedBy = escapeHTML(lineData.updatedBy || "-");
 
-      // 🔴 สแกนงานล่วงหน้า 2 สัปดาห์อัตโนมัติ
       let isUpcoming = hasUpcomingTasks(lineData, true);
       if (isUpcoming) hasAnyUpcoming = true;
       let highlightClass = isUpcoming ? "upcoming-task" : "";
@@ -715,7 +698,6 @@ function renderLines() {
           "https://via.placeholder.com/400x200?text=No+Image+Available";
       }
 
-      // ดึงรายชื่อเครื่องจักรเพื่อสร้างเป็น List แบบมี Scroll ใน Overlay
       let machListHtml = "";
       if (lineData.machines && Object.keys(lineData.machines).length > 0) {
         machListHtml = `<ul class="m-0 ps-3 mt-2" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">`;
@@ -724,10 +706,9 @@ function renderLines() {
         }
         machListHtml += `</ul>`;
       } else {
-        machListHtml = `<div class="text-center text-white-50 mt-3" style="font-size: 12px;">ยังไม่มีเครื่องจักรในไลน์นี้</div>`;
+        machListHtml = `<div class="text-center text-white-50 mt-3" style="font-size: 12px;">${t.no_mach_in_line_small}</div>`;
       }
 
-      // 🔴 สร้างการ์ดเพียง 1 ครั้ง พร้อม Overlay สีน้ำเงิน
       grid.innerHTML += `
         <div class="col-md-6 col-lg-4">
           <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
@@ -736,21 +717,21 @@ function renderLines() {
               <div class="mb-2"><span class="badge bg-secondary">${safeDept}</span></div>
               <h5 class="fw-bold text-primary mb-1">${safeDept} - ${safeLine}</h5>
               <div class="text-muted small fw-bold mt-2">
-                <span class="material-symbols-rounded align-middle text-secondary" style="font-size: 18px;">dns</span> มีเครื่องจักรทั้งหมด ${mCount} เครื่อง
+                <span class="material-symbols-rounded align-middle text-secondary" style="font-size: 18px;">dns</span> ${t.has_mach_text} ${mCount} ${t.unit_mach_text}
               </div>
               <div class="mt-auto pt-3 border-top mt-3" style="font-size: 11px;">
                  <div class="d-flex justify-content-between mb-1 text-muted">
-                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">schedule</span>อัปเดต:</span><span class="fw-bold text-dark">${safeLastUpdated}</span>
+                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">schedule</span>${t.label_updated}</span><span class="fw-bold text-dark">${safeLastUpdated}</span>
                  </div>
                  <div class="d-flex justify-content-between text-muted">
-                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">person</span>ผู้แก้ไข:</span><span class="fw-bold text-dark">${safeUpdatedBy}</span>
+                    <span><span class="material-symbols-rounded align-middle me-1" style="font-size:14px;">person</span>${t.label_editor}</span><span class="fw-bold text-dark">${safeUpdatedBy}</span>
                  </div>
               </div>
             </div>
             
             <div class="card-overlay" style="justify-content: flex-start; padding-top: 25px;">
               <h5 class="fw-bold text-warning mb-1">${safeDept} - ${safeLine}</h5>
-              <div style="font-size: 12px; color: #94a3b8; font-weight: 600;">รายชื่อเครื่องจักร:</div>
+              <div style="font-size: 12px; color: #94a3b8; font-weight: 600;">${t.mach_list_label}</div>
               <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 15px;">
                 ${machListHtml}
               </div>
@@ -758,34 +739,30 @@ function renderLines() {
                 <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">${t.view_machine} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span></span>
               </div>
             </div>
-
           </div>
         </div>`;
     }
   }
 
-  // 🔴 ควบคุมการแสดงผลแบนเนอร์เตือนงานอัตโนมัติ
   let alertBanner = document.getElementById("upcomingAlertBanner");
   if (alertBanner) {
-    if (hasAnyUpcoming) {
-      alertBanner.classList.remove("d-none");
-    } else {
-      alertBanner.classList.add("d-none");
-    }
+    if (hasAnyUpcoming) alertBanner.classList.remove("d-none");
+    else alertBanner.classList.add("d-none");
   }
 
   if (!hasResult) {
     grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
         <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">search_off</span>
-        ไม่พบข้อมูลที่ตรงกับเงื่อนไข หรือยังไม่มีข้อมูลในระบบครับ
+        ${t.no_data_condition}
       </div>`;
   }
 }
 
-// 🔴 2. อัปเดต renderMachs ให้แสดงรายชื่อ Subassembly และจำนวน Component เมื่อ Hover
 function renderMachs(deptName, lineName) {
   let grid = document.getElementById("machGrid");
   grid.innerHTML = "";
+  const lang = getCurrentLang();
+  const t = translations[lang];
 
   if (
     !dbData[deptName] ||
@@ -795,15 +772,13 @@ function renderMachs(deptName, lineName) {
   ) {
     grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
        <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">precision_manufacturing</span>
-       <h5>หน้าเครื่องจักรนี้ แผนก <span class="text-dark">${escapeHTML(deptName)}</span> ไลน์ <span class="text-dark">${escapeHTML(lineName)}</span></h5>
-       <p>ยังไม่มีข้อมูลเครื่องจักรในระบบ กดปุ่ม + มุมขวาล่างเพื่อสร้างใหม่ได้เลยครับ</p>
+       <h5>${t.page_mach_empty_1} <span class="text-dark">${escapeHTML(deptName)}</span> ${t.page_mach_empty_2} <span class="text-dark">${escapeHTML(lineName)}</span></h5>
+       <p>${t.page_mach_empty_3}</p>
     </div>`;
     return;
   }
 
   let line = dbData[deptName][lineName];
-  const lang = getCurrentLang();
-  const t = translations[lang];
 
   for (let machName in line.machines) {
     let safeMachName = escapeHTML(machName);
@@ -811,16 +786,13 @@ function renderMachs(deptName, lineName) {
     let sCount = machData.subassemblies
       ? Object.keys(machData.subassemblies).length
       : 0;
-
     let isUpcoming = hasUpcomingTasks(machData, false);
     let highlightClass = isUpcoming ? "upcoming-task" : "";
+    let imageUrl =
+      machData.image && !machData.image.includes("NO+IMAGE")
+        ? machData.image
+        : "https://via.placeholder.com/400x200?text=No+Image+Available";
 
-    let imageUrl = machData.image;
-    if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-      imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
-    }
-
-    // 🔴 ดึงรายชื่อระบบย่อย และนับจำนวนชิ้นส่วน (Component) ด้านใน
     let subListHtml = "";
     if (
       machData.subassemblies &&
@@ -829,12 +801,12 @@ function renderMachs(deptName, lineName) {
       subListHtml = `<ul class="m-0 ps-3 mt-2" style="font-size: 13px; color: #cbd5e1; line-height: 1.6;">`;
       for (let subName in machData.subassemblies) {
         let subInfo = machData.subassemblies[subName];
-        let cCount = subInfo.components ? subInfo.components.length : 0; // นับจำนวน Component
-        subListHtml += `<li>${escapeHTML(subName)} <span class="text-white opacity-75" style="font-size: 11px;">(${cCount} ชิ้น)</span></li>`;
+        let cCount = subInfo.components ? subInfo.components.length : 0;
+        subListHtml += `<li>${escapeHTML(subName)} <span class="text-white opacity-75" style="font-size: 11px;">(${cCount} ${t.unit_pieces})</span></li>`;
       }
       subListHtml += `</ul>`;
     } else {
-      subListHtml = `<div class="text-center text-white-50 mt-3" style="font-size: 12px;">ยังไม่มีระบบย่อย</div>`;
+      subListHtml = `<div class="text-center text-white-50 mt-3" style="font-size: 12px;">${t.no_sub_in_mach_small}</div>`;
     }
 
     grid.innerHTML += `
@@ -845,37 +817,33 @@ function renderMachs(deptName, lineName) {
             <h5 class="fw-bold text-dark mb-1 text-truncate" title="${safeMachName}">${safeMachName}</h5>
             <div class="text-muted small fw-bold mt-2">
               <span class="material-symbols-rounded align-middle text-primary" style="font-size: 18px;">account_tree</span> 
-              มีระบบย่อย ${sCount} ระบบ
+              ${t.has_sub_text} ${sCount} ${t.unit_sub_text}
             </div>
             <div class="mt-auto"></div> 
           </div>
           
-          <!-- 🔴 พื้นที่ Hover (Overlay) ที่อัปเดตใหม่ -->
           <div class="card-overlay" style="justify-content: flex-start; padding-top: 25px;">
             <h5 class="fw-bold text-warning mb-1 text-truncate" title="${safeMachName}">${safeMachName}</h5>
-            <div style="font-size: 12px; color: #94a3b8; font-weight: 600;">รายชื่อระบบย่อย:</div>
-            
-            <!-- ใส่ Scrollbar เผื่อกรณีมีระบบย่อยจำนวนมาก -->
+            <div style="font-size: 12px; color: #94a3b8; font-weight: 600;">${t.sub_list_label}</div>
             <div style="flex-grow: 1; overflow-y: auto; margin-bottom: 15px;">
               ${subListHtml}
             </div>
-            
             <div class="mt-auto text-center w-100">
               <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
-                ดูระบบย่อย <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
+                ${t.view_sub} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
               </span>
             </div>
           </div>
-          
         </div>
       </div>`;
   }
 }
 
-// 🔴 3. อัปเดต renderSubs ให้สอดคล้องกัน
 function renderSubs(deptName, lineName, machName) {
   let grid = document.getElementById("subGrid");
   grid.innerHTML = "";
+  const lang = getCurrentLang();
+  const t = translations[lang];
 
   if (
     !dbData[deptName] ||
@@ -886,8 +854,8 @@ function renderSubs(deptName, lineName, machName) {
   ) {
     grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
        <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">account_tree</span>
-       <h5>เครื่องจักร <span class="text-danger">${escapeHTML(machName)}</span></h5>
-       <p>ยังไม่มีข้อมูลระบบย่อย (Subassembly) ครับ</p>
+       <h5>${t.page_sub_empty_1} <span class="text-danger">${escapeHTML(machName)}</span></h5>
+       <p>${t.page_sub_empty_2}</p>
      </div>`;
     return;
   }
@@ -898,11 +866,10 @@ function renderSubs(deptName, lineName, machName) {
     let safeSubName = escapeHTML(subName);
     let subData = mach.subassemblies[subName];
     let cCount = subData.components ? subData.components.length : 0;
-
-    let imageUrl = subData.image;
-    if (!imageUrl || imageUrl.includes("NO+IMAGE") || imageUrl === "") {
-      imageUrl = "https://via.placeholder.com/400x200?text=No+Image+Available";
-    }
+    let imageUrl =
+      subData.image && !subData.image.includes("NO+IMAGE")
+        ? subData.image
+        : "https://via.placeholder.com/400x200?text=No+Image+Available";
 
     grid.innerHTML += `
       <div class="col-md-6 col-lg-4">
@@ -912,7 +879,7 @@ function renderSubs(deptName, lineName, machName) {
             <h6 class="fw-bold text-dark mb-1 text-truncate" title="${safeSubName}">${safeSubName}</h6>
             <div class="text-muted small fw-bold mt-2">
               <span class="material-symbols-rounded align-middle text-success" style="font-size: 18px;">build</span> 
-              มี ${cCount} ชิ้นส่วน (Components)
+              ${t.has_comp_text} ${cCount} ${t.unit_comp_text}
             </div>
             <div class="mt-auto"></div>
           </div>
@@ -920,7 +887,7 @@ function renderSubs(deptName, lineName, machName) {
             <h6 class="fw-bold text-warning mb-3 text-truncate" title="${safeSubName}">${safeSubName}</h6>
             <div class="mt-auto text-center w-100">
               <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
-                ดูอะไหล่ <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
+                ${t.view_comp} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
               </span>
             </div>
           </div>
@@ -1811,87 +1778,13 @@ async function submitFormViaAPI() {
   );
 }
 // ==========================================
-// ระบบแปลภาษา (i18n: Internationalization) (อัปเดตครบทุกข้อความ)
+// ระบบแปลภาษา (i18n: Internationalization)
 // ==========================================
 const translations = {
   th: {
-    // Header & Hub
-    header_title: "Machine Ledger & PM Plan",
-    back_bpc: "กลับ BPC Hub",
-
-    // Dashboard & Filters
-    dashboard_title: "ภาพรวมสัปดาห์ปัจจุบัน",
-    btn_clear_filter: "ล้างตัวกรอง",
-    dash_plan_title: "แผน PM สัปดาห์นี้ (W{week})",
-    dash_plan_unit: "งาน",
-    dash_plan_cta: "คลิกเพื่อดูคิวงาน",
-    dash_done_title: "ดำเนินการแล้ว",
-    dash_done_cta: "คลิกเพื่อดูงานสำเร็จ",
-    dash_ewo_title: "เครื่องเสีย / รอซ่อม (EWO)",
-    dash_ewo_unit: "รายการ",
-    dash_ewo_cta: "คลิกดูเครื่องเสีย",
-    trend_no_data: "ไม่มีข้อมูลก่อนหน้า",
-    trend_increase: "เพิ่มขึ้น",
-    trend_decrease: "ลดลง",
-    trend_equal: "เท่ากับสัปดาห์ที่แล้ว",
-
-    search_placeholder:
-      "ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่...",
-    filter_dept_label: "แผนก (Department)",
-    filter_dept_all: "รวมทุกแผนก",
-    filter_other: "อื่นๆ (Others)",
-    filter_line_label: "ไลน์ผลิต (Line)",
-    filter_line_all: "รวมทุกไลน์",
-    filter_class_label: "ระดับความสำคัญ (Class)",
-    filter_class_all: "ทุกระดับ Class",
-
-    upcoming_banner_title:
-      "ประกาศ: มีแผนงาน PM ที่ต้องดำเนินการในอีก 2 สัปดาห์ข้างหน้า!",
-    upcoming_banner_desc:
-      "ระบบได้สแกนและไฮไลต์การ์ดด้วยกรอบสีแดง 🔥 ไว้ให้แล้ว กรุณาตรวจสอบเพื่อเตรียมแผนงานครับ",
-    upcoming_badge: "🔥 มีงานใกล้ถึงกำหนด",
-
+    // --- (คำศัพท์เดิมของคุณ) ---
     select_line: "เลือกไลน์ผลิต (Lines)",
     back_to_line: "กลับหน้าไลน์ผลิต",
-    back_to_mach: "กลับหน้าเครื่องจักร",
-    back_to_sub: "กลับหน้าระบบย่อย",
-
-    // View Titles & Cards
-    mach_view_title: "รายชื่อเครื่องจักรทั้งหมดในไลน์ผลิต:",
-    sub_view_title: "รายชื่อระบบย่อย (Subassemblies) ของเครื่องจักร:",
-    comp_view_subtitle: "รายการชิ้นส่วนและปฏิทินบำรุงรักษา",
-    btn_edit_data: "แก้ไขข้อมูล",
-    btn_print_a3: "พิมพ์ A3",
-
-    has_machine: "มีเครื่องจักรทั้งหมด",
-    unit_machine: "เครื่องจักร",
-    view_machine: "ดูเครื่องจักร",
-    has_sub: "มีระบบย่อย",
-    unit_sub: "ระบบย่อย",
-    view_sub: "ดูระบบย่อย",
-    has_comp: "มี",
-    unit_comp: "ชิ้นส่วน",
-    view_comp: "ดูตาราง Component",
-    no_data: "ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ",
-    no_mach_in_line:
-      "ยังไม่มีข้อมูลเครื่องจักรในระบบ กดปุ่ม + มุมขวาล่างเพื่อสร้างใหม่ได้เลยครับ",
-    no_sub_in_mach: "ยังไม่มีข้อมูลระบบย่อย (Subassembly) ครับ",
-    no_match_filter: "ไม่มีเครื่องจักรที่ตรงกับสถานะนี้ในสัปดาห์นี้ครับ",
-
-    // Table Headers
-    th_image: "Image",
-    th_comp_name: "Component Name",
-    th_task: "Task",
-    th_standards: "Standards",
-    th_class: "Class",
-    th_type: "Type",
-    th_status: "Status",
-    th_min: "Min",
-    th_ppe: "Safety/PPE",
-    th_calendar: "Calendar 52 Weeks",
-    th_remark: "EWO / Remark",
-
-    // Form Section
     form_title: "ฟอร์มบันทึกข้อมูล",
     cancel: "ยกเลิก",
     working_in: "กำลังปฏิบัติงานใน",
@@ -1904,8 +1797,38 @@ const translations = {
     tap_to_upload: "แตะเพื่อถ่ายรูป หรือ เลือกจากอัลบั้ม",
     add_subsystem: "เพิ่มระบบย่อยใหม่ (Add Sub-system)",
     btn_save: "ยืนยันและบันทึกข้อมูลทั้งหมด",
-    export_excel: "ส่งออก Excel (52 สัปดาห์)",
-
+    back_bpc: "กลับ BPC Hub",
+    dash_plan_unit: "งาน",
+    dash_ewo_unit: "รายการ",
+    trend_no_data: "ไม่มีข้อมูลก่อนหน้า",
+    trend_increase: "เพิ่มขึ้น",
+    trend_decrease: "ลดลง",
+    trend_equal: "เท่ากับสัปดาห์ที่แล้ว",
+    no_match_filter: "ไม่มีเครื่องจักรที่ตรงกับสถานะนี้ในสัปดาห์นี้ครับ",
+    has_sub_text: "มีระบบย่อย",
+    unit_sub_text: "ระบบ",
+    has_mach_text: "มีเครื่องจักรทั้งหมด",
+    unit_mach_text: "เครื่อง",
+    label_updated: "อัปเดต:",
+    label_editor: "ผู้แก้ไข:",
+    mach_list_label: "รายชื่อเครื่องจักร:",
+    no_mach_in_line_small: "ยังไม่มีเครื่องจักรในไลน์นี้",
+    view_machine: "ดูเครื่องจักร",
+    no_data_condition:
+      "ไม่พบข้อมูลที่ตรงกับเงื่อนไข หรือยังไม่มีข้อมูลในระบบครับ",
+    page_mach_empty_1: "หน้าเครื่องจักรนี้ แผนก",
+    page_mach_empty_2: "ไลน์",
+    page_mach_empty_3:
+      "ยังไม่มีข้อมูลเครื่องจักรในระบบ กดปุ่ม + มุมขวาล่างเพื่อสร้างใหม่ได้เลยครับ",
+    view_sub: "ดูระบบย่อย",
+    page_sub_empty_1: "เครื่องจักร",
+    page_sub_empty_2: "ยังไม่มีข้อมูลระบบย่อย (Subassembly) ครับ",
+    has_comp_text: "มี",
+    unit_comp_text: "ชิ้นส่วน (Components)",
+    view_comp: "ดูอะไหล่",
+    sub_list_label: "รายชื่อระบบย่อย:",
+    no_sub_in_mach_small: "ยังไม่มีระบบย่อย",
+    unit_pieces: "ชิ้น",
     subassembly: "ระบบย่อย (Subassembly)",
     delete_subassembly: "ลบระบบย่อย",
     label_sub_name: "ชื่อระบบย่อย",
@@ -1915,7 +1838,6 @@ const translations = {
     risk_desc: "ค่าเริ่มต้นคือมีความเสี่ยงทั้งหมด แตะ ❌ หากไม่มี",
     components_title: "ชิ้นส่วนอะไหล่ (Components)",
     add_component: "เพิ่ม Component",
-
     risk_1: "จุดหนีบ",
     risk_2: "อุปกรณ์",
     risk_3: "ยกด้วยมือ",
@@ -1923,7 +1845,6 @@ const translations = {
     risk_5: "สารเคมี",
     risk_6: "เสียงดัง",
     risk_7: "โฟล์คลิฟต์",
-
     comp_image: "ภาพอะไหล่",
     label_comp_name: "ชื่อ Component",
     label_time_min: "เวลา(นาที)",
@@ -1931,7 +1852,6 @@ const translations = {
     placeholder_remark: "ระบุหมายเหตุเพิ่มเติม",
     high_risk: "เสี่ยงสูง (Work Permit)",
     ppe_desc: "อุปกรณ์ PPE ที่จำเป็น (แตะ ❌ หากไม่ใช้)",
-
     ppe_1: "ถุงมือ",
     ppe_2: "หมวกนิรภัย",
     ppe_3: "แว่นตา",
@@ -1941,11 +1861,8 @@ const translations = {
     ppe_7: "กันตกที่สูง",
     ppe_8: "สะท้อนแสง",
     ppe_9: "LOTO",
-
     plan_52_weeks: "แผน 52 สัปดาห์",
     manage: "จัดการ",
-
-    // Modal 52 Weeks
     modal_52_title: "กำหนดแผนงาน 52 สัปดาห์",
     modal_52_subtitle1: "กำหนดค่างานรายสัปดาห์",
     modal_52_step1: "1. แตะเลือกประเภทงาน (เลือกได้หลายข้อ)",
@@ -1961,119 +1878,38 @@ const translations = {
     week_details: "รายละเอียดงานแต่ละสัปดาห์",
     close_window: "ปิดหน้าต่าง",
     save_plan: "บันทึกแผนงาน",
-
-    // Execution Mode
-    exec_title: "ส่งงาน PM",
-    exec_exit: "ออกจากโหมดส่งงาน",
-    exec_current_week: "สัปดาห์ปัจจุบัน:",
-    exec_badge_range: "แสดงงาน +/- 4 สัปดาห์",
-    exec_no_task_title: "ไม่มีแผนงาน PM",
-    exec_no_task_desc: "ไม่พบแผนงานในช่วง +/- 4 สัปดาห์นี้ครับ",
-    exec_status_label: "1. สถานะการทำงาน",
-    exec_status_normal: "✅ ปกติ (ทำ PM เรียบร้อย)",
-    exec_status_defect: "⚠️ พบอะไหล่ชำรุด (เปลี่ยนทันที)",
-    exec_status_waiting: "🛑 พบอะไหล่ชำรุด (รออะไหล่ / เปิด WO)",
-    exec_status_breakdown: "🚨 เครื่องเสีย (Breakdown)",
-    exec_before: "ก่อนทำ (Before)",
-    exec_after: "หลังทำ (After)",
-    exec_time_label: "เวลาจริง (นาที)",
-    exec_mech_label: "รหัสพนักงาน",
-    exec_remark_label: "รายละเอียดปัญหา / หมายเหตุ (WO)",
-    exec_remark_placeholder: "ระบุอาการชำรุด หรือรหัสใบสั่งงาน...",
-    exec_btn_send: "ส่งงาน PM",
-
-    // Modals & Messages
     alert_title_warning: "แจ้งเตือน",
     alert_btn_ok: "ตกลง (OK)",
     confirm_cancel_title: "ยืนยันการย้อนกลับ",
     confirm_cancel_desc:
       "ข้อมูลที่คุณกำลังกรอกไว้จะไม่ถูกบันทึก<br />คุณต้องการย้อนกลับใช่หรือไม่?",
-    btn_no_continue: "ยกเลิก",
-    btn_yes_back: "ยืนยัน",
+    btn_no_continue: "ไม่, พิมพ์ต่อ",
+    btn_yes_back: "ใช่, ย้อนกลับ",
     no_task_week: "ไม่มีงานระบุในสัปดาห์ใดๆ",
     week_prefix: "Week",
     confirm_delete_week: "ต้องการลบข้อมูลแผนงานของ Week {week} ใช่หรือไม่?",
     confirm_clear_all: "ยืนยันที่จะล้างข้อมูล 52 สัปดาห์ทั้งหมดหรือไม่?",
-    btn_confirm: "ตกลง",
-    btn_cancel: "ยกเลิก",
+    btn_confirm: "ตกลง (Confirm)",
+    btn_cancel: "ยกเลิก (Cancel)",
     alert_title_confirm: "ยืนยันการทำรายการ",
+
+    // 🔴 ส่วนที่เพิ่มใหม่สำหรับ Navigation และ โหมดช่าง
+    nav_dept: "แผนก",
+    nav_line: "ไลน์",
+    nav_mach: "เครื่องจักร",
+    nav_sub: "ระบบย่อย",
+    nav_sub_list: "รายชื่อระบบย่อย (Subassemblies) ของเครื่องจักร:",
+    nav_mach_list: "รายชื่อเครื่องจักรทั้งหมดในไลน์ผลิต:",
+    exec_not_found: "ไม่พบข้อมูลเครื่องจักรนี้",
+    exec_risk_high: "เสี่ยงสูง (Work Permit)",
+    exec_risk_normal: "ปกติ",
+    exec_no_plan: "ไม่มีแผนงาน PM",
+    exec_no_plan_desc: "ไม่พบแผนงานในช่วง +/- 4 สัปดาห์นี้ครับ",
   },
   en: {
-    // Header & Hub
-    header_title: "Machine Ledger & PM Plan",
-    back_bpc: "Back to BPC Hub",
-
-    // Dashboard & Filters
-    dashboard_title: "Current Week Overview",
-    btn_clear_filter: "Clear Filter",
-    dash_plan_title: "PM Plan This Week (W{week})",
-    dash_plan_unit: "Tasks",
-    dash_plan_cta: "Click to view queue",
-    dash_done_title: "Completed",
-    dash_done_cta: "Click to view completed",
-    dash_ewo_title: "Breakdown / Waiting (EWO)",
-    dash_ewo_unit: "Items",
-    dash_ewo_cta: "Click to view breakdowns",
-    trend_no_data: "No previous data",
-    trend_increase: "Increase",
-    trend_decrease: "Decrease",
-    trend_equal: "Equal to last week",
-
-    search_placeholder: "Search machine name, production line, or component...",
-    filter_dept_label: "Department",
-    filter_dept_all: "All Departments",
-    filter_other: "Others",
-    filter_line_label: "Production Line",
-    filter_line_all: "All Lines",
-    filter_class_label: "Priority Class",
-    filter_class_all: "All Classes",
-
-    upcoming_banner_title: "Notice: PM tasks scheduled for the next 2 weeks!",
-    upcoming_banner_desc:
-      "The system has scanned and highlighted cards with a red border 🔥. Please check and prepare your workflow.",
-    upcoming_badge: "🔥 Upcoming Task",
-
+    // --- (คำศัพท์เดิมของคุณ) ---
     select_line: "Select Production Line",
     back_to_line: "Back to Lines",
-    back_to_mach: "Back to Machines",
-    back_to_sub: "Back to Subassemblies",
-
-    // View Titles & Cards
-    mach_view_title: "All machines in production line:",
-    sub_view_title: "Subassemblies of machine:",
-    comp_view_subtitle: "Component list and maintenance calendar",
-    btn_edit_data: "Edit Data",
-    btn_print_a3: "Print A3",
-
-    has_machine: "Contains",
-    unit_machine: "Machines",
-    view_machine: "View Machines",
-    has_sub: "Contains",
-    unit_sub: "Subassemblies",
-    view_sub: "View Subassemblies",
-    has_comp: "Contains",
-    unit_comp: "Components",
-    view_comp: "View Components Table",
-    no_data: "No data available. Click + to create a new one.",
-    no_mach_in_line:
-      "No machines in this line yet. Click + at bottom right to create.",
-    no_sub_in_mach: "No subassemblies found for this machine.",
-    no_match_filter: "No machines match this status for the current week.",
-
-    // Table Headers
-    th_image: "Image",
-    th_comp_name: "Component Name",
-    th_task: "Task",
-    th_standards: "Standards",
-    th_class: "Class",
-    th_type: "Type",
-    th_status: "Status",
-    th_min: "Min",
-    th_ppe: "Safety/PPE",
-    th_calendar: "Calendar 52 Weeks",
-    th_remark: "EWO / Remark",
-
-    // Form Section
     form_title: "Data Entry Form",
     cancel: "Cancel",
     working_in: "Working in",
@@ -2086,8 +1922,37 @@ const translations = {
     tap_to_upload: "Tap to take a photo or select from album",
     add_subsystem: "Add Sub-system",
     btn_save: "Confirm and Save All Data",
-    export_excel: "Export Excel (52 Weeks)",
-
+    back_bpc: "Back to BPC Hub",
+    dash_plan_unit: "Tasks",
+    dash_ewo_unit: "Items",
+    trend_no_data: "No previous data",
+    trend_increase: "Increased",
+    trend_decrease: "Decreased",
+    trend_equal: "Same as last week",
+    no_match_filter: "No machines match this status for the current week.",
+    has_sub_text: "Contains",
+    unit_sub_text: "Subassemblies",
+    has_mach_text: "Contains",
+    unit_mach_text: "Machines",
+    label_updated: "Updated:",
+    label_editor: "Editor:",
+    mach_list_label: "Machine List:",
+    no_mach_in_line_small: "No machines in this line",
+    view_machine: "View Machine",
+    no_data_condition: "No data matches the criteria or no data available.",
+    page_mach_empty_1: "Machine page: Dept",
+    page_mach_empty_2: "Line",
+    page_mach_empty_3:
+      "No machine data yet. Click + at bottom right to create.",
+    view_sub: "View Subassemblies",
+    page_sub_empty_1: "Machine",
+    page_sub_empty_2: "No subassembly data found.",
+    has_comp_text: "Contains",
+    unit_comp_text: "Components",
+    view_comp: "View Components",
+    sub_list_label: "Subassembly List:",
+    no_sub_in_mach_small: "No subassemblies",
+    unit_pieces: "pcs",
     subassembly: "Subassembly",
     delete_subassembly: "Delete",
     label_sub_name: "Subassembly Name",
@@ -2097,7 +1962,6 @@ const translations = {
     risk_desc: "Default is all risks apply. Tap ❌ if not.",
     components_title: "Components",
     add_component: "Add Component",
-
     risk_1: "Pinch Point",
     risk_2: "Tools",
     risk_3: "Manual Lift",
@@ -2105,7 +1969,6 @@ const translations = {
     risk_5: "Chemical",
     risk_6: "Loud Noise",
     risk_7: "Forklift",
-
     comp_image: "Component Image",
     label_comp_name: "Component Name",
     label_time_min: "Time (mins)",
@@ -2113,7 +1976,6 @@ const translations = {
     placeholder_remark: "Enter additional remarks",
     high_risk: "High Risk (Work Permit)",
     ppe_desc: "Required PPE (Tap ❌ if not used)",
-
     ppe_1: "Gloves",
     ppe_2: "Helmet",
     ppe_3: "Glasses",
@@ -2123,11 +1985,8 @@ const translations = {
     ppe_7: "Harness",
     ppe_8: "Hi-Vis",
     ppe_9: "LOTO",
-
     plan_52_weeks: "52-Week Plan",
     manage: "Manage",
-
-    // Modal 52 Weeks
     modal_52_title: "Set 52-Week Plan",
     modal_52_subtitle1: "Weekly Task Settings",
     modal_52_step1: "1. Select task types (Multiple)",
@@ -2143,35 +2002,13 @@ const translations = {
     week_details: "Weekly Task Details",
     close_window: "Close",
     save_plan: "Save Plan",
-
-    // Execution Mode
-    exec_title: "PM Execution",
-    exec_exit: "Exit Execution Mode",
-    exec_current_week: "Current Week:",
-    exec_badge_range: "Showing +/- 4 weeks",
-    exec_no_task_title: "No PM Tasks",
-    exec_no_task_desc: "No tasks found within +/- 4 weeks.",
-    exec_status_label: "1. Work Status",
-    exec_status_normal: "✅ Normal (PM Completed)",
-    exec_status_defect: "⚠️ Defect Found (Replaced Immediately)",
-    exec_status_waiting: "🛑 Defect Found (Waiting Parts / WO Opened)",
-    exec_status_breakdown: "🚨 Breakdown",
-    exec_before: "Before",
-    exec_after: "After",
-    exec_time_label: "Actual Time (mins)",
-    exec_mech_label: "Employee ID / Name",
-    exec_remark_label: "Issue Details / Remark (WO)",
-    exec_remark_placeholder: "Enter defect description or work order...",
-    exec_btn_send: "Submit PM Task",
-
-    // Modals & Messages
     alert_title_warning: "Notification",
     alert_btn_ok: "OK",
     confirm_cancel_title: "Confirm Go Back",
     confirm_cancel_desc:
       "Unsaved changes will be lost.<br />Do you want to go back?",
-    btn_no_continue: "Cancel",
-    btn_yes_back: "Confirm",
+    btn_no_continue: "No, Continue Editing",
+    btn_yes_back: "Yes, Go Back",
     no_task_week: "No tasks specified in any week",
     week_prefix: "Week",
     confirm_delete_week: "Do you want to delete the plan for Week {week}?",
@@ -2179,8 +2016,22 @@ const translations = {
     btn_confirm: "Confirm",
     btn_cancel: "Cancel",
     alert_title_confirm: "Confirmation",
+
+    // 🔴 ส่วนที่เพิ่มใหม่สำหรับ Navigation และ โหมดช่าง
+    nav_dept: "Dept",
+    nav_line: "Line",
+    nav_mach: "Machine",
+    nav_sub: "Subassembly",
+    nav_sub_list: "Subassemblies of machine:",
+    nav_mach_list: "All machines in production line:",
+    exec_not_found: "Machine data not found",
+    exec_risk_high: "High Risk (Work Permit)",
+    exec_risk_normal: "Normal",
+    exec_no_plan: "No PM Tasks",
+    exec_no_plan_desc: "No tasks found within +/- 4 weeks.",
   },
 };
+
 // 2. ฟังก์ชันเปลี่ยนภาษา (อัปเดตให้ Re-render หน้าจอ และ สลับสีปุ่ม)
 window.changeLanguage = function (lang) {
   localStorage.setItem("app_lang", lang);
@@ -2215,6 +2066,9 @@ window.changeLanguage = function (lang) {
       element.placeholder = translations[lang][key];
     }
   });
+
+  // 🔴 สั่งอัปเดตภาษาบนหน้า Dashboard และการ์ดต่างๆ ทันที
+  updateDashboardStats();
 
   // เช็คว่าถ้า "ไม่ได้" อยู่ในหน้าฟอร์ม (view-form) ถึงจะยอมให้จัดหน้าใหม่ (Re-render)
   const formView = document.getElementById("view-form");
