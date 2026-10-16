@@ -1810,16 +1810,88 @@ async function submitFormViaAPI() {
     },
   );
 }
-
 // ==========================================
-// ระบบแปลภาษา (i18n: Internationalization)
+// ระบบแปลภาษา (i18n: Internationalization) (อัปเดตครบทุกข้อความ)
 // ==========================================
-
-// 1. สร้างพจนานุกรมคำแปล (เพิ่มคำศัพท์สำหรับการ์ดเข้าไป)
 const translations = {
   th: {
+    // Header & Hub
+    header_title: "Machine Ledger & PM Plan",
+    back_bpc: "กลับ BPC Hub",
+
+    // Dashboard & Filters
+    dashboard_title: "ภาพรวมสัปดาห์ปัจจุบัน",
+    btn_clear_filter: "ล้างตัวกรอง",
+    dash_plan_title: "แผน PM สัปดาห์นี้ (W{week})",
+    dash_plan_unit: "งาน",
+    dash_plan_cta: "คลิกเพื่อดูคิวงาน",
+    dash_done_title: "ดำเนินการแล้ว",
+    dash_done_cta: "คลิกเพื่อดูงานสำเร็จ",
+    dash_ewo_title: "เครื่องเสีย / รอซ่อม (EWO)",
+    dash_ewo_unit: "รายการ",
+    dash_ewo_cta: "คลิกดูเครื่องเสีย",
+    trend_no_data: "ไม่มีข้อมูลก่อนหน้า",
+    trend_increase: "เพิ่มขึ้น",
+    trend_decrease: "ลดลง",
+    trend_equal: "เท่ากับสัปดาห์ที่แล้ว",
+
+    search_placeholder:
+      "ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่...",
+    filter_dept_label: "แผนก (Department)",
+    filter_dept_all: "รวมทุกแผนก",
+    filter_other: "อื่นๆ (Others)",
+    filter_line_label: "ไลน์ผลิต (Line)",
+    filter_line_all: "รวมทุกไลน์",
+    filter_class_label: "ระดับความสำคัญ (Class)",
+    filter_class_all: "ทุกระดับ Class",
+
+    upcoming_banner_title:
+      "ประกาศ: มีแผนงาน PM ที่ต้องดำเนินการในอีก 2 สัปดาห์ข้างหน้า!",
+    upcoming_banner_desc:
+      "ระบบได้สแกนและไฮไลต์การ์ดด้วยกรอบสีแดง 🔥 ไว้ให้แล้ว กรุณาตรวจสอบเพื่อเตรียมแผนงานครับ",
+    upcoming_badge: "🔥 มีงานใกล้ถึงกำหนด",
+
     select_line: "เลือกไลน์ผลิต (Lines)",
     back_to_line: "กลับหน้าไลน์ผลิต",
+    back_to_mach: "กลับหน้าเครื่องจักร",
+    back_to_sub: "กลับหน้าระบบย่อย",
+
+    // View Titles & Cards
+    mach_view_title: "รายชื่อเครื่องจักรทั้งหมดในไลน์ผลิต:",
+    sub_view_title: "รายชื่อระบบย่อย (Subassemblies) ของเครื่องจักร:",
+    comp_view_subtitle: "รายการชิ้นส่วนและปฏิทินบำรุงรักษา",
+    btn_edit_data: "แก้ไขข้อมูล",
+    btn_print_a3: "พิมพ์ A3",
+
+    has_machine: "มีเครื่องจักรทั้งหมด",
+    unit_machine: "เครื่องจักร",
+    view_machine: "ดูเครื่องจักร",
+    has_sub: "มีระบบย่อย",
+    unit_sub: "ระบบย่อย",
+    view_sub: "ดูระบบย่อย",
+    has_comp: "มี",
+    unit_comp: "ชิ้นส่วน",
+    view_comp: "ดูตาราง Component",
+    no_data: "ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ",
+    no_mach_in_line:
+      "ยังไม่มีข้อมูลเครื่องจักรในระบบ กดปุ่ม + มุมขวาล่างเพื่อสร้างใหม่ได้เลยครับ",
+    no_sub_in_mach: "ยังไม่มีข้อมูลระบบย่อย (Subassembly) ครับ",
+    no_match_filter: "ไม่มีเครื่องจักรที่ตรงกับสถานะนี้ในสัปดาห์นี้ครับ",
+
+    // Table Headers
+    th_image: "Image",
+    th_comp_name: "Component Name",
+    th_task: "Task",
+    th_standards: "Standards",
+    th_class: "Class",
+    th_type: "Type",
+    th_status: "Status",
+    th_min: "Min",
+    th_ppe: "Safety/PPE",
+    th_calendar: "Calendar 52 Weeks",
+    th_remark: "EWO / Remark",
+
+    // Form Section
     form_title: "ฟอร์มบันทึกข้อมูล",
     cancel: "ยกเลิก",
     working_in: "กำลังปฏิบัติงานใน",
@@ -1832,21 +1904,8 @@ const translations = {
     tap_to_upload: "แตะเพื่อถ่ายรูป หรือ เลือกจากอัลบั้ม",
     add_subsystem: "เพิ่มระบบย่อยใหม่ (Add Sub-system)",
     btn_save: "ยืนยันและบันทึกข้อมูลทั้งหมด",
-    back_bpc: "กลับ BPC Hub",
+    export_excel: "ส่งออก Excel (52 สัปดาห์)",
 
-    // คำศัพท์สำหรับการ์ดหน้าแรก
-    has_machine: "มี",
-    unit_machine: "เครื่องจักร",
-    view_machine: "ดูเครื่องจักร",
-    has_sub: "มี",
-    unit_sub: "ระบบย่อย",
-    view_sub: "ดูระบบย่อย",
-    has_comp: "มี",
-    unit_comp: "ชิ้นส่วน",
-    view_comp: "ดูตาราง Component",
-    no_data: "ยังไม่มีข้อมูลในระบบ กดปุ่ม + เพื่อสร้างใหม่ได้เลยครับ",
-
-    // ฟอร์มระบบย่อย (Subsystem)
     subassembly: "ระบบย่อย (Subassembly)",
     delete_subassembly: "ลบระบบย่อย",
     label_sub_name: "ชื่อระบบย่อย",
@@ -1856,6 +1915,7 @@ const translations = {
     risk_desc: "ค่าเริ่มต้นคือมีความเสี่ยงทั้งหมด แตะ ❌ หากไม่มี",
     components_title: "ชิ้นส่วนอะไหล่ (Components)",
     add_component: "เพิ่ม Component",
+
     risk_1: "จุดหนีบ",
     risk_2: "อุปกรณ์",
     risk_3: "ยกด้วยมือ",
@@ -1864,7 +1924,6 @@ const translations = {
     risk_6: "เสียงดัง",
     risk_7: "โฟล์คลิฟต์",
 
-    // ฟอร์ม Component
     comp_image: "ภาพอะไหล่",
     label_comp_name: "ชื่อ Component",
     label_time_min: "เวลา(นาที)",
@@ -1872,6 +1931,7 @@ const translations = {
     placeholder_remark: "ระบุหมายเหตุเพิ่มเติม",
     high_risk: "เสี่ยงสูง (Work Permit)",
     ppe_desc: "อุปกรณ์ PPE ที่จำเป็น (แตะ ❌ หากไม่ใช้)",
+
     ppe_1: "ถุงมือ",
     ppe_2: "หมวกนิรภัย",
     ppe_3: "แว่นตา",
@@ -1881,10 +1941,11 @@ const translations = {
     ppe_7: "กันตกที่สูง",
     ppe_8: "สะท้อนแสง",
     ppe_9: "LOTO",
+
     plan_52_weeks: "แผน 52 สัปดาห์",
     manage: "จัดการ",
 
-    // Modal 52 สัปดาห์
+    // Modal 52 Weeks
     modal_52_title: "กำหนดแผนงาน 52 สัปดาห์",
     modal_52_subtitle1: "กำหนดค่างานรายสัปดาห์",
     modal_52_step1: "1. แตะเลือกประเภทงาน (เลือกได้หลายข้อ)",
@@ -1901,26 +1962,118 @@ const translations = {
     close_window: "ปิดหน้าต่าง",
     save_plan: "บันทึกแผนงาน",
 
-    // Modals (Alert / Cancel)
+    // Execution Mode
+    exec_title: "ส่งงาน PM",
+    exec_exit: "ออกจากโหมดส่งงาน",
+    exec_current_week: "สัปดาห์ปัจจุบัน:",
+    exec_badge_range: "แสดงงาน +/- 4 สัปดาห์",
+    exec_no_task_title: "ไม่มีแผนงาน PM",
+    exec_no_task_desc: "ไม่พบแผนงานในช่วง +/- 4 สัปดาห์นี้ครับ",
+    exec_status_label: "1. สถานะการทำงาน",
+    exec_status_normal: "✅ ปกติ (ทำ PM เรียบร้อย)",
+    exec_status_defect: "⚠️ พบอะไหล่ชำรุด (เปลี่ยนทันที)",
+    exec_status_waiting: "🛑 พบอะไหล่ชำรุด (รออะไหล่ / เปิด WO)",
+    exec_status_breakdown: "🚨 เครื่องเสีย (Breakdown)",
+    exec_before: "ก่อนทำ (Before)",
+    exec_after: "หลังทำ (After)",
+    exec_time_label: "เวลาจริง (นาที)",
+    exec_mech_label: "รหัสพนักงาน",
+    exec_remark_label: "รายละเอียดปัญหา / หมายเหตุ (WO)",
+    exec_remark_placeholder: "ระบุอาการชำรุด หรือรหัสใบสั่งงาน...",
+    exec_btn_send: "ส่งงาน PM",
+
+    // Modals & Messages
     alert_title_warning: "แจ้งเตือน",
     alert_btn_ok: "ตกลง (OK)",
     confirm_cancel_title: "ยืนยันการย้อนกลับ",
     confirm_cancel_desc:
       "ข้อมูลที่คุณกำลังกรอกไว้จะไม่ถูกบันทึก<br />คุณต้องการย้อนกลับใช่หรือไม่?",
-    btn_no_continue: "ไม่, พิมพ์ต่อ",
-    btn_yes_back: "ใช่, ย้อนกลับ",
-
+    btn_no_continue: "ยกเลิก",
+    btn_yes_back: "ยืนยัน",
     no_task_week: "ไม่มีงานระบุในสัปดาห์ใดๆ",
     week_prefix: "Week",
     confirm_delete_week: "ต้องการลบข้อมูลแผนงานของ Week {week} ใช่หรือไม่?",
     confirm_clear_all: "ยืนยันที่จะล้างข้อมูล 52 สัปดาห์ทั้งหมดหรือไม่?",
-    btn_confirm: "ตกลง (Confirm)",
-    btn_cancel: "ยกเลิก (Cancel)",
+    btn_confirm: "ตกลง",
+    btn_cancel: "ยกเลิก",
     alert_title_confirm: "ยืนยันการทำรายการ",
   },
   en: {
+    // Header & Hub
+    header_title: "Machine Ledger & PM Plan",
+    back_bpc: "Back to BPC Hub",
+
+    // Dashboard & Filters
+    dashboard_title: "Current Week Overview",
+    btn_clear_filter: "Clear Filter",
+    dash_plan_title: "PM Plan This Week (W{week})",
+    dash_plan_unit: "Tasks",
+    dash_plan_cta: "Click to view queue",
+    dash_done_title: "Completed",
+    dash_done_cta: "Click to view completed",
+    dash_ewo_title: "Breakdown / Waiting (EWO)",
+    dash_ewo_unit: "Items",
+    dash_ewo_cta: "Click to view breakdowns",
+    trend_no_data: "No previous data",
+    trend_increase: "Increase",
+    trend_decrease: "Decrease",
+    trend_equal: "Equal to last week",
+
+    search_placeholder: "Search machine name, production line, or component...",
+    filter_dept_label: "Department",
+    filter_dept_all: "All Departments",
+    filter_other: "Others",
+    filter_line_label: "Production Line",
+    filter_line_all: "All Lines",
+    filter_class_label: "Priority Class",
+    filter_class_all: "All Classes",
+
+    upcoming_banner_title: "Notice: PM tasks scheduled for the next 2 weeks!",
+    upcoming_banner_desc:
+      "The system has scanned and highlighted cards with a red border 🔥. Please check and prepare your workflow.",
+    upcoming_badge: "🔥 Upcoming Task",
+
     select_line: "Select Production Line",
     back_to_line: "Back to Lines",
+    back_to_mach: "Back to Machines",
+    back_to_sub: "Back to Subassemblies",
+
+    // View Titles & Cards
+    mach_view_title: "All machines in production line:",
+    sub_view_title: "Subassemblies of machine:",
+    comp_view_subtitle: "Component list and maintenance calendar",
+    btn_edit_data: "Edit Data",
+    btn_print_a3: "Print A3",
+
+    has_machine: "Contains",
+    unit_machine: "Machines",
+    view_machine: "View Machines",
+    has_sub: "Contains",
+    unit_sub: "Subassemblies",
+    view_sub: "View Subassemblies",
+    has_comp: "Contains",
+    unit_comp: "Components",
+    view_comp: "View Components Table",
+    no_data: "No data available. Click + to create a new one.",
+    no_mach_in_line:
+      "No machines in this line yet. Click + at bottom right to create.",
+    no_sub_in_mach: "No subassemblies found for this machine.",
+    no_match_filter: "No machines match this status for the current week.",
+
+    // Table Headers
+    th_image: "Image",
+    th_comp_name: "Component Name",
+    th_task: "Task",
+    th_standards: "Standards",
+    th_class: "Class",
+    th_type: "Type",
+    th_status: "Status",
+    th_min: "Min",
+    th_ppe: "Safety/PPE",
+    th_calendar: "Calendar 52 Weeks",
+    th_remark: "EWO / Remark",
+
+    // Form Section
     form_title: "Data Entry Form",
     cancel: "Cancel",
     working_in: "Working in",
@@ -1933,21 +2086,8 @@ const translations = {
     tap_to_upload: "Tap to take a photo or select from album",
     add_subsystem: "Add Sub-system",
     btn_save: "Confirm and Save All Data",
-    back_bpc: "Back to BPC Hub",
+    export_excel: "Export Excel (52 Weeks)",
 
-    // คำศัพท์สำหรับการ์ดหน้าแรก
-    has_machine: "Contains",
-    unit_machine: "Machines",
-    view_machine: "View Machines",
-    has_sub: "Contains",
-    unit_sub: "Subassemblies",
-    view_sub: "View Subassemblies",
-    has_comp: "Contains",
-    unit_comp: "Components",
-    view_comp: "View Components Table",
-    no_data: "No data available. Click + to create a new one.",
-
-    // ฟอร์มระบบย่อย (Subsystem)
     subassembly: "Subassembly",
     delete_subassembly: "Delete",
     label_sub_name: "Subassembly Name",
@@ -1957,6 +2097,7 @@ const translations = {
     risk_desc: "Default is all risks apply. Tap ❌ if not.",
     components_title: "Components",
     add_component: "Add Component",
+
     risk_1: "Pinch Point",
     risk_2: "Tools",
     risk_3: "Manual Lift",
@@ -1965,7 +2106,6 @@ const translations = {
     risk_6: "Loud Noise",
     risk_7: "Forklift",
 
-    // ฟอร์ม Component
     comp_image: "Component Image",
     label_comp_name: "Component Name",
     label_time_min: "Time (mins)",
@@ -1973,6 +2113,7 @@ const translations = {
     placeholder_remark: "Enter additional remarks",
     high_risk: "High Risk (Work Permit)",
     ppe_desc: "Required PPE (Tap ❌ if not used)",
+
     ppe_1: "Gloves",
     ppe_2: "Helmet",
     ppe_3: "Glasses",
@@ -1982,10 +2123,11 @@ const translations = {
     ppe_7: "Harness",
     ppe_8: "Hi-Vis",
     ppe_9: "LOTO",
+
     plan_52_weeks: "52-Week Plan",
     manage: "Manage",
 
-    // Modal 52 สัปดาห์
+    // Modal 52 Weeks
     modal_52_title: "Set 52-Week Plan",
     modal_52_subtitle1: "Weekly Task Settings",
     modal_52_step1: "1. Select task types (Multiple)",
@@ -2002,14 +2144,34 @@ const translations = {
     close_window: "Close",
     save_plan: "Save Plan",
 
-    // Modals (Alert / Cancel)
+    // Execution Mode
+    exec_title: "PM Execution",
+    exec_exit: "Exit Execution Mode",
+    exec_current_week: "Current Week:",
+    exec_badge_range: "Showing +/- 4 weeks",
+    exec_no_task_title: "No PM Tasks",
+    exec_no_task_desc: "No tasks found within +/- 4 weeks.",
+    exec_status_label: "1. Work Status",
+    exec_status_normal: "✅ Normal (PM Completed)",
+    exec_status_defect: "⚠️ Defect Found (Replaced Immediately)",
+    exec_status_waiting: "🛑 Defect Found (Waiting Parts / WO Opened)",
+    exec_status_breakdown: "🚨 Breakdown",
+    exec_before: "Before",
+    exec_after: "After",
+    exec_time_label: "Actual Time (mins)",
+    exec_mech_label: "Employee ID / Name",
+    exec_remark_label: "Issue Details / Remark (WO)",
+    exec_remark_placeholder: "Enter defect description or work order...",
+    exec_btn_send: "Submit PM Task",
+
+    // Modals & Messages
     alert_title_warning: "Notification",
     alert_btn_ok: "OK",
     confirm_cancel_title: "Confirm Go Back",
     confirm_cancel_desc:
       "Unsaved changes will be lost.<br />Do you want to go back?",
-    btn_no_continue: "No, Continue Editing",
-    btn_yes_back: "Yes, Go Back",
+    btn_no_continue: "Cancel",
+    btn_yes_back: "Confirm",
     no_task_week: "No tasks specified in any week",
     week_prefix: "Week",
     confirm_delete_week: "Do you want to delete the plan for Week {week}?",
