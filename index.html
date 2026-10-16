@@ -109,9 +109,9 @@
           <h5 class="fw-bold text-dark mb-0">
             <span class="material-symbols-rounded align-middle me-2"
               >monitoring</span
-            >ภาพรวมสัปดาห์ปัจจุบัน
+            ><span data-i18n="dashboard_title">ภาพรวมสัปดาห์ปัจจุบัน</span>
           </h5>
-          <!-- ปุ่มล้างตัวกรอง (จะโชว์เมื่อมีการคลิกการ์ด) -->
+          <!-- ปุ่มล้างตัวกรอง -->
           <button
             id="btn-clear-dash"
             class="btn btn-sm btn-outline-danger fw-bold d-none shadow-sm"
@@ -119,12 +119,12 @@
           >
             <span class="material-symbols-rounded align-middle fs-6 me-1"
               >filter_alt_off</span
-            >ล้างตัวกรอง
+            ><span data-i18n="btn_clear_filter">ล้างตัวกรอง</span>
           </button>
         </div>
 
         <div class="row g-3 mb-4" id="weeklyDashboard">
-          <!-- การ์ด 1: แผน PM ทั้งหมด (สีน้ำเงิน) -->
+          <!-- การ์ด 1: แผน PM ทั้งหมด -->
           <div class="col-md-4">
             <div
               class="card dash-card h-100"
@@ -150,7 +150,8 @@
                   </div>
                   <div>
                     <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
-                      แผน PM สัปดาห์นี้ (W<span id="dash-week">--</span>)
+                      <span data-i18n="dash_plan_title">แผน PM สัปดาห์นี้</span>
+                      (W<span id="dash-week">--</span>)
                     </h6>
                     <h3 class="mb-0 fw-bold" id="dash-total">
                       0 <span class="fs-6 fw-normal">งาน</span>
@@ -159,24 +160,22 @@
                 </div>
                 <div class="mt-auto">
                   <div class="d-flex justify-content-between align-items-end">
-                    <span class="small fw-bold opacity-75" id="dash-trend-total"
-                      ><span class="material-symbols-rounded fs-6 align-middle"
-                        >remove</span
-                      >
-                      ไม่มีข้อมูลก่อนหน้า</span
-                    >
-                    <span class="dash-cta small fw-bold"
-                      ><span class="material-symbols-rounded fs-6 align-middle"
+                    <span
+                      class="small fw-bold opacity-75"
+                      id="dash-trend-total"
+                    ></span>
+                    <span class="dash-cta small fw-bold">
+                      <span class="material-symbols-rounded fs-6 align-middle"
                         >ads_click</span
                       >
-                      คลิกเพื่อดูคิวงาน</span
-                    >
+                      <span data-i18n="dash_plan_cta">คลิกเพื่อดูคิวงาน</span>
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <!-- การ์ด 2: ดำเนินการแล้ว (สีเขียว) -->
+          <!-- การ์ด 2: ดำเนินการแล้ว -->
           <div class="col-md-4">
             <div
               class="card dash-card h-100"
@@ -201,7 +200,11 @@
                     >
                   </div>
                   <div>
-                    <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
+                    <h6
+                      class="mb-1 fw-bold opacity-75"
+                      style="font-size: 13px"
+                      data-i18n="dash_done_title"
+                    >
                       ดำเนินการแล้ว
                     </h6>
                     <h3 class="mb-0 fw-bold">
@@ -211,7 +214,6 @@
                   </div>
                 </div>
                 <div class="mt-auto pt-2">
-                  <!-- Progress Bar -->
                   <div
                     class="progress mb-2 bg-white bg-opacity-25"
                     style="height: 6px"
@@ -224,24 +226,22 @@
                     ></div>
                   </div>
                   <div class="d-flex justify-content-between align-items-end">
-                    <span class="small fw-bold opacity-75" id="dash-trend-done"
-                      ><span class="material-symbols-rounded fs-6 align-middle"
-                        >remove</span
-                      >
-                      ไม่มีข้อมูลก่อนหน้า</span
-                    >
-                    <span class="dash-cta small fw-bold"
-                      ><span class="material-symbols-rounded fs-6 align-middle"
+                    <span
+                      class="small fw-bold opacity-75"
+                      id="dash-trend-done"
+                    ></span>
+                    <span class="dash-cta small fw-bold">
+                      <span class="material-symbols-rounded fs-6 align-middle"
                         >ads_click</span
                       >
-                      คลิกเพื่อดูงานสำเร็จ</span
-                    >
+                      <span data-i18n="dash_done_cta">คลิกดูงานสำเร็จ</span>
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-          <!-- การ์ด 3: เครื่องเสีย/รอซ่อม (สีแดง) -->
+          <!-- การ์ด 3: เครื่องเสีย/รอซ่อม (EWO) -->
           <div class="col-md-4">
             <div
               class="card dash-card h-100"
@@ -264,7 +264,11 @@
                     <span class="material-symbols-rounded fs-3">warning</span>
                   </div>
                   <div>
-                    <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
+                    <h6
+                      class="mb-1 fw-bold opacity-75"
+                      style="font-size: 13px"
+                      data-i18n="dash_ewo_title"
+                    >
                       เครื่องเสีย / รอซ่อม (EWO)
                     </h6>
                     <h3 class="mb-0 fw-bold" id="dash-breakdown">
@@ -274,29 +278,25 @@
                 </div>
                 <div class="mt-auto">
                   <div class="d-flex justify-content-between align-items-end">
-                    <span class="small fw-bold opacity-75" id="dash-trend-ewo"
-                      ><span class="material-symbols-rounded fs-6 align-middle"
-                        >remove</span
-                      >
-                      ไม่มีข้อมูลก่อนหน้า</span
-                    >
-                    <span class="dash-cta small fw-bold"
-                      ><span class="material-symbols-rounded fs-6 align-middle"
+                    <span
+                      class="small fw-bold opacity-75"
+                      id="dash-trend-ewo"
+                    ></span>
+                    <span class="dash-cta small fw-bold">
+                      <span class="material-symbols-rounded fs-6 align-middle"
                         >ads_click</span
                       >
-                      คลิกดูเครื่องเสีย</span
-                    >
+                      <span data-i18n="dash_ewo_cta">คลิกดูเครื่องเสีย</span>
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-        <!-- จบส่วน Dashboard -->
 
-        <!-- 🔴 แถบเครื่องมือ Filter & Search (Premium Floating Card) -->
+        <!-- 🔴 แถบเครื่องมือ Filter & Search -->
         <div class="premium-filter-card mb-4">
-          <!-- บรรทัดที่ 1: ช่องค้นหา (เด่นที่สุด) -->
           <div class="position-relative mb-4">
             <span class="material-symbols-rounded search-icon-inside"
               >search</span
@@ -305,32 +305,37 @@
               type="text"
               id="filterSearch"
               class="form-control search-bar-lg"
+              data-i18n-placeholder="search_placeholder"
               placeholder="ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่..."
               onkeyup="handleRouting()"
             />
           </div>
 
-          <!-- บรรทัดที่ 2: ตัวกรองแบบ Smart Dropdown -->
           <div class="row g-3">
             <div class="col-md-4">
               <label class="form-label text-muted fw-bold small mb-2"
-                ><i class="bi bi-building"></i> แผนก (Department)</label
+                ><i class="bi bi-building"></i>
+                <span data-i18n="filter_dept_label"
+                  >แผนก (Department)</span
+                ></label
               >
               <select
                 id="filterDept"
                 class="form-select filter-select"
                 onchange="updateLineDropdown()"
               >
-                <option value="ALL">รวมทุกแผนก</option>
-                <option value="CO">CO</option>
-                <option value="PCL">PCL</option>
-                <option value="OTHER">อื่นๆ (Others)</option>
+                <option value="ALL" data-i18n="filter_dept_all">
+                  รวมทุกแผนก
+                </option>
               </select>
             </div>
 
             <div class="col-md-4">
               <label class="form-label text-muted fw-bold small mb-2"
-                ><i class="bi bi-diagram-3"></i> ไลน์ผลิต (Line)</label
+                ><i class="bi bi-diagram-3"></i>
+                <span data-i18n="filter_line_label"
+                  >ไลน์ผลิต (Line)</span
+                ></label
               >
               <select
                 id="filterLine"
@@ -338,20 +343,27 @@
                 onchange="handleRouting()"
                 disabled
               >
-                <option value="ALL">รวมทุกไลน์</option>
+                <option value="ALL" data-i18n="filter_line_all">
+                  รวมทุกไลน์
+                </option>
               </select>
             </div>
 
             <div class="col-md-4">
               <label class="form-label text-muted fw-bold small mb-2"
-                ><i class="bi bi-star"></i> ระดับความสำคัญ (Class)</label
+                ><i class="bi bi-star"></i>
+                <span data-i18n="filter_class_label"
+                  >ระดับความสำคัญ (Class)</span
+                ></label
               >
               <select
                 id="filterClass"
                 class="form-select filter-select"
                 onchange="handleRouting()"
               >
-                <option value="ALL">ทุกระดับ Class</option>
+                <option value="ALL" data-i18n="filter_class_all">
+                  ทุกระดับ Class
+                </option>
                 <option value="AA">Class AA (สำคัญสูงสุด)</option>
                 <option value="A">Class A</option>
                 <option value="B">Class B</option>
@@ -361,7 +373,6 @@
           </div>
         </div>
 
-        <!-- 🔴 แบนเนอร์แจ้งเตือนงานล่วงหน้า 2 สัปดาห์ (แสดงอัตโนมัติเมื่อระบบสแกนเจอ) -->
         <div
           id="upcomingAlertBanner"
           class="d-none alert shadow-sm mb-4"

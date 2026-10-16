@@ -91,25 +91,32 @@ async function loadDataFromDatabase() {
 
 // สร้างรายการแผนกจาก dbData อัตโนมัติ
 function initFilters() {
+  const lang = getCurrentLang();
+  const t = translations[lang] || translations["th"];
+
   const deptSelect = document.getElementById("filterDept");
-  deptSelect.innerHTML = '<option value="ALL">รวมทุกแผนก</option>';
+  deptSelect.innerHTML = `<option value="ALL">${t.filter_dept_all}</option>`;
 
   for (let dept in dbData) {
     deptSelect.innerHTML += `<option value="${dept}">${dept}</option>`;
   }
+  // เพิ่มตัวเลือก อื่นๆ (Others)
+  deptSelect.innerHTML += `<option value="OTHER">${t.filter_other}</option>`;
 }
 
 // อัปเดตช่องเลือกไลน์ เมื่อมีการเปลี่ยนแผนก
 function updateLineDropdown() {
+  const lang = getCurrentLang();
+  const t = translations[lang] || translations["th"];
+
   const dept = document.getElementById("filterDept").value;
   const lineSelect = document.getElementById("filterLine");
 
-  lineSelect.innerHTML = '<option value="ALL">รวมทุกไลน์</option>';
+  lineSelect.innerHTML = `<option value="ALL">${t.filter_line_all}</option>`;
 
   if (dept === "ALL") {
     lineSelect.disabled = true;
   } else {
-    // ดึงรายชื่อไลน์ตามแผนกที่เลือก
     if (dept === "OTHER") {
       for (let d in dbData) {
         if (d !== "CO" && d !== "PCL") {
@@ -125,8 +132,9 @@ function updateLineDropdown() {
     }
     lineSelect.disabled = false;
   }
-  handleRouting(); // วาดหน้าจอใหม่ทันที
+  handleRouting();
 }
+
 // สวิตช์ปุ่มแคปซูล 2 สัปดาห์
 function toggleUpcomingFilter() {
   const btn = document.getElementById("btnFilterUpcoming");
@@ -1777,12 +1785,32 @@ async function submitFormViaAPI() {
     },
   );
 }
+
 // ==========================================
 // ระบบแปลภาษา (i18n: Internationalization)
 // ==========================================
 const translations = {
   th: {
-    // --- (คำศัพท์เดิมของคุณ) ---
+    // --- ส่วนที่เพิ่มใหม่สำหรับ Dashboard & Filter ---
+    dashboard_title: "ภาพรวมสัปดาห์ปัจจุบัน",
+    dash_plan_title: "แผน PM สัปดาห์นี้",
+    dash_done_title: "ดำเนินการแล้ว",
+    dash_ewo_title: "เครื่องเสีย / รอซ่อม (EWO)",
+    dash_plan_cta: "คลิกเพื่อดูคิวงาน",
+    dash_done_cta: "คลิกดูงานสำเร็จ",
+    dash_ewo_cta: "คลิกดูเครื่องเสีย",
+    search_placeholder:
+      "ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่...",
+    filter_dept_label: "แผนก (Department)",
+    filter_line_label: "ไลน์ผลิต (Line)",
+    filter_class_label: "ระดับความสำคัญ (Class)",
+    filter_dept_all: "รวมทุกแผนก",
+    filter_line_all: "รวมทุกไลน์",
+    filter_class_all: "ทุกระดับ Class",
+    filter_other: "อื่นๆ (Others)",
+    btn_clear_filter: "ล้างตัวกรอง",
+
+    // --- คำศัพท์เดิม ---
     select_line: "เลือกไลน์ผลิต (Lines)",
     back_to_line: "กลับหน้าไลน์ผลิต",
     form_title: "ฟอร์มบันทึกข้อมูล",
@@ -1892,8 +1920,6 @@ const translations = {
     btn_confirm: "ตกลง (Confirm)",
     btn_cancel: "ยกเลิก (Cancel)",
     alert_title_confirm: "ยืนยันการทำรายการ",
-
-    // 🔴 ส่วนที่เพิ่มใหม่สำหรับ Navigation และ โหมดช่าง
     nav_dept: "แผนก",
     nav_line: "ไลน์",
     nav_mach: "เครื่องจักร",
@@ -1907,7 +1933,25 @@ const translations = {
     exec_no_plan_desc: "ไม่พบแผนงานในช่วง +/- 4 สัปดาห์นี้ครับ",
   },
   en: {
-    // --- (คำศัพท์เดิมของคุณ) ---
+    // --- ส่วนที่เพิ่มใหม่สำหรับ Dashboard & Filter ---
+    dashboard_title: "Current Week Overview",
+    dash_plan_title: "PM Plan This Week",
+    dash_done_title: "Completed",
+    dash_ewo_title: "Breakdown / Waiting (EWO)",
+    dash_plan_cta: "Click to view queue",
+    dash_done_cta: "Click to view completed",
+    dash_ewo_cta: "Click to view breakdowns",
+    search_placeholder: "Search machine, line, or component...",
+    filter_dept_label: "Department",
+    filter_line_label: "Production Line",
+    filter_class_label: "Priority Class",
+    filter_dept_all: "All Departments",
+    filter_line_all: "All Lines",
+    filter_class_all: "All Classes",
+    filter_other: "Others",
+    btn_clear_filter: "Clear Filter",
+
+    // --- คำศัพท์เดิม ---
     select_line: "Select Production Line",
     back_to_line: "Back to Lines",
     form_title: "Data Entry Form",
@@ -2016,8 +2060,6 @@ const translations = {
     btn_confirm: "Confirm",
     btn_cancel: "Cancel",
     alert_title_confirm: "Confirmation",
-
-    // 🔴 ส่วนที่เพิ่มใหม่สำหรับ Navigation และ โหมดช่าง
     nav_dept: "Dept",
     nav_line: "Line",
     nav_mach: "Machine",
