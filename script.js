@@ -70,6 +70,7 @@ async function loadDataFromDatabase() {
   try {
     const result = await ApiService.request("get_all_data");
     dbData = await ApiService.getAllData();
+    updateDashboardStats();
     initFilters();
     handleRouting();
     checkDraftStatus(); // เช็คว่ามีแบบร่างค้างไว้ไหม
@@ -212,6 +213,62 @@ function hasUpcomingTasks(entityData, isLine = false) {
     }
   }
   return false;
+}
+
+// 🔴 ฟังก์ชันอัปเดต Dashboard สรุปผล
+function updateDashboardStats() {
+  let currentWeekIndex = getCurrentWeekNumber() - 1;
+  let dashWeekEl = document.getElementById("dash-week");
+  if (dashWeekEl) dashWeekEl.innerText = currentWeekIndex + 1;
+
+  let totalTasks = 0;
+  let completedTasks = 0;
+  let breakdownTasks = 0;
+
+  // วนลูปนับงานในสัปดาห์ปัจจุบัน
+  for (let dept in dbData) {
+    for (let line in dbData[dept]) {
+      if (!dbData[dept][line].machines) continue;
+      for (let mach in dbData[dept][line].machines) {
+        if (!dbData[dept][line].machines[mach].subassemblies) continue;
+        for (let sub in dbData[dept][line].machines[mach].subassemblies) {
+          let comps =
+            dbData[dept][line].machines[mach].subassemblies[sub].components;
+          if (!comps) continue;
+
+          comps.forEach((comp) => {
+            if (comp.weeks && comp.weeks[currentWeekIndex]) {
+              let w = comp.weeks[currentWeekIndex];
+              // นับงานทั้งหมดในสัปดาห์นี้ (Planned 'b' สีเหลือง หรือ Executed 't' สีดำ)
+              if (w.b === 1 || w.t === 1) totalTasks++;
+
+              // นับงานที่ทำเสร็จแล้ว (Executed 't' สีดำ)
+              if (w.t === 1) completedTasks++;
+
+              // นับงานที่มีปัญหา/แจ้งเสีย (Breakdown 'r' สีแดง หรือ Waiting)
+              if (w.r === 1) breakdownTasks++;
+            }
+          });
+        }
+      }
+    }
+  }
+
+  let percent =
+    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+
+  // นำค่าไปแสดงบน UI
+  let totalEl = document.getElementById("dash-total");
+  let compEl = document.getElementById("dash-completed");
+  let pctEl = document.getElementById("dash-percent");
+  let brkEl = document.getElementById("dash-breakdown");
+
+  if (totalEl)
+    totalEl.innerHTML = `${totalTasks} <span class="fs-6 fw-normal">งาน</span>`;
+  if (compEl) compEl.innerText = completedTasks;
+  if (pctEl) pctEl.innerText = `(${percent}%)`;
+  if (brkEl)
+    brkEl.innerHTML = `${breakdownTasks} <span class="fs-6 fw-normal">รายการ</span>`;
 }
 
 // อัปเดต Navigate ให้พ่วง Department ไปด้วย
