@@ -1092,7 +1092,48 @@ body {
 }
 
 @keyframes pulse-red {
-  0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4); }
-  70% { box-shadow: 0 0 0 10px rgba(239, 68, 68, 0); }
-  100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); }
+  0% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+}
+
+/* =========================================================
+   Interactive Dashboard Styles
+   ========================================================= */
+.dash-card {
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+.dash-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 15px 30px rgba(0, 0, 0, 0.15) !important;
+}
+/* ให้ข้อความ "คลิกเพื่อดู..." สว่างขึ้นตอนโฮเวอร์ */
+.dash-card .dash-cta {
+  opacity: 0.5;
+  transition: all 0.3s;
+}
+.dash-card:hover .dash-cta {
+  opacity: 1;
+}
+/* สไตล์ตอนการ์ดถูกกด (Active) และไม่ได้ถูกกด (Inactive) */
+.dash-card.dash-active {
+  transform: scale(1.02);
+  box-shadow:
+    0 0 0 4px rgba(255, 255, 255, 0.8),
+    0 0 0 8px #cbd5e1 !important;
+  z-index: 10;
+}
+.dash-card.dash-inactive {
+  opacity: 0.4;
+  filter: grayscale(80%);
 }

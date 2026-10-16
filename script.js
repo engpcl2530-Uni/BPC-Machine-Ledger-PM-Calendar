@@ -215,17 +215,26 @@ function hasUpcomingTasks(entityData, isLine = false) {
   return false;
 }
 
-// 🔴 ฟังก์ชันอัปเดต Dashboard สรุปผล
+// ตัวแปรเก็บสถานะว่าผู้ใช้กดกรอง Dashboard โหมดไหนอยู่ ('PLAN', 'DONE', 'EWO', หรือ null)
+let currentDashFilter = null;
+
 function updateDashboardStats() {
   let currentWeekIndex = getCurrentWeekNumber() - 1;
+  let prevWeekIndex = currentWeekIndex - 1; // สัปดาห์ก่อนหน้า
+
   let dashWeekEl = document.getElementById("dash-week");
   if (dashWeekEl) dashWeekEl.innerText = currentWeekIndex + 1;
 
-  let totalTasks = 0;
-  let completedTasks = 0;
-  let breakdownTasks = 0;
+  let stats = {
+    currTotal: 0,
+    currDone: 0,
+    currEwo: 0,
+    prevTotal: 0,
+    prevDone: 0,
+    prevEwo: 0,
+  };
 
-  // วนลูปนับงานในสัปดาห์ปัจจุบัน
+  // วนลูปนับงาน
   for (let dept in dbData) {
     for (let line in dbData[dept]) {
       if (!dbData[dept][line].machines) continue;
@@ -237,16 +246,19 @@ function updateDashboardStats() {
           if (!comps) continue;
 
           comps.forEach((comp) => {
+            // นับสัปดาห์ปัจจุบัน
             if (comp.weeks && comp.weeks[currentWeekIndex]) {
               let w = comp.weeks[currentWeekIndex];
-              // นับงานทั้งหมดในสัปดาห์นี้ (Planned 'b' สีเหลือง หรือ Executed 't' สีดำ)
-              if (w.b === 1 || w.t === 1) totalTasks++;
-
-              // นับงานที่ทำเสร็จแล้ว (Executed 't' สีดำ)
-              if (w.t === 1) completedTasks++;
-
-              // นับงานที่มีปัญหา/แจ้งเสีย (Breakdown 'r' สีแดง หรือ Waiting)
-              if (w.r === 1) breakdownTasks++;
+              if (w.b === 1 || w.t === 1) stats.currTotal++;
+              if (w.t === 1) stats.currDone++;
+              if (w.r === 1) stats.currEwo++;
+            }
+            // นับสัปดาห์ก่อนหน้า (ถ้ามี)
+            if (prevWeekIndex >= 0 && comp.weeks && comp.weeks[prevWeekIndex]) {
+              let w = comp.weeks[prevWeekIndex];
+              if (w.b === 1 || w.t === 1) stats.prevTotal++;
+              if (w.t === 1) stats.prevDone++;
+              if (w.r === 1) stats.prevEwo++;
             }
           });
         }
@@ -254,21 +266,131 @@ function updateDashboardStats() {
     }
   }
 
-  let percent =
-    totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : 0;
+  let currPercent =
+    stats.currTotal > 0
+      ? Math.round((stats.currDone / stats.currTotal) * 100)
+      : 0;
+  let prevPercent =
+    stats.prevTotal > 0
+      ? Math.round((stats.prevDone / stats.prevTotal) * 100)
+      : 0;
 
-  // นำค่าไปแสดงบน UI
-  let totalEl = document.getElementById("dash-total");
-  let compEl = document.getElementById("dash-completed");
-  let pctEl = document.getElementById("dash-percent");
-  let brkEl = document.getElementById("dash-breakdown");
+  // อัปเดตตัวเลขบนการ์ด
+  if (document.getElementById("dash-total"))
+    document.getElementById("dash-total").innerHTML =
+      `${stats.currTotal} <span class="fs-6 fw-normal">งาน</span>`;
+  if (document.getElementById("dash-completed"))
+    document.getElementById("dash-completed").innerText = stats.currDone;
+  if (document.getElementById("dash-percent"))
+    document.getElementById("dash-percent").innerText = `(${currPercent}%)`;
+  if (document.getElementById("dash-breakdown"))
+    document.getElementById("dash-breakdown").innerHTML =
+      `${stats.currEwo} <span class="fs-6 fw-normal">รายการ</span>`;
+  if (document.getElementById("dash-progress-bar"))
+    document.getElementById("dash-progress-bar").style.width =
+      `${currPercent}%`;
 
-  if (totalEl)
-    totalEl.innerHTML = `${totalTasks} <span class="fs-6 fw-normal">งาน</span>`;
-  if (compEl) compEl.innerText = completedTasks;
-  if (pctEl) pctEl.innerText = `(${percent}%)`;
-  if (brkEl)
-    brkEl.innerHTML = `${breakdownTasks} <span class="fs-6 fw-normal">รายการ</span>`;
+  // อัปเดต Trend
+  updateTrendUI(
+    "dash-trend-total",
+    stats.currTotal,
+    stats.prevTotal,
+    prevWeekIndex,
+  );
+  updateTrendUI(
+    "dash-trend-done",
+    currPercent,
+    prevPercent,
+    prevWeekIndex,
+    "%",
+  );
+  updateTrendUI("dash-trend-ewo", stats.currEwo, stats.prevEwo, prevWeekIndex);
+}
+
+// ฟังก์ชันย่อยสำหรับวาด Trend (ลูกศรขึ้น/ลง)
+function updateTrendUI(
+  elementId,
+  currValue,
+  prevValue,
+  prevWeekIndex,
+  suffix = "",
+) {
+  let el = document.getElementById(elementId);
+  if (!el) return;
+
+  if (prevWeekIndex < 0) {
+    // สัปดาห์แรกของปี ไม่มีข้อมูลก่อนหน้าให้เทียบ (รองรับการดึงข้อมูลปีที่แล้วในอนาคต)
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">remove</span> ไม่มีข้อมูลก่อนหน้า`;
+    return;
+  }
+
+  let diff = currValue - prevValue;
+  if (diff > 0) {
+    // EWO เพิ่มขึ้นให้เป็นสีแดง (ไม่ดี), งานเสร็จ/แผนงานเพิ่มให้เป็นสีสว่าง
+    let icon = elementId.includes("ewo") ? "trending_up" : "trending_up";
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">${icon}</span> เพิ่มขึ้น ${diff}${suffix} (W${prevWeekIndex + 1})`;
+  } else if (diff < 0) {
+    let icon = "trending_down";
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">${icon}</span> ลดลง ${Math.abs(diff)}${suffix} (W${prevWeekIndex + 1})`;
+  } else {
+    el.innerHTML = `<span class="material-symbols-rounded fs-6 align-middle">drag_handle</span> เท่ากับสัปดาห์ที่แล้ว`;
+  }
+}
+
+// 🔴 ฟังก์ชันควบคุมการกด Dashboard Filter
+function toggleDashboardFilter(type) {
+  // กดซ้ำที่เดิม = ล้างฟิลเตอร์
+  if (currentDashFilter === type) {
+    clearDashboardFilter();
+    return;
+  }
+
+  currentDashFilter = type;
+  document.getElementById("btn-clear-dash").classList.remove("d-none");
+
+  // ล้างการค้นหาและ Dropdown เดิมทิ้ง (ป้องกันเงื่อนไขตีกัน)
+  document.getElementById("filterSearch").value = "";
+  document.getElementById("filterDept").value = "ALL";
+  document.getElementById("filterLine").value = "ALL";
+  document.getElementById("filterLine").disabled = true;
+  document.getElementById("filterClass").value = "ALL";
+
+  updateDashboardCardVisuals();
+  handleRouting(); // รีเรนเดอร์หน้าจอ
+}
+
+function clearDashboardFilter() {
+  currentDashFilter = null;
+  document.getElementById("btn-clear-dash").classList.add("d-none");
+  updateDashboardCardVisuals();
+  handleRouting();
+}
+
+function updateDashboardCardVisuals() {
+  let cards = ["dash-card-plan", "dash-card-done", "dash-card-ewo"];
+  let activeMap = {
+    PLAN: "dash-card-plan",
+    DONE: "dash-card-done",
+    EWO: "dash-card-ewo",
+  };
+
+  cards.forEach((c) => {
+    let el = document.getElementById(c);
+    if (el) {
+      if (!currentDashFilter) {
+        // ไม่มีฟิลเตอร์ ให้การ์ดสว่างทุกใบ
+        el.classList.remove("dash-active", "dash-inactive");
+      } else {
+        if (activeMap[currentDashFilter] === c) {
+          el.classList.add("dash-active");
+          el.classList.remove("dash-inactive");
+        } else {
+          el.classList.remove("dash-active");
+          el.classList.add("dash-inactive");
+        }
+      }
+    }
+  });
 }
 
 // อัปเดต Navigate ให้พ่วง Department ไปด้วย
@@ -466,6 +588,80 @@ function renderLines() {
 
   let hasResult = false;
   let hasAnyUpcoming = false; // ตัวแปรเช็คว่าเจองานด่วนหรือไม่
+
+  // 🔴 1. หากผู้ใช้กดกรองจาก Dashboard -> ให้โชว์การ์ดเครื่องจักร (ระดับ Machine) ที่ตรงเงื่อนไขแทนการโชว์ไลน์
+  if (currentDashFilter) {
+    let hasMachineResult = false;
+    let currentWeekIndex = getCurrentWeekNumber() - 1;
+
+    for (let deptName in dbData) {
+      for (let lineName in dbData[deptName]) {
+        let lineData = dbData[deptName][lineName];
+        if (!lineData.machines) continue;
+
+        for (let machName in lineData.machines) {
+          let machData = lineData.machines[machName];
+          let isMatch = false;
+
+          // เช็คว่าเครื่องจักรนี้ตรงกับ Dashboard Filter ไหม
+          for (let sub in machData.subassemblies) {
+            let comps = machData.subassemblies[sub].components;
+            if (!comps) continue;
+
+            for (let c of comps) {
+              if (c.weeks && c.weeks[currentWeekIndex]) {
+                let w = c.weeks[currentWeekIndex];
+                if (currentDashFilter === "PLAN" && (w.b === 1 || w.t === 1))
+                  isMatch = true;
+                if (currentDashFilter === "DONE" && w.t === 1) isMatch = true;
+                if (currentDashFilter === "EWO" && w.r === 1) isMatch = true;
+              }
+            }
+            if (isMatch) break;
+          }
+
+          if (isMatch) {
+            hasMachineResult = true;
+            let safeMachName = escapeHTML(machName);
+            let imageUrl =
+              machData.image && !machData.image.includes("NO+IMAGE")
+                ? machData.image
+                : "https://via.placeholder.com/400x200?text=No+Image+Available";
+            let sCount = machData.subassemblies
+              ? Object.keys(machData.subassemblies).length
+              : 0;
+
+            // วาดการ์ดเครื่องจักร (แนบ Badge แผนก/ไลน์ไว้ด้านบนให้ชัดเจน)
+            grid.innerHTML += `
+              <div class="col-md-6 col-lg-4">
+                <div class="hover-card d-flex flex-column h-100" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${safeMachName}')">
+                  <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
+                  <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
+                    <div class="mb-2">
+                       <span class="badge bg-primary me-1">${escapeHTML(deptName)}</span>
+                       <span class="badge bg-secondary">${escapeHTML(lineName)}</span>
+                    </div>
+                    <h5 class="fw-bold text-dark mb-1 text-truncate" title="${safeMachName}">${safeMachName}</h5>
+                    <div class="text-muted small fw-bold mt-2">
+                      <span class="material-symbols-rounded align-middle text-primary" style="font-size: 18px;">account_tree</span> 
+                      มีระบบย่อย ${sCount} ระบบ
+                    </div>
+                  </div>
+                </div>
+              </div>`;
+          }
+        }
+      }
+    }
+
+    if (!hasMachineResult) {
+      grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
+           <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">check_circle</span>
+           <h5>ไม่มีเครื่องจักรที่ตรงกับสถานะนี้ในสัปดาห์นี้ครับ</h5>
+         </div>`;
+    }
+    return; // 🔴 จบการทำงานของ renderLines ตรงนี้ ไม่ต้องวาดการ์ดไลน์แบบปกติ
+  }
 
   for (let deptName in dbData) {
     // กรองแผนก
@@ -1417,14 +1613,27 @@ function checkDraftStatus() {
 function restoreDraftData() {
   let draft = safeJSONParse(localStorage.getItem("bpc_draft"));
   if (draft.time) {
-    // ใช้ showModalConfirm แทน confirm ธรรมดาให้สวยงาม
     showModalConfirm(
       "กู้คืนแบบร่าง",
       `พบข้อมูลที่เคยพิมพ์ค้างไว้เมื่อ: ${draft.time}<br/>คุณต้องการกู้คืนมาแก้ไขต่อหรือไม่?`,
       () => {
         openAddFormContext();
-        document.getElementById("f_department").value = draft.department || ""; // 🔴 เพิ่มบรรทัดนี้
-        document.getElementById("f_lineName").value = draft.lineName || "";
+
+        // 🔴 โหลดข้อมูลกลับเข้าฟอร์ม
+        document.getElementById("f_department").value = draft.department || "";
+
+        // 🔴 จัดการระบบ Line Dropdown รูปแบบใหม่
+        let lineSelect = document.getElementById("f_lineSelect");
+        if (lineSelect) {
+          lineSelect.value = draft.lineSelect || "";
+          toggleCustomLineInput(); // สั่งให้โชว์/ซ่อน กล่องพิมพ์เอง
+        }
+
+        let lineCustom = document.getElementById("f_lineCustom");
+        if (lineCustom && draft.lineCustom) {
+          lineCustom.value = draft.lineCustom;
+        }
+
         document.getElementById("f_machineName").value =
           draft.machineName || "";
         document.getElementById("f_updatedBy").value = draft.updatedBy || "";

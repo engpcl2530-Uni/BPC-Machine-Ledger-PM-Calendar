@@ -104,90 +104,189 @@
     <div class="container mt-3 mb-5 pb-5">
       <!-- View 1: Lines -->
       <div id="view-lines" class="view-section active">
-        <!-- 🔴 Dashboard สรุปสถานะรายสัปดาห์ (Weekly Overview) -->
+        <!-- 🔴 Dashboard สรุปสถานะรายสัปดาห์ (Interactive) -->
+        <div class="d-flex justify-content-between align-items-end mb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <span class="material-symbols-rounded align-middle me-2"
+              >monitoring</span
+            >ภาพรวมสัปดาห์ปัจจุบัน
+          </h5>
+          <!-- ปุ่มล้างตัวกรอง (จะโชว์เมื่อมีการคลิกการ์ด) -->
+          <button
+            id="btn-clear-dash"
+            class="btn btn-sm btn-outline-danger fw-bold d-none shadow-sm"
+            onclick="clearDashboardFilter()"
+          >
+            <span class="material-symbols-rounded align-middle fs-6 me-1"
+              >filter_alt_off</span
+            >ล้างตัวกรอง
+          </button>
+        </div>
+
         <div class="row g-3 mb-4" id="weeklyDashboard">
+          <!-- การ์ด 1: แผน PM ทั้งหมด (สีน้ำเงิน) -->
           <div class="col-md-4">
             <div
-              class="card border-0 shadow-sm h-100"
+              class="card dash-card h-100"
+              id="dash-card-plan"
+              onclick="toggleDashboardFilter('PLAN')"
               style="
                 background: linear-gradient(135deg, #005eb8, #0f0e9a);
                 color: white;
                 border-radius: 16px;
               "
             >
-              <div class="card-body d-flex align-items-center">
-                <div
-                  class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
-                  style="width: 50px; height: 50px"
-                >
-                  <span class="material-symbols-rounded fs-2"
-                    >calendar_today</span
+              <div
+                class="card-body d-flex flex-column justify-content-between p-3"
+              >
+                <div class="d-flex align-items-center mb-3">
+                  <div
+                    class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
+                    style="width: 45px; height: 45px"
                   >
+                    <span class="material-symbols-rounded fs-3"
+                      >calendar_today</span
+                    >
+                  </div>
+                  <div>
+                    <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
+                      แผน PM สัปดาห์นี้ (W<span id="dash-week">--</span>)
+                    </h6>
+                    <h3 class="mb-0 fw-bold" id="dash-total">
+                      0 <span class="fs-6 fw-normal">งาน</span>
+                    </h3>
+                  </div>
                 </div>
-                <div>
-                  <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
-                    แผน PM สัปดาห์นี้ (W<span id="dash-week">--</span>)
-                  </h6>
-                  <h3 class="mb-0 fw-bold" id="dash-total">
-                    0 <span class="fs-6 fw-normal">งาน</span>
-                  </h3>
+                <div class="mt-auto">
+                  <div class="d-flex justify-content-between align-items-end">
+                    <span class="small fw-bold opacity-75" id="dash-trend-total"
+                      ><span class="material-symbols-rounded fs-6 align-middle"
+                        >remove</span
+                      >
+                      ไม่มีข้อมูลก่อนหน้า</span
+                    >
+                    <span class="dash-cta small fw-bold"
+                      ><span class="material-symbols-rounded fs-6 align-middle"
+                        >ads_click</span
+                      >
+                      คลิกเพื่อดูคิวงาน</span
+                    >
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <!-- การ์ด 2: ดำเนินการแล้ว (สีเขียว) -->
           <div class="col-md-4">
             <div
-              class="card border-0 shadow-sm h-100"
+              class="card dash-card h-100"
+              id="dash-card-done"
+              onclick="toggleDashboardFilter('DONE')"
               style="
                 background: linear-gradient(135deg, #10b981, #059669);
                 color: white;
                 border-radius: 16px;
               "
             >
-              <div class="card-body d-flex align-items-center">
-                <div
-                  class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
-                  style="width: 50px; height: 50px"
-                >
-                  <span class="material-symbols-rounded fs-2"
-                    >check_circle</span
+              <div
+                class="card-body d-flex flex-column justify-content-between p-3"
+              >
+                <div class="d-flex align-items-center mb-2">
+                  <div
+                    class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
+                    style="width: 45px; height: 45px"
                   >
+                    <span class="material-symbols-rounded fs-3"
+                      >check_circle</span
+                    >
+                  </div>
+                  <div>
+                    <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
+                      ดำเนินการแล้ว
+                    </h6>
+                    <h3 class="mb-0 fw-bold">
+                      <span id="dash-completed">0</span>
+                      <span class="fs-6 fw-normal" id="dash-percent">(0%)</span>
+                    </h3>
+                  </div>
                 </div>
-                <div>
-                  <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
-                    ดำเนินการแล้ว
-                  </h6>
-                  <h3 class="mb-0 fw-bold">
-                    <span id="dash-completed">0</span>
-                    <span class="fs-6 fw-normal" id="dash-percent">(0%)</span>
-                  </h3>
+                <div class="mt-auto pt-2">
+                  <!-- Progress Bar -->
+                  <div
+                    class="progress mb-2 bg-white bg-opacity-25"
+                    style="height: 6px"
+                  >
+                    <div
+                      id="dash-progress-bar"
+                      class="progress-bar bg-white"
+                      role="progressbar"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-end">
+                    <span class="small fw-bold opacity-75" id="dash-trend-done"
+                      ><span class="material-symbols-rounded fs-6 align-middle"
+                        >remove</span
+                      >
+                      ไม่มีข้อมูลก่อนหน้า</span
+                    >
+                    <span class="dash-cta small fw-bold"
+                      ><span class="material-symbols-rounded fs-6 align-middle"
+                        >ads_click</span
+                      >
+                      คลิกเพื่อดูงานสำเร็จ</span
+                    >
+                  </div>
                 </div>
               </div>
             </div>
           </div>
+          <!-- การ์ด 3: เครื่องเสีย/รอซ่อม (สีแดง) -->
           <div class="col-md-4">
             <div
-              class="card border-0 shadow-sm h-100"
+              class="card dash-card h-100"
+              id="dash-card-ewo"
+              onclick="toggleDashboardFilter('EWO')"
               style="
                 background: linear-gradient(135deg, #ef4444, #b91c1c);
                 color: white;
                 border-radius: 16px;
               "
             >
-              <div class="card-body d-flex align-items-center">
-                <div
-                  class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
-                  style="width: 50px; height: 50px"
-                >
-                  <span class="material-symbols-rounded fs-2">warning</span>
+              <div
+                class="card-body d-flex flex-column justify-content-between p-3"
+              >
+                <div class="d-flex align-items-center mb-3">
+                  <div
+                    class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
+                    style="width: 45px; height: 45px"
+                  >
+                    <span class="material-symbols-rounded fs-3">warning</span>
+                  </div>
+                  <div>
+                    <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
+                      เครื่องเสีย / รอซ่อม (EWO)
+                    </h6>
+                    <h3 class="mb-0 fw-bold" id="dash-breakdown">
+                      0 <span class="fs-6 fw-normal">รายการ</span>
+                    </h3>
+                  </div>
                 </div>
-                <div>
-                  <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
-                    เครื่องเสีย / รอซ่อม (EWO)
-                  </h6>
-                  <h3 class="mb-0 fw-bold" id="dash-breakdown">
-                    0 <span class="fs-6 fw-normal">รายการ</span>
-                  </h3>
+                <div class="mt-auto">
+                  <div class="d-flex justify-content-between align-items-end">
+                    <span class="small fw-bold opacity-75" id="dash-trend-ewo"
+                      ><span class="material-symbols-rounded fs-6 align-middle"
+                        >remove</span
+                      >
+                      ไม่มีข้อมูลก่อนหน้า</span
+                    >
+                    <span class="dash-cta small fw-bold"
+                      ><span class="material-symbols-rounded fs-6 align-middle"
+                        >ads_click</span
+                      >
+                      คลิกดูเครื่องเสีย</span
+                    >
+                  </div>
                 </div>
               </div>
             </div>
