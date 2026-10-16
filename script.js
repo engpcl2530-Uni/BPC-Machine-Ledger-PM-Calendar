@@ -1227,12 +1227,18 @@ function addComponentCard(elementInsideCard) {
 }
 
 function openAddFormContext() {
+  // 🔴 กรณีที่ 2: กดปุ่ม [+] ตอนที่อยู่หน้าระบบย่อย (Subassembly) หรือลึกกว่านั้น
+  // สลับไปโหมด Edit ดึงข้อมูลเดิม และเพิ่มการ์ดใหม่ให้ 1 ใบต่อท้ายอัตโนมัติ
+  if (currentDept && currentLine && currentMach) {
+    editSubassembly(true); // ส่งสถานะ true เพื่อบอกว่าเป็นการ "เพิ่มย่อยใหม่"
+    return;
+  }
+
   document.getElementById("ledgerForm").reset();
   document.getElementById("subSystemsContainer").innerHTML = "";
   populateImportDropdown();
   toggleFabMode(true);
 
-  // 🔴 อัปเดตการดึง ID ให้ตรงกับ HTML ตัวใหม่ (Dropdown แผนก และ ไลน์)
   let deptSelect = document.getElementById("f_department");
   let lineSelect = document.getElementById("f_lineSelect");
   let lineCustom = document.getElementById("f_lineCustom");
@@ -1245,6 +1251,7 @@ function openAddFormContext() {
   let cardStructure = document.getElementById("cardStructure");
   let btnAddSub = document.getElementById("btnAddSub");
 
+  // เปิดช่องกลับมาเป็นปกติก่อน
   if (cardStructure) cardStructure.style.display = "block";
   if (boxDept) boxDept.style.display = "block";
   if (boxLine) boxLine.style.display = "block";
@@ -1252,48 +1259,54 @@ function openAddFormContext() {
   if (boxImgMach) boxImgMach.style.display = "block";
   if (btnAddSub) btnAddSub.style.display = "block";
 
-  // ปลดล็อกฟอร์มให้แก้ไขได้
+  // ปลดล็อกฟอร์ม
   if (deptSelect) deptSelect.disabled = false;
   if (lineSelect) lineSelect.disabled = false;
   if (lineCustom) lineCustom.readOnly = false;
   if (mInput) mInput.readOnly = false;
-
-  // รีเซ็ตซ่อนกล่อง Custom ไว้ก่อน
   if (lineCustom) lineCustom.classList.add("d-none");
 
-  // 🔴 ตรรกะจัดการเวลาผู้ใช้กดปุ่ม + จากหน้าแผนก/ไลน์/เครื่องจักร (Context Aware)
-  if (currentDept && currentLine && currentMach && currentSub) {
-    cardStructure.style.display = "none";
-    btnAddSub.style.display = "none";
-
-    if (deptSelect) deptSelect.value = currentDept;
-    autoSetLineDropdown(currentLine);
-    mInput.value = currentMach;
-
-    addSubsystemCard();
-    let subCard = document.querySelector(".sub-system-card");
-    subCard.querySelector(".input-subname").value = currentSub;
-  } else if (currentDept && currentLine && currentMach) {
-    cardStructure.style.display = "none";
-    if (deptSelect) deptSelect.value = currentDept;
-    autoSetLineDropdown(currentLine);
-    mInput.value = currentMach;
-    addSubsystemCard();
-  } else if (currentDept && currentLine) {
-    if (boxDept) boxDept.style.display = "none";
-    boxLine.style.display = "none";
-    if (deptSelect) deptSelect.value = currentDept;
-    autoSetLineDropdown(currentLine);
-    addSubsystemCard();
-  } else {
-    addSubsystemCard();
+  // เคลียร์รูปภาพพรีวิวเครื่องจักรที่ค้างไว้
+  let machImgPreview = document.querySelector("#cardStructure .preview-img");
+  if (machImgPreview) {
+    machImgPreview.src = "";
+    machImgPreview.style.display = "none";
   }
 
+  // 🔴 กรณีที่ 1: กดปุ่ม [+] จากหน้า "ไลน์ผลิต" (หน้ารายการเครื่องจักร)
+  if (currentDept && currentLine && !currentMach) {
+    // ซ่อน Dropdown แผนกและไลน์
+    if (boxDept) boxDept.style.display = "none";
+    if (boxLine) boxLine.style.display = "none";
+
+    // ล็อกค่าหลังบ้านไว้ แต่อย่า disable เพื่อให้ค่าถูกส่งตอนเซฟ
+    if (deptSelect) deptSelect.value = currentDept;
+    autoSetLineDropdown(currentLine);
+
+    // ใส่การ์ดระบบย่อย 1 ใบ
+    addSubsystemCard();
+
+    // เปลี่ยนแบนเนอร์ด้านบน
+    let banner = document.getElementById("formContextBanner");
+    let bannerText = document.getElementById("formContextText");
+    if (banner && bannerText) {
+      banner.classList.remove("d-none");
+      bannerText.innerText = `สร้างเครื่องจักรใหม่ในไลน์ ${currentLine}`;
+    }
+  }
+  // 🔴 กรณีกดจากหน้าแรก Dashboard (ให้โชว์กรอกใหม่หมด)
+  else {
+    addSubsystemCard();
+    let banner = document.getElementById("formContextBanner");
+    if (banner) banner.classList.add("d-none");
+  }
+
+  // ปิดหน้าเก่า เปิดหน้าฟอร์ม
   document
     .querySelectorAll(".view-section")
     .forEach((v) => v.classList.remove("active"));
   document.getElementById("view-form").classList.add("active");
-  window.scrollTo(0, 0);
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // 🔴 ฟังก์ชันช่วยเลือก Dropdown ไลน์ผลิตให้อัตโนมัติ (ใช้คู่กับ openAddFormContext)
@@ -2104,7 +2117,8 @@ function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
 // =========================================================
 // 🔴 ฟังก์ชันดึงข้อมูลเดิมกลับมาแก้ไข (Edit Mode)
 // =========================================================
-function editSubassembly() {
+// เพิ่มพารามิเตอร์ isAppendNewSub สำหรับแยกว่าเป็นการ "แก้ไข" หรือ "เพิ่มของใหม่ต่อท้าย"
+function editSubassembly(isAppendNewSub = false) {
   if (!currentDept || !currentLine || !currentMach) return;
 
   let machData = dbData[currentDept][currentLine].machines[currentMach];
@@ -2113,7 +2127,7 @@ function editSubassembly() {
     return;
   }
 
-  // 1. เคลียร์ฟอร์มให้ว่าง และซ่อนปุ่ม FAB (+)
+  // 1. เคลียร์ฟอร์ม
   document.getElementById("ledgerForm").reset();
   document.getElementById("subSystemsContainer").innerHTML = "";
   toggleFabMode(true);
@@ -2123,10 +2137,14 @@ function editSubassembly() {
   autoSetLineDropdown(currentLine);
   document.getElementById("f_machineName").value = currentMach;
 
-  // 🔴 ล็อกชื่อเครื่องจักรไว้ไม่ให้แก้ (ป้องกันการเกิดไฟล์ชีตซ้ำซ้อนเวลาเซฟ)
+  // ล็อกชื่อเครื่องจักร แผนก และไลน์ ไม่ให้แก้ไข
   document.getElementById("f_machineName").readOnly = true;
+  let boxDept = document.getElementById("box_f_dept");
+  let boxLine = document.getElementById("box_f_lineName");
+  if (boxDept) boxDept.style.display = "none";
+  if (boxLine) boxLine.style.display = "none";
 
-  // ดึงรูประดับเครื่องจักรมาพรีวิว
+  // ดึงรูประดับเครื่องจักร
   let machImgPreview = document.querySelector("#cardStructure .preview-img");
   let machImgUploadBox = document.getElementById("box_imgMach");
   if (machData.image && machData.image.indexOf("NO+IMAGE") === -1) {
@@ -2139,17 +2157,17 @@ function editSubassembly() {
     if (machImgUploadBox) machImgUploadBox.style.display = "flex";
   }
 
-  // 3. วนลูปสร้างการ์ดระบบย่อย (Subassemblies)
+  // 3. วนลูปสร้างการ์ดระบบย่อยเก่า
   for (let subName in machData.subassemblies) {
     let subInfo = machData.subassemblies[subName];
 
-    addSubsystemCard(); // สร้างการ์ดระบบย่อยเปล่าๆ ขึ้นมา 1 ใบ
+    addSubsystemCard();
     let subCard = document.getElementById(
       "subSystemsContainer",
     ).lastElementChild;
     subCard.querySelector(".input-subname").value = subName;
 
-    // ดึงรูประบบย่อย
+    // รูประบบย่อย
     let subImgPreview = subCard.querySelector(".preview-img");
     let subImgBox = subCard.querySelector(".box_imgSub");
     if (subInfo.image && subInfo.image.indexOf("NO+IMAGE") === -1) {
@@ -2158,7 +2176,7 @@ function editSubassembly() {
       if (subImgBox) subImgBox.style.display = "none";
     }
 
-    // ติ๊กประเมินความเสี่ยงตามข้อมูลเดิม
+    // ประเมินความเสี่ยง
     let importedRisks = subInfo.risks || "";
     subCard.querySelectorAll(".risk-grid .icon-checkbox").forEach((chk) => {
       let val = chk.getAttribute("data-val");
@@ -2166,15 +2184,13 @@ function editSubassembly() {
       else chk.classList.add("not-used");
     });
 
-    // ลบการ์ดอะไหล่ (Component) ที่แถมมากับ Subassembly ทิ้งไปก่อน
     subCard.querySelector(".parts-container").innerHTML = "";
 
-    // 4. วนลูปสร้างการ์ดอะไหล่ (Components)
+    // Component
     subInfo.components.forEach((comp) => {
       addComponentCard(subCard.querySelector(".parts-container"));
       let compCard = subCard.querySelector(".parts-container").lastElementChild;
 
-      // เติมข้อมูล Text
       compCard.querySelector(".input-compname").value = comp.name || "";
       compCard.querySelector(".input-task").value = comp.task || "";
       compCard.querySelector(".input-class").value = comp.class || "A";
@@ -2184,7 +2200,6 @@ function editSubassembly() {
       compCard.querySelector(".input-risk").checked = comp.risk;
       compCard.querySelector(".input-remark").value = comp.remarkEwo || "";
 
-      // ติ๊ก PPE ตามข้อมูลเดิม
       let importedPPE = comp.ppe || "";
       compCard.querySelectorAll(".ppe-grid .icon-checkbox").forEach((chk) => {
         let val = chk.getAttribute("data-val");
@@ -2192,7 +2207,6 @@ function editSubassembly() {
         else chk.classList.add("not-used");
       });
 
-      // ดึงรูปอะไหล่
       let compImgPreview = compCard.querySelector(".box_imgComp .preview-img");
       let compImgBox = compCard.querySelector(".box_imgComp .upload-box-smp");
       if (comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1) {
@@ -2201,7 +2215,6 @@ function editSubassembly() {
         if (compImgBox) compImgBox.style.display = "none";
       }
 
-      // โหลดข้อมูลแผน 52 สัปดาห์
       compCard.querySelector(".week-data-input").value = JSON.stringify(
         comp.weeks,
       );
@@ -2212,20 +2225,55 @@ function editSubassembly() {
     });
   }
 
-  // 5. สลับหน้าจอไปยังฟอร์มแก้ไข และโชว์แบนเนอร์
-  document
-    .querySelectorAll(".view-section")
-    .forEach((v) => v.classList.remove("active"));
-  document.getElementById("view-form").classList.add("active");
+  // 🔴 4. เพิ่มช่อง Subassembly ใหม่ต่อท้ายอัตโนมัติ (ถ้ามาจากการกดปุ่ม +)
+  if (isAppendNewSub === true) {
+    addSubsystemCard();
+    let newlyAddedCard = document.getElementById(
+      "subSystemsContainer",
+    ).lastElementChild;
 
-  let banner = document.getElementById("formContextBanner");
-  let bannerText = document.getElementById("formContextText");
-  if (banner && bannerText) {
-    banner.classList.remove("d-none");
-    bannerText.innerText = `โหมดแก้ไข: ${currentMach}`;
+    // เปลี่ยนไปที่หน้าฟอร์ม
+    document
+      .querySelectorAll(".view-section")
+      .forEach((v) => v.classList.remove("active"));
+    document.getElementById("view-form").classList.add("active");
+
+    // ตั้งค่าแบนเนอร์
+    let banner = document.getElementById("formContextBanner");
+    let bannerText = document.getElementById("formContextText");
+    if (banner && bannerText) {
+      banner.classList.remove("d-none");
+      bannerText.innerText = `เพิ่มระบบย่อยให้กับเครื่องจักร: ${currentMach}`;
+    }
+
+    // Auto-scroll ลงมาที่การ์ดใหม่ พร้อมโฟกัสช่องพิมพ์ และไฮไลต์
+    setTimeout(() => {
+      newlyAddedCard.scrollIntoView({ behavior: "smooth", block: "center" });
+      let inputField = newlyAddedCard.querySelector(".input-subname");
+      if (inputField) {
+        // แอฟเฟกต์แสงไฮไลต์รอบการ์ด 1.5 วินาที
+        newlyAddedCard.style.transition = "box-shadow 0.5s";
+        newlyAddedCard.style.boxShadow = "0 0 0 4px rgba(0, 94, 184, 0.5)";
+        setTimeout(() => (newlyAddedCard.style.boxShadow = ""), 1500);
+
+        inputField.focus(); // เคอร์เซอร์ไปรอที่ช่องพิมพ์เลย
+      }
+    }, 300); // ดีเลย์เล็กน้อยเพื่อให้หน้าจอเรนเดอร์เสร็จก่อนเลื่อน
+  } else {
+    // กรณีเข้าโหมด "แก้ไข" ปกติ
+    document
+      .querySelectorAll(".view-section")
+      .forEach((v) => v.classList.remove("active"));
+    document.getElementById("view-form").classList.add("active");
+
+    let banner = document.getElementById("formContextBanner");
+    let bannerText = document.getElementById("formContextText");
+    if (banner && bannerText) {
+      banner.classList.remove("d-none");
+      bannerText.innerText = `โหมดแก้ไขเครื่องจักร: ${currentMach}`;
+    }
+    window.scrollTo(0, 0);
   }
-
-  window.scrollTo(0, 0);
 }
 
 async function submitExecutionTask(btnElement) {
