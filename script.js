@@ -578,11 +578,14 @@ function toggleDefectFields(selectElement) {
 // =========================================================
 
 // อัปเดต renderLines() ให้สแกนและโชว์แบนเนอร์แจ้งเตือนทันที
+// =========================================================
+// 🟢 อัปเดตฟังก์ชัน Render หน้าแรก (Lines) แบบรีดประสิทธิภาพ
+// =========================================================
+
 function renderLines() {
   let grid = document.getElementById("lineGrid");
-  grid.innerHTML = "";
   const lang = getCurrentLang();
-  const t = translations[lang];
+  const t = translations[lang] || translations["th"];
 
   const filterDept = document.getElementById("filterDept").value;
   const filterLine = document.getElementById("filterLine").value;
@@ -593,6 +596,9 @@ function renderLines() {
 
   let hasResult = false;
   let hasAnyUpcoming = false;
+
+  // ใช้ตัวแปรเก็บ HTML string ไว้ก่อน เพื่อยิงเข้า DOM ทีเดียวตอนจบลูป (ลดอาการกระตุก Reflow/Repaint)
+  let htmlOutput = "";
 
   if (currentDashFilter) {
     let hasMachineResult = false;
@@ -633,10 +639,10 @@ function renderLines() {
               ? Object.keys(machData.subassemblies).length
               : 0;
 
-            grid.innerHTML += `
+            htmlOutput += `
               <div class="col-md-6 col-lg-4">
                 <div class="hover-card d-flex flex-column h-100" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${safeMachName}')">
-                  <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
+                  <img src="${imageUrl}" loading="lazy" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
                   <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
                     <div class="mb-2">
                        <span class="badge bg-primary me-1">${escapeHTML(deptName)}</span>
@@ -655,6 +661,7 @@ function renderLines() {
       }
     }
 
+    grid.innerHTML = htmlOutput;
     if (!hasMachineResult) {
       grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
            <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">check_circle</span>
@@ -717,10 +724,11 @@ function renderLines() {
         machListHtml = `<div class="text-center text-white-50 mt-3" style="font-size: 12px;">${t.no_mach_in_line_small}</div>`;
       }
 
-      grid.innerHTML += `
+      // สะสมข้อความ HTML ไว้ในตัวแปร แทนการสั่ง .innerHTML += บ่อยๆ ในลูป
+      htmlOutput += `
         <div class="col-md-6 col-lg-4">
           <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${safeDept}', '${safeLine}')">
-            <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
+            <img src="${imageUrl}" loading="lazy" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
             <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
               <div class="mb-2"><span class="badge bg-secondary">${safeDept}</span></div>
               <h5 class="fw-bold text-primary mb-1">${safeDept} - ${safeLine}</h5>
@@ -752,10 +760,13 @@ function renderLines() {
     }
   }
 
+  // ยิงเข้า DOM ครั้งเดียวจบ ทำให้หน้าแรกโหลดไวขึ้นและอนิเมชั่นไม่สะดุด
+  grid.innerHTML = htmlOutput;
+
   let alertBanner = document.getElementById("upcomingAlertBanner");
   if (alertBanner) {
     if (hasAnyUpcoming) alertBanner.classList.remove("d-none");
-    else alertBanner.classList.add("d-none");
+    else alertBanner.classList.add("t-none");
   }
 
   if (!hasResult) {
