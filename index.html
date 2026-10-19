@@ -41,13 +41,23 @@
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   </head>
   <body>
     <!-- Modern Loading Overlay สไตล์ SMP -->
     <div id="loadingOverlay" style="display: none">
       <div class="modern-spinner"></div>
-      <div class="loading-pulse mt-3" style="font-size: 1.1rem; color: #005eb8">
-        Loading...
+      <!-- Modern Loading Overlay สไตล์ SMP -->
+      <div id="loadingOverlay" style="display: none">
+        <div class="modern-spinner"></div>
+        <!-- 🔴 อัปเดต: เพิ่ม id="loadingText" -->
+        <div
+          id="loadingText"
+          class="loading-pulse mt-3"
+          style="font-size: 1.1rem; color: #005eb8"
+        >
+          กำลังโหลดข้อมูล...
+        </div>
       </div>
     </div>
 
@@ -428,18 +438,42 @@
 
       <!-- View 2: Machines -->
       <div id="view-machs" class="view-section">
-        <button class="btn-back-prominent mb-3 no-print" onclick="navigateTo()">
-          <span class="material-symbols-rounded fs-5">arrow_back</span>
-          กลับหน้าไลน์ผลิต
-        </button>
-        <h3 class="fw-bold mb-4 text-primary" id="lbl-line-title">Line Name</h3>
+        <!-- 🔴 อัปเดต: นำปุ่ม Back มาใส่ให้อยู่บรรทัดเดียวกับปุ่ม Export ZIP -->
+        <div
+          class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2"
+        >
+          <div>
+            <button
+              class="btn-back-prominent mb-3 no-print"
+              onclick="navigateTo()"
+            >
+              <span class="material-symbols-rounded fs-5">arrow_back</span>
+              กลับหน้าไลน์ผลิต
+            </button>
+            <h3 class="fw-bold mb-1 text-primary" id="lbl-line-title">
+              Line Name
+            </h3>
+          </div>
+          <!-- ปุ่ม Export ZIP ระดับ Line -->
+          <button
+            class="btn btn-primary fw-bold shadow-sm no-print mb-2"
+            onclick="handleExportLineZip()"
+          >
+            <span class="material-symbols-rounded align-middle fs-5 me-1"
+              >folder_zip</span
+            >
+            โหลดทั้งหมด (ZIP)
+          </button>
+        </div>
         <div class="row g-4" id="machGrid"></div>
       </div>
 
       <!-- View 3: Subassemblies -->
       <!-- View 3: Subassemblies -->
       <div id="view-subs" class="view-section">
-        <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
+        <div
+          class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2"
+        >
           <div>
             <button
               class="btn-back-prominent mb-3 no-print"
@@ -451,7 +485,7 @@
             <h3 class="fw-bold mb-1 text-primary" id="lbl-mach-title">
               Machine Name
             </h3>
-            <p class="text-muted small mb-0" style="font-size: 13px;">
+            <p class="text-muted small mb-0" style="font-size: 13px">
               รายชื่อระบบย่อยทั้งหมดในเครื่องจักรนี้
             </p>
           </div>
