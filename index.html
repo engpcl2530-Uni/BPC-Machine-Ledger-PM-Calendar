@@ -38,6 +38,9 @@
         font-size: 1.25rem;
       }
     </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
   </head>
   <body>
     <!-- Modern Loading Overlay สไตล์ SMP -->
@@ -479,12 +482,12 @@
               >แก้ไขข้อมูล
             </button>
             <button
-              class="btn btn-secondary fw-bold shadow-sm no-print"
-              onclick="window.print()"
+              class="btn btn-success fw-bold shadow-sm no-print"
+              onclick="handleExportExcel()"
             >
               <span class="material-symbols-rounded align-middle fs-5 me-1"
-                >print</span
-              >พิมพ์ A3
+                >download</span
+              >Export Excel
             </button>
           </div>
         </div>
@@ -1353,13 +1356,25 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label>Std</label>
+                  <label>วิธีการ (Method)</label>
                   <select class="form-select input-pmstd">
-                    <option value="TBM">TBM</option>
-                    <option value="CBM">CBM</option>
-                    <option value="BDM">BDM</option>
+                    <option value="TBM">TBM (ตามเวลา)</option>
+                    <option value="CBM">CBM (ตามสภาพ)</option>
+                    <option value="BDM">BDM (เมื่อเสีย)</option>
                   </select>
                 </div>
+
+                <div class="form-group">
+                  <label>ความถี่ (Frequency):</label>
+                  <select class="form-select input-frequency">
+                    <option value="1W">1 สัปดาห์ (1W)</option>
+                    <option value="1M">1 เดือน (1M)</option>
+                    <option value="3M">3 เดือน (3M)</option>
+                    <option value="6M">6 เดือน (6M)</option>
+                    <option value="1Y">1 ปี (1Y)</option>
+                  </select>
+                </div>
+
                 <div class="form-group">
                   <label>Status</label>
                   <select class="form-select input-status">

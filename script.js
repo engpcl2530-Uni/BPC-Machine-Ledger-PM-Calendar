@@ -1094,6 +1094,10 @@ function executeImportData() {
       compCard.querySelector(".input-time").value = comp.time || "";
       compCard.querySelector(".input-risk").checked = comp.risk;
       compCard.querySelector(".input-remark").value = comp.remarkEwo || "";
+      if (compCard.querySelector(".input-frequency")) {
+        compCard.querySelector(".input-frequency").value =
+          comp.frequency || "1W";
+      }
 
       let importedPPE = comp.ppe || "";
       compCard.querySelectorAll(".ppe-grid .icon-checkbox").forEach((chk) => {
@@ -1759,6 +1763,9 @@ async function submitFormViaAPI() {
             task: pCard.querySelector(".input-task").value,
             spareClass: pCard.querySelector(".input-class").value,
             pmStd: pCard.querySelector(".input-pmstd").value,
+            frequency: pCard.querySelector(".input-frequency")
+              ? pCard.querySelector(".input-frequency").value
+              : "1M",
             status: pCard.querySelector(".input-status").value,
             stdTime: pCard.querySelector(".input-time").value,
             remarkEwo: pCard.querySelector(".input-remark").value,
@@ -2295,6 +2302,10 @@ function editSubassembly(isAppendNewSub = false) {
       compCard.querySelector(".input-time").value = comp.time || "";
       compCard.querySelector(".input-risk").checked = comp.risk;
       compCard.querySelector(".input-remark").value = comp.remarkEwo || "";
+      if (compCard.querySelector(".input-frequency")) {
+        compCard.querySelector(".input-frequency").value =
+          comp.frequency || "1W";
+      }
 
       let importedPPE = comp.ppe || "";
       compCard.querySelectorAll(".ppe-grid .icon-checkbox").forEach((chk) => {
@@ -2455,4 +2466,312 @@ function exitExecutionMode() {
   url.searchParams.delete("mode"); // ลบพารามิเตอร์ mode ออก (กลับสู่หน้าปกติ)
   window.history.pushState({}, "", url);
   handleRouting(); // รีเฟรชหน้าจอ
+}
+
+// ฟังก์ชันจำลองการแปลงสถานะ 4 สี (Top, Right, Bottom, Left) ให้เป็นรูปภาพ
+// 🔴 ฟังก์ชันวาดสถานะ 4 สี (Top, Right, Bottom, Left) เป็นรูปภาพ (Base64)
+function create52WeekImageBase64(t, r, b, l) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 40;
+  canvas.height = 40;
+  const ctx = canvas.getContext("2d");
+
+  // ล้างพื้นหลังให้โปร่งใส
+  ctx.clearRect(0, 0, 40, 40);
+
+  // กำหนดโค้ดสี (ให้ตรงกับรูป Legend ด้านขวาบน)
+  const COLOR_PLAN = "#000000"; // ดำ (b = Plan)
+  const COLOR_DONE = "#005eb8"; // น้ำเงิน (t = Done)
+  const COLOR_BREAKDOWN = "#ef4444"; // แดง (r = Breakdown)
+  const COLOR_WAIT = "#eab308"; // เหลือง (l = Wait Part)
+  const COLOR_INACTIVE = "#e2e8f0"; // สีเทาอ่อน (กรณีไม่มีข้อมูล)
+
+  // Helper ฟังก์ชันสำหรับวาดรูปสามเหลี่ยม
+  function drawTriangle(points, isActive, color) {
+    ctx.beginPath();
+    ctx.moveTo(points[0].x, points[0].y);
+    ctx.lineTo(points[1].x, points[1].y);
+    ctx.lineTo(points[2].x, points[2].y);
+    ctx.closePath();
+    ctx.fillStyle = isActive ? color : COLOR_INACTIVE;
+    ctx.fill();
+    ctx.strokeStyle = "#ffffff"; // เส้นขอบสีขาวแยกแต่ละมุม
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+
+  // วาด 4 มุม (จุดกึ่งกลางคือ 20, 20)
+  // Top
+  drawTriangle(
+    [
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+      { x: 20, y: 20 },
+    ],
+    t === 1,
+    COLOR_DONE,
+  );
+  // Right
+  drawTriangle(
+    [
+      { x: 40, y: 0 },
+      { x: 40, y: 40 },
+      { x: 20, y: 20 },
+    ],
+    r === 1,
+    COLOR_BREAKDOWN,
+  );
+  // Bottom
+  drawTriangle(
+    [
+      { x: 40, y: 40 },
+      { x: 0, y: 40 },
+      { x: 20, y: 20 },
+    ],
+    b === 1,
+    COLOR_PLAN,
+  );
+  // Left
+  drawTriangle(
+    [
+      { x: 0, y: 40 },
+      { x: 0, y: 0 },
+      { x: 20, y: 20 },
+    ],
+    l === 1,
+    COLOR_WAIT,
+  );
+
+  return canvas.toDataURL("image/png");
+}
+
+// ฟังก์ชันสร้างรูปภาพ Legend 4 สี (คำอธิบายสัญลักษณ์ขวาบน)
+function createLegendImageBase64() {
+  const canvas = document.createElement("canvas");
+  canvas.width = 300;
+  canvas.height = 100;
+  const ctx = canvas.getContext("2d");
+
+  // กำหนดสีพื้นหลังขาว
+  ctx.fillStyle = "#ffffff";
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+  // ตั้งค่าฟอนต์
+  ctx.font = "14px Arial";
+  ctx.fillStyle = "#000000";
+  ctx.fillText("คำอธิบายสัญลักษณ์ (Legend):", 10, 20);
+
+  // วาดกล่องตัวอย่าง 4 สี พร้อมข้อความ (คุณสามารถปรับสีและคำอธิบายตามที่ตกลงไว้ได้)
+  const colors = [
+    { color: "black", text: "วางแผน (Plan)", x: 10, y: 40 },
+    { color: "blue", text: "ทำเสร็จตามแผน (Done)", x: 150, y: 40 },
+    { color: "red", text: "เครื่องเสีย (Breakdown)", x: 10, y: 70 },
+    { color: "yellow", text: "รออะไหล่ (Wait Part)", x: 150, y: 70 },
+  ];
+
+  colors.forEach((item) => {
+    ctx.fillStyle = item.color;
+    ctx.fillRect(item.x, item.y, 15, 15);
+    ctx.fillStyle = "#000000";
+    ctx.fillText(item.text, item.x + 25, item.y + 12);
+  });
+
+  return canvas.toDataURL("image/png");
+}
+
+// ฟังก์ชันหลักในการ Export
+async function exportMachineToExcel(machineData) {
+  const workbook = new ExcelJS.Workbook();
+
+  // --- 1. สร้างหน้า Hub (Index) ---
+  const hubSheet = workbook.addWorksheet("Index Hub");
+  hubSheet.getCell("A1").value = `Machine Ledger: ${machineData.machineName}`;
+  hubSheet.getCell("A1").font = { size: 18, bold: true };
+  // (ใส่ลอจิกสร้าง Hyperlink ไปยัง Subassembly แบบที่เคยคุยกันไว้ตรงนี้...)
+
+  // --- 2. วนลูปสร้างหน้า Subassembly ---
+  for (const sub of machineData.subassemblies) {
+    const sheet = workbook.addWorksheet(sub.name);
+
+    // ใส่หัวกระดาษซ้ายบน
+    sheet.getCell("A1").value =
+      `Equipment: ${machineData.machineName} - ${sub.name}`;
+    sheet.getCell("A1").font = { size: 16, bold: true };
+    sheet.getCell("A2").value = `PLANNED MAINTENANCE SCHEDULE`;
+    sheet.getCell("A2").font = { size: 14, bold: true };
+
+    // แทรกรูปภาพ Legend 4 สี ไว้ที่มุมขวาบน (คอลัมน์ช่วงท้ายๆ ของสัปดาห์ที่ 40-52)
+    const legendImgId = workbook.addImage({
+      base64: createLegendImageBase64(),
+      extension: "png",
+    });
+    sheet.addImage(legendImgId, {
+      tl: { col: 45, row: 0 }, // วางไว้ประมาณคอลัมน์ที่ 45 (ขวาบน)
+      br: { col: 55, row: 3 },
+    });
+
+    // กำหนดหัวตาราง (Row 4)
+    sheet.getCell("A4").value = "Part Name";
+    sheet.getCell("B4").value = "Picture";
+    sheet.getCell("C4").value = "Method"; // CBM/TBM
+    sheet.getCell("D4").value = "Freq."; // 12W, 3M
+
+    // วนลูปสร้างหัวคอลัมน์ Week 1 - 52 (คอลัมน์ E เป็นต้นไป)
+    for (let w = 1; w <= 52; w++) {
+      sheet.getCell(4, w + 4).value = `W${w}`;
+      sheet.getColumn(w + 4).width = 5; // ปรับความกว้างคอลัมน์สัปดาห์ให้แคบลง
+    }
+
+    // เพิ่มคอลัมน์สำหรับการบันทึกประวัติซ่อมท้ายเอกสาร
+    sheet.getCell(4, 57).value = "EWO / Breakdown Summary";
+    sheet.getColumn(57).width = 30;
+
+    // --- ใส่ข้อมูลอะไหล่ลงตาราง ---
+    let rowIdx = 5;
+    for (const part of sub.parts) {
+      sheet.getRow(rowIdx).height = 80; // ทำให้แถวสูงพอเห็นรูป
+
+      sheet.getCell(`A${rowIdx}`).value = part.name;
+      sheet.getCell(`C${rowIdx}`).value = part.method || "-";
+      sheet.getCell(`D${rowIdx}`).value = part.frequency || "-";
+
+      // ถ้ามีรูป ให้แทรกลงคอลัมน์ B (คอลัมน์ที่ 2)
+      if (part.imageBase64) {
+        const imgId = workbook.addImage({
+          base64: part.imageBase64,
+          extension: "png",
+        });
+        sheet.addImage(imgId, {
+          tl: { col: 1.1, row: rowIdx - 1 + 0.1 },
+          br: { col: 1.9, row: rowIdx - 0.1 },
+        });
+      }
+
+      // แทรกรูปสามเหลี่ยม 52 สัปดาห์ ตรงนี้ (เรียกใช้ฟังก์ชัน create52WeekImageBase64)
+      for (let w = 1; w <= 52; w++) {
+        if (part.weeks && part.weeks[w]) {
+          let weekData = part.weeks[w - 1];
+          if (weekData) {
+            let pmImgId = workbook.addImage({
+              base64: create52WeekImageBase64(
+                weekData.t,
+                weekData.r,
+                weekData.b,
+                weekData.l,
+              ),
+              extension: "png",
+            });
+            sheet.addImage(pmImgId, {
+              tl: { col: w + 4 - 1 + 0.1, row: rowIdx - 1 + 0.1 },
+              br: { col: w + 4 - 0.1, row: rowIdx - 0.1 },
+            });
+          }
+        }
+
+        rowIdx++;
+      }
+    }
+
+    // ลอจิกส่วนลายเซ็นท้ายเอกสาร
+    // 🔴 ลอจิกส่วนลายเซ็นท้ายเอกสาร (ปรับให้ช่องไฟและช่องเซ็นสวยงามลงตัว)
+    let approvalRow = rowIdx + 2;
+    sheet.getRow(approvalRow).height = 60; // เพิ่มความสูงช่องเซ็นชื่อ
+
+    sheet.getCell(`C${approvalRow}`).value =
+      "ผู้จัดทำ (Prepared by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`C${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
+    sheet.mergeCells(`C${approvalRow}:G${approvalRow}`); // ผสานเซลล์ให้กว้าง
+
+    sheet.getCell(`J${approvalRow}`).value =
+      "ผู้ตรวจสอบ (Checked by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`J${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
+    sheet.mergeCells(`J${approvalRow}:N${approvalRow}`);
+
+    sheet.getCell(`S${approvalRow}`).value =
+      "ผู้อนุมัติ (Approved by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`S${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
+    sheet.mergeCells(`S${approvalRow}:W${approvalRow}`);
+  }
+
+  // --- 3. บันทึกและดาวน์โหลดไฟล์ ---
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  saveAs(blob, `Machine_Ledger_${machineData.machineName}.xlsx`);
+}
+
+// 🔴 ฟังก์ชันจัดเตรียมข้อมูลสำหรับปุ่ม Export Excel
+async function handleExportExcel() {
+  if (!currentDept || !currentLine || !currentMach) {
+    showModalAlert(
+      "แจ้งเตือน",
+      "ไม่พบข้อมูลเครื่องจักรที่ต้องการ Export",
+      true,
+    );
+    return;
+  }
+
+  // เปิดหน้าจอโหลดดิ้ง
+  document.getElementById("loadingOverlay").style.display = "flex";
+
+  try {
+    let machDataDB = dbData[currentDept][currentLine].machines[currentMach];
+
+    // โครงสร้าง Object ใหม่ที่เตรียมให้ exportMachineToExcel นำไปใช้ต่อ
+    let machineData = {
+      machineName: currentMach,
+      subassemblies: [],
+    };
+
+    // วนลูปดึงข้อมูลจากทุกระบบย่อย
+    for (let subName in machDataDB.subassemblies) {
+      let subDB = machDataDB.subassemblies[subName];
+      let sub = {
+        name: subName,
+        parts: [],
+      };
+
+      // วนลูปดึงข้อมูลอะไหล่ในแต่ละระบบย่อย
+      subDB.components.forEach((comp) => {
+        sub.parts.push({
+          name: comp.name,
+          method: comp.std,
+          frequency: comp.frequency || comp.time || "-",
+          imageBase64:
+            comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1
+              ? comp.imgComp
+              : null,
+          weeks: comp.weeks || [],
+        });
+      });
+
+      machineData.subassemblies.push(sub);
+    }
+
+    // สั่งรันฟังก์ชัน Export จริง
+    await exportMachineToExcel(machineData);
+  } catch (error) {
+    console.error("Export Error:", error);
+    showModalAlert(
+      "เกิดข้อผิดพลาด",
+      "ไม่สามารถสร้างไฟล์ Excel ได้: " + error.message,
+      true,
+    );
+  } finally {
+    // ปิดโหลดดิ้ง
+    document.getElementById("loadingOverlay").style.display = "none";
+  }
 }
