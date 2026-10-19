@@ -437,17 +437,36 @@
       </div>
 
       <!-- View 3: Subassemblies -->
+      <!-- View 3: Subassemblies -->
       <div id="view-subs" class="view-section">
-        <button
-          class="btn-back-prominent mb-3 no-print"
-          onclick="navigateTo(currentDept, currentLine)"
-        >
-          <span class="material-symbols-rounded fs-5">arrow_back</span>
-          กลับหน้าเครื่องจักร
-        </button>
-        <h3 class="fw-bold mb-4 text-primary" id="lbl-mach-title">
-          Machine Name
-        </h3>
+        <div class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2">
+          <div>
+            <button
+              class="btn-back-prominent mb-3 no-print"
+              onclick="navigateTo(currentDept, currentLine)"
+            >
+              <span class="material-symbols-rounded fs-5">arrow_back</span>
+              กลับหน้าเครื่องจักร
+            </button>
+            <h3 class="fw-bold mb-1 text-primary" id="lbl-mach-title">
+              Machine Name
+            </h3>
+            <p class="text-muted small mb-0" style="font-size: 13px;">
+              รายชื่อระบบย่อยทั้งหมดในเครื่องจักรนี้
+            </p>
+          </div>
+          <!-- 🔴 เพิ่มปุ่ม Export Excel ในหน้าเครื่องจักร -->
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-success fw-bold shadow-sm no-print"
+              onclick="handleExportExcel()"
+            >
+              <span class="material-symbols-rounded align-middle fs-5 me-1"
+                >download</span
+              >Export Excel
+            </button>
+          </div>
+        </div>
         <div class="row g-4" id="subGrid"></div>
       </div>
 

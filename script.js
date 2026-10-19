@@ -858,62 +858,6 @@ function renderMachs(deptName, lineName) {
   }
 }
 
-function renderSubs(deptName, lineName, machName) {
-  let grid = document.getElementById("subGrid");
-  grid.innerHTML = "";
-  const lang = getCurrentLang();
-  const t = translations[lang];
-
-  if (
-    !dbData[deptName] ||
-    !dbData[deptName][lineName] ||
-    !dbData[deptName][lineName].machines[machName] ||
-    Object.keys(dbData[deptName][lineName].machines[machName].subassemblies)
-      .length === 0
-  ) {
-    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
-       <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">account_tree</span>
-       <h5>${t.page_sub_empty_1} <span class="text-danger">${escapeHTML(machName)}</span></h5>
-       <p>${t.page_sub_empty_2}</p>
-     </div>`;
-    return;
-  }
-
-  let mach = dbData[deptName][lineName].machines[machName];
-
-  for (let subName in mach.subassemblies) {
-    let safeSubName = escapeHTML(subName);
-    let subData = mach.subassemblies[subName];
-    let cCount = subData.components ? subData.components.length : 0;
-    let imageUrl =
-      subData.image && !subData.image.includes("NO+IMAGE")
-        ? subData.image
-        : "https://via.placeholder.com/400x200?text=No+Image+Available";
-
-    grid.innerHTML += `
-      <div class="col-md-6 col-lg-4">
-        <div class="hover-card d-flex flex-column h-100" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${escapeHTML(machName)}', '${safeSubName}')">
-          <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
-          <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
-            <h6 class="fw-bold text-dark mb-1 text-truncate" title="${safeSubName}">${safeSubName}</h6>
-            <div class="text-muted small fw-bold mt-2">
-              <span class="material-symbols-rounded align-middle text-success" style="font-size: 18px;">build</span> 
-              ${t.has_comp_text} ${cCount} ${t.unit_comp_text}
-            </div>
-            <div class="mt-auto"></div>
-          </div>
-          <div class="card-overlay">
-            <h6 class="fw-bold text-warning mb-3 text-truncate" title="${safeSubName}">${safeSubName}</h6>
-            <div class="mt-auto text-center w-100">
-              <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
-                ${t.view_comp} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>`;
-  }
-}
 
 // =========================================================
 // 🔴 ฟังก์ชันวาดตาราง Component (อัปเดต: คืนรูปภาพ, ดึง Task จาก 52 วีคมาโชว์)
@@ -2579,139 +2523,6 @@ function createLegendImageBase64() {
   return canvas.toDataURL("image/png");
 }
 
-// ฟังก์ชันหลักในการ Export
-async function exportMachineToExcel(machineData) {
-  const workbook = new ExcelJS.Workbook();
-
-  // --- 1. สร้างหน้า Hub (Index) ---
-  const hubSheet = workbook.addWorksheet("Index Hub");
-  hubSheet.getCell("A1").value = `Machine Ledger: ${machineData.machineName}`;
-  hubSheet.getCell("A1").font = { size: 18, bold: true };
-  // (ใส่ลอจิกสร้าง Hyperlink ไปยัง Subassembly แบบที่เคยคุยกันไว้ตรงนี้...)
-
-  // --- 2. วนลูปสร้างหน้า Subassembly ---
-  for (const sub of machineData.subassemblies) {
-    const sheet = workbook.addWorksheet(sub.name);
-
-    // ใส่หัวกระดาษซ้ายบน
-    sheet.getCell("A1").value =
-      `Equipment: ${machineData.machineName} - ${sub.name}`;
-    sheet.getCell("A1").font = { size: 16, bold: true };
-    sheet.getCell("A2").value = `PLANNED MAINTENANCE SCHEDULE`;
-    sheet.getCell("A2").font = { size: 14, bold: true };
-
-    // แทรกรูปภาพ Legend 4 สี ไว้ที่มุมขวาบน (คอลัมน์ช่วงท้ายๆ ของสัปดาห์ที่ 40-52)
-    const legendImgId = workbook.addImage({
-      base64: createLegendImageBase64(),
-      extension: "png",
-    });
-    sheet.addImage(legendImgId, {
-      tl: { col: 45, row: 0 }, // วางไว้ประมาณคอลัมน์ที่ 45 (ขวาบน)
-      br: { col: 55, row: 3 },
-    });
-
-    // กำหนดหัวตาราง (Row 4)
-    sheet.getCell("A4").value = "Part Name";
-    sheet.getCell("B4").value = "Picture";
-    sheet.getCell("C4").value = "Method"; // CBM/TBM
-    sheet.getCell("D4").value = "Freq."; // 12W, 3M
-
-    // วนลูปสร้างหัวคอลัมน์ Week 1 - 52 (คอลัมน์ E เป็นต้นไป)
-    for (let w = 1; w <= 52; w++) {
-      sheet.getCell(4, w + 4).value = `W${w}`;
-      sheet.getColumn(w + 4).width = 5; // ปรับความกว้างคอลัมน์สัปดาห์ให้แคบลง
-    }
-
-    // เพิ่มคอลัมน์สำหรับการบันทึกประวัติซ่อมท้ายเอกสาร
-    sheet.getCell(4, 57).value = "EWO / Breakdown Summary";
-    sheet.getColumn(57).width = 30;
-
-    // --- ใส่ข้อมูลอะไหล่ลงตาราง ---
-    let rowIdx = 5;
-    for (const part of sub.parts) {
-      sheet.getRow(rowIdx).height = 80; // ทำให้แถวสูงพอเห็นรูป
-
-      sheet.getCell(`A${rowIdx}`).value = part.name;
-      sheet.getCell(`C${rowIdx}`).value = part.method || "-";
-      sheet.getCell(`D${rowIdx}`).value = part.frequency || "-";
-
-      // ถ้ามีรูป ให้แทรกลงคอลัมน์ B (คอลัมน์ที่ 2)
-      if (part.imageBase64) {
-        const imgId = workbook.addImage({
-          base64: part.imageBase64,
-          extension: "png",
-        });
-        sheet.addImage(imgId, {
-          tl: { col: 1.1, row: rowIdx - 1 + 0.1 },
-          br: { col: 1.9, row: rowIdx - 0.1 },
-        });
-      }
-
-      // แทรกรูปสามเหลี่ยม 52 สัปดาห์ ตรงนี้ (เรียกใช้ฟังก์ชัน create52WeekImageBase64)
-      for (let w = 1; w <= 52; w++) {
-        if (part.weeks && part.weeks[w]) {
-          let weekData = part.weeks[w - 1];
-          if (weekData) {
-            let pmImgId = workbook.addImage({
-              base64: create52WeekImageBase64(
-                weekData.t,
-                weekData.r,
-                weekData.b,
-                weekData.l,
-              ),
-              extension: "png",
-            });
-            sheet.addImage(pmImgId, {
-              tl: { col: w + 4 - 1 + 0.1, row: rowIdx - 1 + 0.1 },
-              br: { col: w + 4 - 0.1, row: rowIdx - 0.1 },
-            });
-          }
-        }
-
-        rowIdx++;
-      }
-    }
-
-    // ลอจิกส่วนลายเซ็นท้ายเอกสาร
-    // 🔴 ลอจิกส่วนลายเซ็นท้ายเอกสาร (ปรับให้ช่องไฟและช่องเซ็นสวยงามลงตัว)
-    let approvalRow = rowIdx + 2;
-    sheet.getRow(approvalRow).height = 60; // เพิ่มความสูงช่องเซ็นชื่อ
-
-    sheet.getCell(`C${approvalRow}`).value =
-      "ผู้จัดทำ (Prepared by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`C${approvalRow}`).alignment = {
-      wrapText: true,
-      horizontal: "center",
-      vertical: "middle",
-    };
-    sheet.mergeCells(`C${approvalRow}:G${approvalRow}`); // ผสานเซลล์ให้กว้าง
-
-    sheet.getCell(`J${approvalRow}`).value =
-      "ผู้ตรวจสอบ (Checked by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`J${approvalRow}`).alignment = {
-      wrapText: true,
-      horizontal: "center",
-      vertical: "middle",
-    };
-    sheet.mergeCells(`J${approvalRow}:N${approvalRow}`);
-
-    sheet.getCell(`S${approvalRow}`).value =
-      "ผู้อนุมัติ (Approved by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`S${approvalRow}`).alignment = {
-      wrapText: true,
-      horizontal: "center",
-      vertical: "middle",
-    };
-    sheet.mergeCells(`S${approvalRow}:W${approvalRow}`);
-  }
-
-  // --- 3. บันทึกและดาวน์โหลดไฟล์ ---
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  saveAs(blob, `Machine_Ledger_${machineData.machineName}.xlsx`);
-}
 
 // 🔴 ฟังก์ชันจัดเตรียมข้อมูลสำหรับปุ่ม Export Excel
 async function handleExportExcel() {
@@ -2774,4 +2585,241 @@ async function handleExportExcel() {
     // ปิดโหลดดิ้ง
     document.getElementById("loadingOverlay").style.display = "none";
   }
+}
+
+// ==========================================
+// 1. ฟังก์ชันกรอง Base64 ให้ใช้งานกับ ExcelJS ได้อย่างปลอดภัย
+// ==========================================
+function getCleanBase64(dataUrl) {
+  if (!dataUrl) return null;
+  // เอาเฉพาะเนื้อหาหลังลูกน้ำ ตัด "data:image/png;base64," ออก
+  if (dataUrl.startsWith("data:image")) {
+    return dataUrl.split(",")[1];
+  }
+  return null; // ป้องกัน URL ที่เป็น HTTP/HTTPS พังตอน Export
+}
+
+// ==========================================
+// 2. ฟังก์ชันตรวจสอบงานล่วงหน้าในระดับ "ระบบย่อย" (Subassembly)
+// ==========================================
+function hasUpcomingSubTasks(subData) {
+  const currentWeekIndex = getCurrentWeekNumber() - 1;
+  if (!subData.components) return false;
+
+  for (let c of subData.components) {
+    for (let i = currentWeekIndex; i <= currentWeekIndex + 1; i++) {
+      if (i < 52 && c.weeks[i]) {
+        let w = c.weeks[i];
+        if (w.t === 1 || w.b === 1 || w.r === 1) return true;
+      }
+    }
+  }
+  return false;
+}
+
+// ==========================================
+// 3. ทับฟังก์ชัน renderSubs เดิม ให้รองรับการไฮไลต์แดง
+// ==========================================
+function renderSubs(deptName, lineName, machName) {
+  let grid = document.getElementById("subGrid");
+  grid.innerHTML = "";
+  const lang = getCurrentLang();
+  const t = translations[lang];
+
+  if (
+    !dbData[deptName] ||
+    !dbData[deptName][lineName] ||
+    !dbData[deptName][lineName].machines[machName] ||
+    Object.keys(dbData[deptName][lineName].machines[machName].subassemblies)
+      .length === 0
+  ) {
+    grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
+       <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">account_tree</span>
+       <h5>${t.page_sub_empty_1} <span class="text-danger">${escapeHTML(machName)}</span></h5>
+       <p>${t.page_sub_empty_2}</p>
+     </div>`;
+    return;
+  }
+
+  let mach = dbData[deptName][lineName].machines[machName];
+
+  for (let subName in mach.subassemblies) {
+    let safeSubName = escapeHTML(subName);
+    let subData = mach.subassemblies[subName];
+    let cCount = subData.components ? subData.components.length : 0;
+
+    // 🔴 เช็คและใส่ไฮไลต์ upcoming-task ถ้าระบบย่อยนี้มีคิวงาน
+    let isUpcoming = hasUpcomingSubTasks(subData);
+    let highlightClass = isUpcoming ? "upcoming-task" : "";
+
+    let imageUrl =
+      subData.image && !subData.image.includes("NO+IMAGE")
+        ? subData.image
+        : "https://via.placeholder.com/400x200?text=No+Image+Available";
+
+    grid.innerHTML += `
+      <div class="col-md-6 col-lg-4">
+        <div class="hover-card ${highlightClass} d-flex flex-column h-100" onclick="navigateTo('${escapeHTML(deptName)}', '${escapeHTML(lineName)}', '${escapeHTML(machName)}', '${safeSubName}')">
+          <img src="${imageUrl}" class="card-img-top border-bottom" onerror="this.src='https://via.placeholder.com/400x200?text=Image+Error'">
+          <div class="p-3 d-flex flex-column flex-grow-1 bg-white">
+            <h6 class="fw-bold text-dark mb-1 text-truncate" title="${safeSubName}">${safeSubName}</h6>
+            <div class="text-muted small fw-bold mt-2">
+              <span class="material-symbols-rounded align-middle text-success" style="font-size: 18px;">build</span> 
+              ${t.has_comp_text} ${cCount} ${t.unit_comp_text}
+            </div>
+            <div class="mt-auto"></div>
+          </div>
+          <div class="card-overlay">
+            <h6 class="fw-bold text-warning mb-3 text-truncate" title="${safeSubName}">${safeSubName}</h6>
+            <div class="mt-auto text-center w-100">
+              <span class="badge bg-light text-primary py-2 px-3 w-100 rounded-pill shadow-sm">
+                ${t.view_comp} <span class="material-symbols-rounded align-middle ms-1" style="font-size: 16px;">arrow_forward</span>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+}
+
+// ==========================================
+// 4. ทับฟังก์ชัน exportMachineToExcel ใหม่ทั้งหมด (ติดเทอร์โบ Cache 🚀 + แก้บัค Base64)
+// ==========================================
+async function exportMachineToExcel(machineData) {
+  const workbook = new ExcelJS.Workbook();
+
+  // 🔴 สร้างตัวแปร Cache เก็บรูปภาพ (ประหยัดเวลา Render มหาศาล!)
+  const weekImageCache = {};
+
+  function getWeekImageId(t, r, b, l) {
+    const key = `${t}_${r}_${b}_${l}`;
+    if (weekImageCache[key]) return weekImageCache[key]; // ถ้ารูปนี้เคยสร้างแล้ว ดึงไปใช้เลย
+
+    // ถ้ายังไม่เคยสร้าง ให้สร้างใหม่ แปลงเป็น Clean Base64 แล้วโยนเข้า Excel
+    const base64Data = getCleanBase64(create52WeekImageBase64(t, r, b, l));
+    const imgId = workbook.addImage({ base64: base64Data, extension: "png" });
+    weekImageCache[key] = imgId;
+    return imgId;
+  }
+
+  // สร้างรูป Legend ครั้งเดียว
+  const legendImgId = workbook.addImage({
+    base64: getCleanBase64(createLegendImageBase64()),
+    extension: "png",
+  });
+
+  const hubSheet = workbook.addWorksheet("Index Hub");
+  hubSheet.getCell("A1").value = `Machine Ledger: ${machineData.machineName}`;
+  hubSheet.getCell("A1").font = { size: 18, bold: true };
+
+  for (const sub of machineData.subassemblies) {
+    const sheet = workbook.addWorksheet(sub.name);
+
+    sheet.getCell("A1").value =
+      `Equipment: ${machineData.machineName} - ${sub.name}`;
+    sheet.getCell("A1").font = { size: 16, bold: true };
+    sheet.getCell("A2").value = `PLANNED MAINTENANCE SCHEDULE`;
+    sheet.getCell("A2").font = { size: 14, bold: true };
+
+    sheet.addImage(legendImgId, {
+      tl: { col: 45, row: 0 },
+      br: { col: 55, row: 3 },
+    });
+
+    sheet.getCell("A4").value = "Part Name";
+    sheet.getCell("B4").value = "Picture";
+    sheet.getCell("C4").value = "Method";
+    sheet.getCell("D4").value = "Freq.";
+
+    for (let w = 1; w <= 52; w++) {
+      sheet.getCell(4, w + 4).value = `W${w}`;
+      sheet.getColumn(w + 4).width = 5;
+    }
+
+    sheet.getCell(4, 57).value = "EWO / Breakdown Summary";
+    sheet.getColumn(57).width = 30;
+
+    let rowIdx = 5;
+    for (const part of sub.parts) {
+      sheet.getRow(rowIdx).height = 80;
+
+      sheet.getCell(`A${rowIdx}`).value = part.name;
+      sheet.getCell(`C${rowIdx}`).value = part.method || "-";
+      sheet.getCell(`D${rowIdx}`).value = part.frequency || "-";
+
+      // 🔴 แปลงรูปอะไหล่ด้วย Clean Base64 ป้องกัน Error
+      if (part.imageBase64) {
+        const cleanImg = getCleanBase64(part.imageBase64);
+        if (cleanImg) {
+          try {
+            const imgId = workbook.addImage({
+              base64: cleanImg,
+              extension: "png",
+            });
+            sheet.addImage(imgId, {
+              tl: { col: 1.1, row: rowIdx - 1 + 0.1 },
+              br: { col: 1.9, row: rowIdx - 0.1 },
+            });
+          } catch (e) {
+            console.warn("ข้ามรูปที่ Base64 ผิดปกติ:", part.name);
+          }
+        }
+      }
+
+      // วาดปฏิทิน 52 สัปดาห์ (เร็วขึ้นด้วย Cache)
+      for (let w = 1; w <= 52; w++) {
+        if (part.weeks && part.weeks[w - 1]) {
+          let weekData = part.weeks[w - 1];
+          let pmImgId = getWeekImageId(
+            weekData.t,
+            weekData.r,
+            weekData.b,
+            weekData.l,
+          );
+
+          sheet.addImage(pmImgId, {
+            tl: { col: w + 4 - 1 + 0.1, row: rowIdx - 1 + 0.1 },
+            br: { col: w + 4 - 0.1, row: rowIdx - 0.1 },
+          });
+        }
+      }
+      rowIdx++;
+    }
+
+    let approvalRow = rowIdx + 2;
+    sheet.getRow(approvalRow).height = 60;
+
+    sheet.getCell(`C${approvalRow}`).value =
+      "ผู้จัดทำ (Prepared by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`C${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
+    sheet.mergeCells(`C${approvalRow}:G${approvalRow}`);
+
+    sheet.getCell(`J${approvalRow}`).value =
+      "ผู้ตรวจสอบ (Checked by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`J${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
+    sheet.mergeCells(`J${approvalRow}:N${approvalRow}`);
+
+    sheet.getCell(`S${approvalRow}`).value =
+      "ผู้อนุมัติ (Approved by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`S${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
+    sheet.mergeCells(`S${approvalRow}:W${approvalRow}`);
+  }
+
+  const buffer = await workbook.xlsx.writeBuffer();
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
+  saveAs(blob, `Machine_Ledger_${machineData.machineName}.xlsx`);
 }
