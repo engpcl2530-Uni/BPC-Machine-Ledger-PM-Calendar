@@ -858,7 +858,6 @@ function renderMachs(deptName, lineName) {
   }
 }
 
-
 // =========================================================
 // 🔴 ฟังก์ชันวาดตาราง Component (อัปเดต: คืนรูปภาพ, ดึง Task จาก 52 วีคมาโชว์)
 // =========================================================
@@ -2412,15 +2411,26 @@ function exitExecutionMode() {
   handleRouting(); // รีเฟรชหน้าจอ
 }
 
-
 // ==========================================
-// 1. ฟังก์ชันกรอง Base64 ให้ใช้งานกับ ExcelJS ได้
+// 1. ฟังก์ชันกรอง Base64 และหานามสกุลไฟล์รูป (แก้ปัญหารูปไม่แสดงใน Excel)
 // ==========================================
 function getCleanBase64(dataUrl) {
   if (!dataUrl) return null;
-  if (dataUrl.startsWith("data:image")) return dataUrl.split(",")[1];
+  // ดึงเฉพาะข้อมูล Base64 ออกมา ไม่ว่าจะเป็น jpeg หรือ png
+  if (dataUrl.includes("base64,")) {
+    return dataUrl.split("base64,")[1];
+  }
   if (!dataUrl.startsWith("http")) return dataUrl;
-  return null; 
+  return null;
+}
+
+function getExtensionFromBase64(dataUrl) {
+  if (!dataUrl) return "png";
+  // เช็คว่าเป็นรูปประเภทไหน เพื่อให้ ExcelJS สร้างไฟล์ได้ถูกต้อง
+  if (dataUrl.includes("image/jpeg") || dataUrl.includes("image/jpg"))
+    return "jpeg";
+  if (dataUrl.includes("image/gif")) return "gif";
+  return "png"; // ค่าเริ่มต้น
 }
 
 // ==========================================
@@ -2441,7 +2451,7 @@ function hasUpcomingSubTasks(subData) {
 }
 
 // ==========================================
-// 3. ทับฟังก์ชัน renderSubs ให้รองรับการไฮไลต์แดง 
+// 3. ทับฟังก์ชัน renderSubs ให้รองรับการไฮไลต์แดง
 // ==========================================
 function renderSubs(deptName, lineName, machName) {
   let grid = document.getElementById("subGrid");
@@ -2449,7 +2459,13 @@ function renderSubs(deptName, lineName, machName) {
   const lang = getCurrentLang();
   const t = translations[lang];
 
-  if (!dbData[deptName] || !dbData[deptName][lineName] || !dbData[deptName][lineName].machines[machName] || Object.keys(dbData[deptName][lineName].machines[machName].subassemblies).length === 0) {
+  if (
+    !dbData[deptName] ||
+    !dbData[deptName][lineName] ||
+    !dbData[deptName][lineName].machines[machName] ||
+    Object.keys(dbData[deptName][lineName].machines[machName].subassemblies)
+      .length === 0
+  ) {
     grid.innerHTML = `<div class="col-12 text-center text-muted p-5">
        <span class="material-symbols-rounded text-secondary mb-3 d-block" style="font-size:48px;">account_tree</span>
        <h5>${t.page_sub_empty_1} <span class="text-danger">${escapeHTML(machName)}</span></h5>
@@ -2464,10 +2480,13 @@ function renderSubs(deptName, lineName, machName) {
     let safeSubName = escapeHTML(subName);
     let subData = mach.subassemblies[subName];
     let cCount = subData.components ? subData.components.length : 0;
-    
+
     let isUpcoming = hasUpcomingSubTasks(subData);
     let highlightClass = isUpcoming ? "upcoming-task" : "";
-    let imageUrl = subData.image && !subData.image.includes("NO+IMAGE") ? subData.image : "https://via.placeholder.com/400x200?text=No+Image+Available";
+    let imageUrl =
+      subData.image && !subData.image.includes("NO+IMAGE")
+        ? subData.image
+        : "https://via.placeholder.com/400x200?text=No+Image+Available";
 
     grid.innerHTML += `
       <div class="col-md-6 col-lg-4">
@@ -2503,15 +2522,15 @@ function create52WeekImageBase64(t, r, b, l) {
   canvas.height = 40;
   const ctx = canvas.getContext("2d");
 
-  // 🔴 ถมพื้นหลังสีขาวเสมอ ป้องกัน Excel แสดงผลโปร่งใสเพี้ยน
+  // ถมพื้นหลังสีขาวเสมอ
   ctx.fillStyle = "#ffffff";
   ctx.fillRect(0, 0, 40, 40);
 
-  const COLOR_PLAN = "#000000"; 
-  const COLOR_DONE = "#005eb8"; 
-  const COLOR_BREAKDOWN = "#ef4444"; 
-  const COLOR_WAIT = "#eab308"; 
-  const COLOR_INACTIVE = "#e2e8f0"; 
+  const COLOR_TOP = "#000000"; // สีดำ (Planned Maint. Executed)
+  const COLOR_RIGHT = "#ef4444"; // สีแดง (Breakdown Maint.)
+  const COLOR_BOTTOM = "#eab308"; // สีเหลือง (Planned Maintenance)
+  const COLOR_LEFT = "#005eb8"; // สีน้ำเงิน (Unplanned Extra)
+  const COLOR_INACTIVE = "#e2e8f0"; // สีเทา (ไม่มีข้อมูล)
 
   function drawTriangle(points, isActive, color) {
     ctx.beginPath();
@@ -2521,18 +2540,52 @@ function create52WeekImageBase64(t, r, b, l) {
     ctx.closePath();
     ctx.fillStyle = isActive ? color : COLOR_INACTIVE;
     ctx.fill();
-    ctx.strokeStyle = "#ffffff"; 
+    ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 1;
     ctx.stroke();
   }
 
-  drawTriangle([{x:0, y:0}, {x:40, y:0}, {x:20, y:20}], t === 1, COLOR_DONE);
-  drawTriangle([{x:40, y:0}, {x:40, y:40}, {x:20, y:20}], r === 1, COLOR_BREAKDOWN);
-  drawTriangle([{x:40, y:40}, {x:0, y:40}, {x:20, y:20}], b === 1, COLOR_PLAN);
-  drawTriangle([{x:0, y:40}, {x:0, y:0}, {x:20, y:20}], l === 1, COLOR_WAIT);
+  // วาด 4 มุม (จัดตำแหน่งใหม่ตาม UI)
+  drawTriangle(
+    [
+      { x: 0, y: 0 },
+      { x: 40, y: 0 },
+      { x: 20, y: 20 },
+    ],
+    t === 1,
+    COLOR_TOP,
+  ); // Top
+  drawTriangle(
+    [
+      { x: 40, y: 0 },
+      { x: 40, y: 40 },
+      { x: 20, y: 20 },
+    ],
+    r === 1,
+    COLOR_RIGHT,
+  ); // Right
+  drawTriangle(
+    [
+      { x: 40, y: 40 },
+      { x: 0, y: 40 },
+      { x: 20, y: 20 },
+    ],
+    b === 1,
+    COLOR_BOTTOM,
+  ); // Bottom
+  drawTriangle(
+    [
+      { x: 0, y: 40 },
+      { x: 0, y: 0 },
+      { x: 20, y: 20 },
+    ],
+    l === 1,
+    COLOR_LEFT,
+  ); // Left
 
   return canvas.toDataURL("image/png");
 }
+
 
 function createLegendImageBase64() {
   const canvas = document.createElement("canvas");
@@ -2548,236 +2601,61 @@ function createLegendImageBase64() {
   ctx.fillText("สัญลักษณ์แผนงาน PM (Legend)", 10, 25);
 
   // วาดสัญลักษณ์รวม 4 สี
-  const cx = 40, cy = 60, size = 20;
+  const cx = 40,
+    cy = 60,
+    size = 20;
   ctx.lineWidth = 1;
   ctx.strokeStyle = "#ffffff";
 
-  ctx.fillStyle = "#005eb8"; ctx.beginPath(); ctx.moveTo(cx-size, cy-size); ctx.lineTo(cx+size, cy-size); ctx.lineTo(cx, cy); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "#ef4444"; ctx.beginPath(); ctx.moveTo(cx+size, cy-size); ctx.lineTo(cx+size, cy+size); ctx.lineTo(cx, cy); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "#000000"; ctx.beginPath(); ctx.moveTo(cx+size, cy+size); ctx.lineTo(cx-size, cy+size); ctx.lineTo(cx, cy); ctx.fill(); ctx.stroke();
-  ctx.fillStyle = "#eab308"; ctx.beginPath(); ctx.moveTo(cx-size, cy+size); ctx.lineTo(cx-size, cy-size); ctx.lineTo(cx, cy); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = "#005eb8";
+  ctx.beginPath();
+  ctx.moveTo(cx - size, cy - size);
+  ctx.lineTo(cx + size, cy - size);
+  ctx.lineTo(cx, cy);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#ef4444";
+  ctx.beginPath();
+  ctx.moveTo(cx + size, cy - size);
+  ctx.lineTo(cx + size, cy + size);
+  ctx.lineTo(cx, cy);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#000000";
+  ctx.beginPath();
+  ctx.moveTo(cx + size, cy + size);
+  ctx.lineTo(cx - size, cy + size);
+  ctx.lineTo(cx, cy);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = "#eab308";
+  ctx.beginPath();
+  ctx.moveTo(cx - size, cy + size);
+  ctx.lineTo(cx - size, cy - size);
+  ctx.lineTo(cx, cy);
+  ctx.fill();
+  ctx.stroke();
 
   // วาดคำอธิบาย
   ctx.font = "14px Arial";
-  ctx.fillStyle = "#000000"; ctx.fillRect(80, 40, 12, 12); ctx.fillText("สีดำ = วางแผน (Plan)", 100, 51);
-  ctx.fillStyle = "#005eb8"; ctx.fillRect(80, 65, 12, 12); ctx.fillText("สีน้ำเงิน = ทำเสร็จ (Done)", 100, 76);
+  ctx.fillStyle = "#000000";
+  ctx.fillRect(80, 40, 12, 12);
+  ctx.fillText("สีดำ = วางแผน (Plan)", 100, 51);
+  ctx.fillStyle = "#005eb8";
+  ctx.fillRect(80, 65, 12, 12);
+  ctx.fillText("สีน้ำเงิน = ทำเสร็จ (Done)", 100, 76);
 
-  ctx.fillStyle = "#ef4444"; ctx.fillRect(250, 40, 12, 12); ctx.fillText("สีแดง = เครื่องเสีย (Breakdown)", 270, 51);
-  ctx.fillStyle = "#eab308"; ctx.fillRect(250, 65, 12, 12); ctx.fillText("สีเหลือง = รออะไหล่ (Wait Part)", 270, 76);
+  ctx.fillStyle = "#ef4444";
+  ctx.fillRect(250, 40, 12, 12);
+  ctx.fillText("สีแดง = เครื่องเสีย (Breakdown)", 270, 51);
+  ctx.fillStyle = "#eab308";
+  ctx.fillRect(250, 65, 12, 12);
+  ctx.fillText("สีเหลือง = รออะไหล่ (Wait Part)", 270, 76);
 
   return canvas.toDataURL("image/png");
 }
 
-// ==========================================
-// 5. โค้ด Export Excel (ตีตารางสวยงาม + หน้า Index)
-// ==========================================
-async function exportMachineToExcel(machineData) {
-  const workbook = new ExcelJS.Workbook();
-  const weekImageCache = {};
 
-  function getWeekImageId(t, r, b, l) {
-    const key = `${t}_${r}_${b}_${l}`;
-    if (weekImageCache[key]) return weekImageCache[key];
-    const base64Data = getCleanBase64(create52WeekImageBase64(t, r, b, l));
-    const imgId = workbook.addImage({ base64: base64Data, extension: "png" });
-    weekImageCache[key] = imgId;
-    return imgId;
-  }
-
-  const legendImgId = workbook.addImage({ base64: getCleanBase64(createLegendImageBase64()), extension: "png" });
-
-  // 🔴 หน้า 1: Index Hub (หน้าสารบัญ)
-  const hubSheet = workbook.addWorksheet("Index Hub");
-  hubSheet.columns = [{ width: 5 }, { width: 30 }, { width: 50 }];
-  hubSheet.getCell("B2").value = "MACHINE MAINTENANCE LEDGER";
-  hubSheet.getCell("B2").font = { size: 18, bold: true, color: { argb: "FF005EB8" } };
-
-  hubSheet.getCell("B4").value = "Department (แผนก):";
-  hubSheet.getCell("C4").value = machineData.dept;
-  hubSheet.getCell("B5").value = "Line (ไลน์ผลิต):";
-  hubSheet.getCell("C5").value = machineData.line;
-  hubSheet.getCell("B6").value = "Machine Name (ชื่อเครื่อง):";
-  hubSheet.getCell("C6").value = machineData.machineName;
-
-  hubSheet.getCell("B4").font = { bold: true };
-  hubSheet.getCell("B5").font = { bold: true };
-  hubSheet.getCell("B6").font = { bold: true };
-
-  hubSheet.getCell("B8").value = "Subassembly List (คลิกเพื่อไปยังชีต):";
-  hubSheet.getCell("B8").font = { bold: true, size: 12 };
-
-  let hubRow = 9;
-  for (const sub of machineData.subassemblies) {
-    // สร้าง Hyperlink ไปยัง Sheet ปลายทาง
-    hubSheet.getCell(`C${hubRow}`).value = {
-      text: `🔗 ${sub.name}`,
-      hyperlink: `#'${sub.name}'!A1`
-    };
-    hubSheet.getCell(`C${hubRow}`).font = { color: { argb: "FF0563C1" }, underline: true };
-    hubRow++;
-  }
-
-  // 🔴 หน้า 2 เป็นต้นไป: ชีต Subassemblies (ตาราง 52 วีค)
-  for (const sub of machineData.subassemblies) {
-    const sheet = workbook.addWorksheet(sub.name);
-
-    // ปรับความกว้างคอลัมน์
-    sheet.getColumn(1).width = 25; // Part Name
-    sheet.getColumn(2).width = 15; // Picture
-    sheet.getColumn(3).width = 10; // Method
-    sheet.getColumn(4).width = 10; // Freq
-    for (let w = 1; w <= 52; w++) sheet.getColumn(w + 4).width = 4;
-    sheet.getColumn(57).width = 25; // Remark
-
-    // หัวกระดาษ
-    sheet.getCell("A1").value = `Equipment: ${machineData.machineName} - ${sub.name}`;
-    sheet.getCell("A1").font = { size: 16, bold: true };
-    sheet.getCell("A2").value = `PLANNED MAINTENANCE SCHEDULE`;
-    sheet.getCell("A2").font = { size: 14, bold: true, color: { argb: "FF005EB8" } };
-
-    // แปะรูป Legend
-    sheet.addImage(legendImgId, { tl: { col: 45, row: 0 }, br: { col: 55, row: 3 } });
-
-    // หัวตาราง (ทาสีและตีเส้น)
-    const headerRow = sheet.getRow(4);
-    headerRow.height = 25;
-    
-    const headers = ["Part Name", "Picture", "Method", "Freq."];
-    for (let i = 1; i <= 4; i++) {
-      let cell = sheet.getCell(4, i);
-      cell.value = headers[i-1];
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF005EB8' } };
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-    }
-
-    for (let w = 1; w <= 52; w++) {
-      let cell = sheet.getCell(4, w + 4);
-      cell.value = `W${w}`;
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF38A169' } };
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 };
-      cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-    }
-
-    let ewoCell = sheet.getCell(4, 57);
-    ewoCell.value = "EWO / Breakdown Summary";
-    ewoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF005EB8' } };
-    ewoCell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-    ewoCell.alignment = { horizontal: "center", vertical: "middle" };
-    ewoCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-
-    // ข้อมูลอะไหล่
-    let rowIdx = 5;
-    for (const part of sub.parts) {
-      sheet.getRow(rowIdx).height = 60;
-
-      sheet.getCell(`A${rowIdx}`).value = part.name;
-      sheet.getCell(`A${rowIdx}`).alignment = { vertical: "middle", wrapText: true };
-      
-      sheet.getCell(`C${rowIdx}`).value = part.method || "-";
-      sheet.getCell(`D${rowIdx}`).value = part.frequency || "-";
-      sheet.getCell(`C${rowIdx}`).alignment = { horizontal: "center", vertical: "middle" };
-      sheet.getCell(`D${rowIdx}`).alignment = { horizontal: "center", vertical: "middle" };
-
-      // 🔴 จัดการรูปภาพอะไหล่ (ข้ามรูปที่เป็น http link เดิมๆ)
-      if (part.imageBase64 && part.imageBase64.startsWith("http")) {
-        sheet.getCell(`B${rowIdx}`).value = "(รูปเก่าดูในระบบ)";
-        sheet.getCell(`B${rowIdx}`).font = { italic: true, color: { argb: 'FF888888' }, size: 10 };
-        sheet.getCell(`B${rowIdx}`).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
-      } else if (part.imageBase64) {
-        const cleanImg = getCleanBase64(part.imageBase64);
-        if (cleanImg) {
-          try {
-            const imgId = workbook.addImage({ base64: cleanImg, extension: "png" });
-            sheet.addImage(imgId, { tl: { col: 1.1, row: rowIdx - 1 + 0.1 }, br: { col: 1.9, row: rowIdx - 0.1 } });
-          } catch (e) {
-            console.warn("ข้ามรูปที่ Base64 ผิดปกติ");
-          }
-        }
-      }
-
-      for (let w = 1; w <= 52; w++) {
-        if (part.weeks && part.weeks[w - 1]) {
-          let weekData = part.weeks[w - 1];
-          let pmImgId = getWeekImageId(weekData.t, weekData.r, weekData.b, weekData.l);
-          sheet.addImage(pmImgId, { tl: { col: w + 4 - 1 + 0.1, row: rowIdx - 1 + 0.1 }, br: { col: w + 4 - 0.1, row: rowIdx - 0.1 } });
-        }
-      }
-
-      // ตีเส้นขอบทุกช่องของแถวนี้
-      for (let c = 1; c <= 57; c++) {
-        let cell = sheet.getCell(rowIdx, c);
-        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-      }
-      rowIdx++;
-    }
-
-    // ลายเซ็นต์
-    let approvalRow = rowIdx + 2;
-    sheet.getRow(approvalRow).height = 60;
-
-    sheet.getCell(`C${approvalRow}`).value = "ผู้จัดทำ (Prepared by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`C${approvalRow}`).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
-    sheet.mergeCells(`C${approvalRow}:G${approvalRow}`);
-
-    sheet.getCell(`J${approvalRow}`).value = "ผู้ตรวจสอบ (Checked by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`J${approvalRow}`).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
-    sheet.mergeCells(`J${approvalRow}:N${approvalRow}`);
-
-    sheet.getCell(`S${approvalRow}`).value = "ผู้อนุมัติ (Approved by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`S${approvalRow}`).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
-    sheet.mergeCells(`S${approvalRow}:W${approvalRow}`);
-  }
-
-  const buffer = await workbook.xlsx.writeBuffer();
-  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
-  saveAs(blob, `Machine_Ledger_${machineData.machineName}.xlsx`);
-}
-
-// 🔴 อัปเดตฟังก์ชันดึงข้อมูลให้ส่ง Dept และ Line เข้าไปจัดหน้า Index ด้วย
-async function handleExportExcel() {
-  if (!currentDept || !currentLine || !currentMach) {
-    showModalAlert("แจ้งเตือน", "ไม่พบข้อมูลเครื่องจักรที่ต้องการ Export", true);
-    return;
-  }
-
-  document.getElementById("loadingOverlay").style.display = "flex";
-
-  try {
-    let machDataDB = dbData[currentDept][currentLine].machines[currentMach];
-
-    let machineData = {
-      dept: currentDept,
-      line: currentLine,
-      machineName: currentMach,
-      subassemblies: [],
-    };
-
-    for (let subName in machDataDB.subassemblies) {
-      let subDB = machDataDB.subassemblies[subName];
-      let sub = { name: subName, parts: [] };
-
-      subDB.components.forEach((comp) => {
-        sub.parts.push({
-          name: comp.name,
-          method: comp.std,
-          frequency: comp.frequency || comp.time || "-",
-          imageBase64: comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1 ? comp.imgComp : null,
-          weeks: comp.weeks || [],
-        });
-      });
-      machineData.subassemblies.push(sub);
-    }
-    await exportMachineToExcel(machineData);
-  } catch (error) {
-    console.error("Export Error:", error);
-    showModalAlert("เกิดข้อผิดพลาด", "ไม่สามารถสร้างไฟล์ Excel ได้: " + error.message, true);
-  } finally {
-    document.getElementById("loadingOverlay").style.display = "none";
-  }
-}
 
 // ==========================================
 // 🔴 Helper: ระบบแจ้งสถานะ Loading อัจฉริยะ
@@ -2813,12 +2691,19 @@ async function exportMachineToExcel(machineData, returnBuffer = false) {
     return imgId;
   }
 
-  const legendImgId = workbook.addImage({ base64: getCleanBase64(createLegendImageBase64()), extension: "png" });
+  const legendImgId = workbook.addImage({
+    base64: getCleanBase64(createLegendImageBase64()),
+    extension: "png",
+  });
 
   const hubSheet = workbook.addWorksheet("Index Hub");
   hubSheet.columns = [{ width: 5 }, { width: 30 }, { width: 50 }];
   hubSheet.getCell("B2").value = "MACHINE MAINTENANCE LEDGER";
-  hubSheet.getCell("B2").font = { size: 18, bold: true, color: { argb: "FF005EB8" } };
+  hubSheet.getCell("B2").font = {
+    size: 18,
+    bold: true,
+    color: { argb: "FF005EB8" },
+  };
 
   hubSheet.getCell("B4").value = "Department (แผนก):";
   hubSheet.getCell("C4").value = machineData.dept;
@@ -2837,9 +2722,12 @@ async function exportMachineToExcel(machineData, returnBuffer = false) {
   for (const sub of machineData.subassemblies) {
     hubSheet.getCell(`C${hubRow}`).value = {
       text: `🔗 ${sub.name}`,
-      hyperlink: `#'${sub.name}'!A1`
+      hyperlink: `#'${sub.name}'!A1`,
     };
-    hubSheet.getCell(`C${hubRow}`).font = { color: { argb: "FF0563C1" }, underline: true };
+    hubSheet.getCell(`C${hubRow}`).font = {
+      color: { argb: "FF0563C1" },
+      underline: true,
+    };
     hubRow++;
   }
 
@@ -2852,94 +2740,182 @@ async function exportMachineToExcel(machineData, returnBuffer = false) {
     for (let w = 1; w <= 52; w++) sheet.getColumn(w + 4).width = 4;
     sheet.getColumn(57).width = 25;
 
-    sheet.getCell("A1").value = `Equipment: ${machineData.machineName} - ${sub.name}`;
+    sheet.getCell("A1").value =
+      `Equipment: ${machineData.machineName} - ${sub.name}`;
     sheet.getCell("A1").font = { size: 16, bold: true };
     sheet.getCell("A2").value = `PLANNED MAINTENANCE SCHEDULE`;
-    sheet.getCell("A2").font = { size: 14, bold: true, color: { argb: "FF005EB8" } };
-    sheet.addImage(legendImgId, { tl: { col: 45, row: 0 }, br: { col: 55, row: 3 } });
+    sheet.getCell("A2").font = {
+      size: 14,
+      bold: true,
+      color: { argb: "FF005EB8" },
+    };
+    sheet.addImage(legendImgId, {
+      tl: { col: 45, row: 0 },
+      br: { col: 55, row: 3 },
+    });
 
     const headers = ["Part Name", "Picture", "Method", "Freq."];
     for (let i = 1; i <= 4; i++) {
       let cell = sheet.getCell(4, i);
-      cell.value = headers[i-1];
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF005EB8' } };
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.value = headers[i - 1];
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF005EB8" },
+      };
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" } };
       cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
     }
     for (let w = 1; w <= 52; w++) {
       let cell = sheet.getCell(4, w + 4);
       cell.value = `W${w}`;
-      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF38A169' } };
-      cell.font = { bold: true, color: { argb: 'FFFFFFFF' }, size: 9 };
+      cell.fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF38A169" },
+      };
+      cell.font = { bold: true, color: { argb: "FFFFFFFF" }, size: 9 };
       cell.alignment = { horizontal: "center", vertical: "middle" };
-      cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+      cell.border = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        bottom: { style: "thin" },
+        right: { style: "thin" },
+      };
     }
 
     let ewoCell = sheet.getCell(4, 57);
     ewoCell.value = "EWO / Breakdown Summary";
-    ewoCell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF005EB8' } };
-    ewoCell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+    ewoCell.fill = {
+      type: "pattern",
+      pattern: "solid",
+      fgColor: { argb: "FF005EB8" },
+    };
+    ewoCell.font = { bold: true, color: { argb: "FFFFFFFF" } };
     ewoCell.alignment = { horizontal: "center", vertical: "middle" };
-    ewoCell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+    ewoCell.border = {
+      top: { style: "thin" },
+      left: { style: "thin" },
+      bottom: { style: "thin" },
+      right: { style: "thin" },
+    };
 
     let rowIdx = 5;
     for (const part of sub.parts) {
       sheet.getRow(rowIdx).height = 60;
       sheet.getCell(`A${rowIdx}`).value = part.name;
-      sheet.getCell(`A${rowIdx}`).alignment = { vertical: "middle", wrapText: true };
+      sheet.getCell(`A${rowIdx}`).alignment = {
+        vertical: "middle",
+        wrapText: true,
+      };
       sheet.getCell(`C${rowIdx}`).value = part.method || "-";
       sheet.getCell(`D${rowIdx}`).value = part.frequency || "-";
-      sheet.getCell(`C${rowIdx}`).alignment = { horizontal: "center", vertical: "middle" };
-      sheet.getCell(`D${rowIdx}`).alignment = { horizontal: "center", vertical: "middle" };
+      sheet.getCell(`C${rowIdx}`).alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+      sheet.getCell(`D${rowIdx}`).alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
 
       if (part.imageBase64 && part.imageBase64.startsWith("http")) {
         sheet.getCell(`B${rowIdx}`).value = "(รูปเก่าดูในระบบ)";
-        sheet.getCell(`B${rowIdx}`).font = { italic: true, color: { argb: 'FF888888' }, size: 10 };
-        sheet.getCell(`B${rowIdx}`).alignment = { horizontal: "center", vertical: "middle", wrapText: true };
+        sheet.getCell(`B${rowIdx}`).font = {
+          italic: true,
+          color: { argb: "FF888888" },
+          size: 10,
+        };
+        sheet.getCell(`B${rowIdx}`).alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
       } else if (part.imageBase64) {
         const cleanImg = getCleanBase64(part.imageBase64);
         if (cleanImg) {
           try {
-            const imgId = workbook.addImage({ base64: cleanImg, extension: "png" });
-            sheet.addImage(imgId, { tl: { col: 1.1, row: rowIdx - 1 + 0.1 }, br: { col: 1.9, row: rowIdx - 0.1 } });
-          } catch (e) { }
+            const imgId = workbook.addImage({
+              base64: cleanImg,
+              extension: "png",
+            });
+            sheet.addImage(imgId, {
+              tl: { col: 1.1, row: rowIdx - 1 + 0.1 },
+              br: { col: 1.9, row: rowIdx - 0.1 },
+            });
+          } catch (e) {}
         }
       }
 
       for (let w = 1; w <= 52; w++) {
         if (part.weeks && part.weeks[w - 1]) {
           let weekData = part.weeks[w - 1];
-          let pmImgId = getWeekImageId(weekData.t, weekData.r, weekData.b, weekData.l);
-          sheet.addImage(pmImgId, { tl: { col: w + 4 - 1 + 0.1, row: rowIdx - 1 + 0.1 }, br: { col: w + 4 - 0.1, row: rowIdx - 0.1 } });
+          let pmImgId = getWeekImageId(
+            weekData.t,
+            weekData.r,
+            weekData.b,
+            weekData.l,
+          );
+          sheet.addImage(pmImgId, {
+            tl: { col: w + 4 - 1 + 0.1, row: rowIdx - 1 + 0.1 },
+            br: { col: w + 4 - 0.1, row: rowIdx - 0.1 },
+          });
         }
       }
       for (let c = 1; c <= 57; c++) {
-        sheet.getCell(rowIdx, c).border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+        sheet.getCell(rowIdx, c).border = {
+          top: { style: "thin" },
+          left: { style: "thin" },
+          bottom: { style: "thin" },
+          right: { style: "thin" },
+        };
       }
       rowIdx++;
     }
 
     let approvalRow = rowIdx + 2;
     sheet.getRow(approvalRow).height = 60;
-    sheet.getCell(`C${approvalRow}`).value = "ผู้จัดทำ (Prepared by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`C${approvalRow}`).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
+    sheet.getCell(`C${approvalRow}`).value =
+      "ผู้จัดทำ (Prepared by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`C${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
     sheet.mergeCells(`C${approvalRow}:G${approvalRow}`);
-    sheet.getCell(`J${approvalRow}`).value = "ผู้ตรวจสอบ (Checked by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`J${approvalRow}`).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
+    sheet.getCell(`J${approvalRow}`).value =
+      "ผู้ตรวจสอบ (Checked by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`J${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
     sheet.mergeCells(`J${approvalRow}:N${approvalRow}`);
-    sheet.getCell(`S${approvalRow}`).value = "ผู้อนุมัติ (Approved by)\n\n...................................\nวันที่: ....../....../......";
-    sheet.getCell(`S${approvalRow}`).alignment = { wrapText: true, horizontal: "center", vertical: "middle" };
+    sheet.getCell(`S${approvalRow}`).value =
+      "ผู้อนุมัติ (Approved by)\n\n...................................\nวันที่: ....../....../......";
+    sheet.getCell(`S${approvalRow}`).alignment = {
+      wrapText: true,
+      horizontal: "center",
+      vertical: "middle",
+    };
     sheet.mergeCells(`S${approvalRow}:W${approvalRow}`);
   }
 
   const buffer = await workbook.xlsx.writeBuffer();
-  
+
   // 🔴 เช็คว่าต้องการข้อมูลดิบ (นำไปใส่ ZIP) หรือ ให้โหลดลงเครื่องเลย
   if (returnBuffer) {
     return buffer;
   }
-  const blob = new Blob([buffer], { type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" });
+  const blob = new Blob([buffer], {
+    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  });
   saveAs(blob, `Machine_Ledger_${machineData.machineName}.xlsx`);
 }
 
@@ -2948,7 +2924,11 @@ async function exportMachineToExcel(machineData, returnBuffer = false) {
 // ==========================================
 async function handleExportExcel() {
   if (!currentDept || !currentLine || !currentMach) {
-    showModalAlert("แจ้งเตือน", "ไม่พบข้อมูลเครื่องจักรที่ต้องการ Export", true);
+    showModalAlert(
+      "แจ้งเตือน",
+      "ไม่พบข้อมูลเครื่องจักรที่ต้องการ Export",
+      true,
+    );
     return;
   }
 
@@ -2971,23 +2951,29 @@ async function handleExportExcel() {
           name: comp.name,
           method: comp.std,
           frequency: comp.frequency || comp.time || "-",
-          imageBase64: comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1 ? comp.imgComp : null,
+          imageBase64:
+            comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1
+              ? comp.imgComp
+              : null,
           weeks: comp.weeks || [],
         });
       });
       machineData.subassemblies.push(sub);
     }
-    
+
     updateLoadingStatus("กำลังประมวลผลไฟล์ Excel (อาจใช้เวลาสักครู่)...");
-    
+
     // หน่วงเวลาเล็กน้อยให้หน้าจอ UI ได้อัปเดตข้อความก่อนลุยงานหนัก
-    await new Promise(resolve => setTimeout(resolve, 100)); 
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     await exportMachineToExcel(machineData, false);
-    
   } catch (error) {
     console.error("Export Error:", error);
-    showModalAlert("เกิดข้อผิดพลาด", "ไม่สามารถสร้างไฟล์ Excel ได้: " + error.message, true);
+    showModalAlert(
+      "เกิดข้อผิดพลาด",
+      "ไม่สามารถสร้างไฟล์ Excel ได้: " + error.message,
+      true,
+    );
   } finally {
     hideLoading();
   }
@@ -3003,33 +2989,43 @@ async function handleExportLineZip() {
   }
 
   if (typeof JSZip === "undefined") {
-    showModalAlert("ข้อผิดพลาด", "ระบบยังไม่ได้โหลดไลบรารี JSZip สำหรับบีบอัดไฟล์ กรุณารีเฟรชหน้าเว็บ", true);
+    showModalAlert(
+      "ข้อผิดพลาด",
+      "ระบบยังไม่ได้โหลดไลบรารี JSZip สำหรับบีบอัดไฟล์ กรุณารีเฟรชหน้าเว็บ",
+      true,
+    );
     return;
   }
 
   let lineData = dbData[currentDept][currentLine];
-  if (!lineData || !lineData.machines || Object.keys(lineData.machines).length === 0) {
+  if (
+    !lineData ||
+    !lineData.machines ||
+    Object.keys(lineData.machines).length === 0
+  ) {
     showModalAlert("แจ้งเตือน", "ไม่มีเครื่องจักรในไลน์นี้ให้ Export", true);
     return;
   }
 
   showLoading(`กำลังเตรียมไฟล์ ZIP สำหรับไลน์ ${currentLine}...`);
-  
+
   try {
     const zip = new JSZip();
     // สร้าง Folder ข้างใน ZIP ให้ชื่อเป็น Dept_Line
     const folderName = `${currentDept}_${currentLine}`;
     const rootFolder = zip.folder(folderName);
-    
+
     let machKeys = Object.keys(lineData.machines);
-    
+
     for (let i = 0; i < machKeys.length; i++) {
       let machName = machKeys[i];
-      
+
       // อัปเดตบอกผู้ใช้ว่ากำลังทำเครื่องที่เท่าไหร่จากทั้งหมด
-      updateLoadingStatus(`กำลังสร้างไฟล์ (${i + 1}/${machKeys.length}): เครื่อง ${machName}...`);
-      await new Promise(resolve => setTimeout(resolve, 100)); // คืนลมหายใจให้เบราว์เซอร์อัปเดต UI
-      
+      updateLoadingStatus(
+        `กำลังสร้างไฟล์ (${i + 1}/${machKeys.length}): เครื่อง ${machName}...`,
+      );
+      await new Promise((resolve) => setTimeout(resolve, 100)); // คืนลมหายใจให้เบราว์เซอร์อัปเดต UI
+
       let machDataDB = lineData.machines[machName];
       let machineData = {
         dept: currentDept,
@@ -3046,30 +3042,36 @@ async function handleExportLineZip() {
             name: comp.name,
             method: comp.std,
             frequency: comp.frequency || comp.time || "-",
-            imageBase64: comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1 ? comp.imgComp : null,
+            imageBase64:
+              comp.imgComp && comp.imgComp.indexOf("NO+IMAGE") === -1
+                ? comp.imgComp
+                : null,
             weeks: comp.weeks || [],
           });
         });
         machineData.subassemblies.push(sub);
       }
-      
-      // 🔴 ส่ง true เพื่อรับเป็น Buffer แทนที่จะ SaveAs 
+
+      // 🔴 ส่ง true เพื่อรับเป็น Buffer แทนที่จะ SaveAs
       let excelBuffer = await exportMachineToExcel(machineData, true);
-      
+
       // นำ Buffer ยัดใส่โฟลเดอร์ใน ZIP
-      let safeFileName = machName.replace(/[/\\?%*:|"<>]/g, '-'); // ป้องกันชื่อไฟล์มีอักขระต้องห้าม
+      let safeFileName = machName.replace(/[/\\?%*:|"<>]/g, "-"); // ป้องกันชื่อไฟล์มีอักขระต้องห้าม
       rootFolder.file(`Machine_${safeFileName}.xlsx`, excelBuffer);
     }
-    
+
     updateLoadingStatus("รวบรวมไฟล์เสร็จสิ้น กำลังบีบอัดเป็น ZIP...");
-    await new Promise(resolve => setTimeout(resolve, 100));
-    
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
     const zipBlob = await zip.generateAsync({ type: "blob" });
     saveAs(zipBlob, `Export_${currentDept}_${currentLine}_Ledger.zip`);
-    
   } catch (error) {
     console.error("ZIP Export Error:", error);
-    showModalAlert("เกิดข้อผิดพลาด", "ไม่สามารถสร้างไฟล์ ZIP ได้: " + error.message, true);
+    showModalAlert(
+      "เกิดข้อผิดพลาด",
+      "ไม่สามารถสร้างไฟล์ ZIP ได้: " + error.message,
+      true,
+    );
   } finally {
     hideLoading();
   }
