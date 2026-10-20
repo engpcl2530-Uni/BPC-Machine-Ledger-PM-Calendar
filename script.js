@@ -1,6 +1,6 @@
 // 🔴 นำ Web App URL ของ Google Apps Script มาใส่ตรงนี้
 const GAS_API_URL =
-  "https://script.google.com/macros/s/AKfycbxRj_dahQfwuT4X8iTFF2-ds_9vo-GHVbvLDgxvOdW-r8UfYQ3F4uXtvN-MOuhHOu0Ngg/exec";
+  "https://script.google.com/macros/s/AKfycbyZhSBvKldL9y_iWXXFL1T6_w3UZOSXp53vQGZ-i3sXgMZU1vuvQG_3PZ7oTimqb85F4Q/exec";
 
 // ================= 0. Helper Functions (Modal Alert & Security) =================
 // ฟังก์ชันโชว์แจ้งเตือนด้วย Modal สวยๆ แทน alert()
