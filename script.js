@@ -64,118 +64,26 @@ let currentMach = null;
 let currentSub = null;
 
 // ================= 1. ดึงข้อมูลจากฐานข้อมูล =================
-// ตัวแปรเก็บการ์ดทั้งหมด
-let allMachineCards = [];
+async function loadDataFromDatabase() {
+  document.getElementById("loadingOverlay").style.display = "flex";
 
-// 1. จังหวะที่ 1: ดึงการ์ดทั้งหมดตอนเปิดจอ
-// 1. จังหวะที่ 1: ดึงการ์ดทั้งหมดตอนเปิดจอ
-function fetchFirstLoad() {
-  // สั่งโชว์ Loading ใหญ่กลางจอ
-  showLoading("กำลังโหลดข้อมูลเครื่องจักร..."); // 🔴 แก้ตรงนี้
-
-  var payload = { action: "get_first_load" };
-
-  google.script.run
-    .withSuccessHandler(function (response) {
-      if (response.success) {
-        allMachineCards = response.data;
-        renderAllCards(allMachineCards); // วาดการ์ดทั้งหมดทีเดียวเลย
-        hideLoading(); // 🔴 แก้ตรงนี้ ปิด Loading
-
-        // เริ่มจังหวะที่ 2 (แอบดึง Real-time ขาดด้านหลัง)
-        fetchRealtimePMStatus();
-      } else {
-        updateLoadingStatus("เกิดข้อผิดพลาดในการดึงข้อมูล"); // 🔴 แก้ตรงนี้
-      }
-    })
-    .withFailureHandler(function (error) {
-      updateLoadingStatus("เกิดข้อผิดพลาด โปรดรีเฟรชหน้าจอ"); // 🔴 แก้ตรงนี้
-    })
-    .doPost(payload);
-}
-
-// วาดการ์ดทั้งหมด
-function renderAllCards(data) {
-  const container = document.getElementById("first-page-container");
-  container.innerHTML = "";
-
-  data.forEach((item) => {
-    const card = document.createElement("div");
-    card.className = "card";
-    card.id = "mach-card-" + item.machineName.replace(/\s+/g, "-"); // ตั้ง ID ให้หาเจอง่ายๆ
-
-    // ถ้ามี PM ให้ใส่คลาสเรืองแสงสีแดง
-    if (item.hasPM) {
-      card.classList.add("pm-alert-glow");
-    }
-
-    card.innerHTML = `
-      ${item.hasPM ? '<div class="pm-badge" id="badge-' + item.machineName.replace(/\s+/g, "-") + '">มี PM สัปดาห์นี้!</div>' : ""}
-      <img src="${item.image}" alt="${item.machineName}" style="width:100%; height:150px; object-fit:cover; border-radius:8px 8px 0 0;">
-      <div style="padding: 10px;">
-        <h4 style="color:#d90000;">${item.machineName}</h4>
-        <p><strong>Line:</strong> ${item.line}</p>
-        <p><strong>Subassemblies:</strong> ${item.subCount}</p>
-        <p><strong>Components:</strong> ${item.compCount}</p>
-      </div>
-    `;
-    container.appendChild(card);
-  });
-}
-
-// 2. จังหวะที่ 2: ดึงข้อมูลอัปเดตล่าสุด
-function fetchRealtimePMStatus() {
-  const syncAlert = document.getElementById("pm-sync-alert");
-  syncAlert.style.display = "flex"; // โชว์กล่อง "กำลังซิงค์ข้อมูล..." มุมขวาล่าง
-
-  var payload = { action: "get_realtime_pm_status" };
-
-  google.script.run
-    .withSuccessHandler(function (response) {
-      syncAlert.style.display = "none"; // ซ่อนเมื่อเสร็จ
-
-      if (response.success) {
-        var finished = response.finishedPMs;
-        // วนดูว่ามีเครื่องไหนในหน้าจอที่เพิ่งทำเสร็จไปวันนี้บ้าง
-        allMachineCards.forEach((item) => {
-          if (item.hasPM && finished[item.machineName] > 0) {
-            // ถ้ามีคนทำ PM เครื่องนี้ไปแล้ว (อย่างน้อย 1 ชิ้น)
-            // **หมายเหตุ:** ถ้าอยากให้เป๊ะว่า "ทำครบทุกชิ้นแล้วถึงจะลบป้าย"
-            // ต้องเพิ่มเงื่อนไขนับจำนวนชิ้นรวมด้วย ตรงนี้ผมทำแบบ "ถ้าเริ่มทำแล้ว ให้ลบป้ายออกก่อนเลย"
-
-            let cardId = "mach-card-" + item.machineName.replace(/\s+/g, "-");
-            let cardElement = document.getElementById(cardId);
-            if (cardElement) {
-              cardElement.classList.remove("pm-alert-glow"); // เอาขอบแดงออก
-              let badge = document.getElementById(
-                "badge-" + item.machineName.replace(/\s+/g, "-"),
-              );
-              if (badge) badge.remove(); // ลบป้ายแจ้งเตือนทิ้ง
-            }
-          }
-        });
-      }
-    })
-    .withFailureHandler(function (error) {
-      syncAlert.style.display = "none";
-      console.log("Realtime Sync Failed");
-    })
-    .doPost(payload);
-}
-
-// เริ่มทำงานเมื่อเว็บโหลด
-window.addEventListener("DOMContentLoaded", () => {
-  // สร้างกล่องแจ้งเตือนซิงค์ใส่ใน body (ถ้าคุณไม่ได้ใส่ใน HTML ไว้)
-  if (!document.getElementById("pm-sync-alert")) {
-    let syncBox = document.createElement("div");
-    syncBox.id = "pm-sync-alert";
-    syncBox.innerHTML =
-      '<div class="sync-spinner"></div> ซิงค์สถานะ PM ล่าสุด...';
-    document.body.appendChild(syncBox);
+  try {
+    const result = await ApiService.request("get_all_data");
+    dbData = await ApiService.getAllData();
+    updateDashboardStats();
+    initFilters();
+    handleRouting();
+    checkDraftStatus(); // เช็คว่ามีแบบร่างค้างไว้ไหม
+  } catch (err) {
+    showModalAlert(
+      "โหลดข้อมูลล้มเหลว",
+      "ไม่สามารถเชื่อมต่อฐานข้อมูลได้: " + err.message,
+      true,
+    );
+  } finally {
+    document.getElementById("loadingOverlay").style.display = "none";
   }
-
-  fetchFirstLoad();
-});
+}
 
 // =========================================================
 // 🔴 ฟังก์ชันควบคุม Smart Filters
@@ -264,6 +172,9 @@ function hasClassTarget(entityData, targetClass, isLine = false) {
   return false;
 }
 
+window.onload = () => {
+  loadDataFromDatabase();
+};
 
 // ดึงภาษาปัจจุบันที่ใช้อยู่ (ถ้าไม่มีให้เป็น 'th')
 function getCurrentLang() {
@@ -2675,6 +2586,7 @@ function create52WeekImageBase64(t, r, b, l) {
   return canvas.toDataURL("image/png");
 }
 
+
 function createLegendImageBase64() {
   const canvas = document.createElement("canvas");
   canvas.width = 400;
@@ -2742,6 +2654,8 @@ function createLegendImageBase64() {
 
   return canvas.toDataURL("image/png");
 }
+
+
 
 // ==========================================
 // 🔴 Helper: ระบบแจ้งสถานะ Loading อัจฉริยะ
