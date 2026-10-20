@@ -68,9 +68,10 @@ let currentSub = null;
 let allMachineCards = [];
 
 // 1. จังหวะที่ 1: ดึงการ์ดทั้งหมดตอนเปิดจอ
+// 1. จังหวะที่ 1: ดึงการ์ดทั้งหมดตอนเปิดจอ
 function fetchFirstLoad() {
   // สั่งโชว์ Loading ใหญ่กลางจอ
-  updateLoadingState("กำลังโหลดข้อมูลเครื่องจักร...");
+  showLoading("กำลังโหลดข้อมูลเครื่องจักร..."); // 🔴 แก้ตรงนี้
 
   var payload = { action: "get_first_load" };
 
@@ -79,16 +80,16 @@ function fetchFirstLoad() {
       if (response.success) {
         allMachineCards = response.data;
         renderAllCards(allMachineCards); // วาดการ์ดทั้งหมดทีเดียวเลย
-        updateLoadingState("", true); // ปิด Loading ใหญ่กลางจอ
+        hideLoading(); // 🔴 แก้ตรงนี้ ปิด Loading
 
         // เริ่มจังหวะที่ 2 (แอบดึง Real-time ขาดด้านหลัง)
         fetchRealtimePMStatus();
       } else {
-        updateLoadingState("เกิดข้อผิดพลาดในการดึงข้อมูล");
+        updateLoadingStatus("เกิดข้อผิดพลาดในการดึงข้อมูล"); // 🔴 แก้ตรงนี้
       }
     })
     .withFailureHandler(function (error) {
-      updateLoadingState("เกิดข้อผิดพลาด โปรดรีเฟรชหน้าจอ");
+      updateLoadingStatus("เกิดข้อผิดพลาด โปรดรีเฟรชหน้าจอ"); // 🔴 แก้ตรงนี้
     })
     .doPost(payload);
 }
@@ -263,9 +264,6 @@ function hasClassTarget(entityData, targetClass, isLine = false) {
   return false;
 }
 
-window.onload = () => {
-  loadDataFromDatabase();
-};
 
 // ดึงภาษาปัจจุบันที่ใช้อยู่ (ถ้าไม่มีให้เป็น 'th')
 function getCurrentLang() {
