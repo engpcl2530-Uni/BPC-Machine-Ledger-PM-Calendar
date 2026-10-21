@@ -1137,3 +1137,44 @@ body {
   opacity: 0.4;
   filter: grayscale(80%);
 }
+
+/* ล็อกคอลัมน์ให้เลื่อนเฉพาะข้อมูล 52 สัปดาห์ */
+.table-ledger {
+  border-collapse: separate;
+  border-spacing: 0;
+}
+
+/* ล็อกคอลัมน์ที่ 1 (Image) */
+.table-ledger th:nth-child(1),
+.table-ledger td:nth-child(1) {
+  position: sticky;
+  left: 0;
+  background-color: #ffffff;
+  z-index: 2;
+  border-right: 1px solid #e2e8f0;
+}
+
+/* ล็อกคอลัมน์ที่ 2 (Component Name) */
+.table-ledger th:nth-child(2),
+.table-ledger td:nth-child(2) {
+  position: sticky;
+  left: 55px; /* ปรับให้พอดีกับความกว้างของคอลัมน์รูปภาพ */
+  background-color: #ffffff;
+  z-index: 2;
+  border-right: 2px solid #cbd5e1; /* เส้นกั้นชัดเจนขึ้นก่อนเข้าส่วนข้อมูล */
+  box-shadow: 2px 0 5px rgba(0,0,0,0.05); /* เพิ่มเงาให้ดูมีมิติว่ามันทับอยู่ */
+}
+
+/* ทำให้ Header อยู่สูงกว่า Data Cell ตอนเลื่อนลง */
+.table-ledger thead th:nth-child(1),
+.table-ledger thead th:nth-child(2) {
+  z-index: 3;
+  background-color: #cfe2ff; /* สีเดียวกับ table-primary ของ Bootstrap */
+}
+
+/* ป้องกันตารางบีบตัว */
+.table-responsive {
+  overflow-x: auto;
+  overflow-y: hidden;
+  max-width: 100%;
+}

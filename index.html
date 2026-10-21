@@ -58,6 +58,41 @@
         >
           กำลังโหลดข้อมูล...
         </div>
+        <!-- ระบบคิว (Queue Overlay) -->
+        <div
+          id="queueOverlay"
+          style="
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            z-index: 10000;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+          "
+        >
+          <span
+            class="material-symbols-rounded text-primary mb-3"
+            style="font-size: 64px; animation: pulse 1.5s infinite"
+            >hourglass_empty</span
+          >
+          <h3 class="fw-bold text-dark">ระบบกำลังมีผู้ใช้งานจำนวนมาก</h3>
+          <p class="text-muted fs-5 mb-4">
+            กรุณารอสักครู่ คุณอยู่ในคิวที่
+            <span id="queueNumber" class="text-primary fw-bold fs-4">...</span>
+          </p>
+          <div class="progress w-25" style="height: 10px; border-radius: 5px">
+            <div
+              class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+              style="width: 100%"
+            ></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -76,7 +111,16 @@
             </div>
           </div>
         </div>
-
+        <button
+          class="btn btn-warning fw-bold shadow-sm"
+          style="border-radius: 8px"
+          onclick="openGlobalCalendarModal()"
+        >
+          <span class="material-symbols-rounded align-middle fs-5 me-1"
+            >event_note</span
+          >
+          Calendar รวม
+        </button>
         <!-- กลุ่มปุ่มด้านขวา: สลับภาษา + กลับ BPC Hub -->
         <div class="d-flex align-items-center gap-3">
           <!-- ปุ่มสลับภาษา -->
@@ -571,6 +615,65 @@
               </tr>
             </thead>
             <tbody id="componentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="view-global-calendar" class="view-section">
+        <div
+          class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2"
+        >
+          <div>
+            <button
+              class="btn-back-prominent mb-3 no-print"
+              onclick="
+                document
+                  .getElementById('view-global-calendar')
+                  .classList.remove('active');
+                document.getElementById('view-lines').classList.add('active');
+              "
+            >
+              <span class="material-symbols-rounded fs-5">arrow_back</span>
+              กลับหน้าหลัก
+            </button>
+            <h3 class="fw-bold mb-1 text-primary">Global Calendar (แผนรวม)</h3>
+            <p class="text-muted small mb-0" id="globalCalendarDesc">
+              ข้อมูลจากไลน์ที่เลือก...
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="table-responsive bg-white rounded shadow-sm border mt-3"
+          style="max-height: 75vh; overflow-y: auto"
+        >
+          <table
+            class="table table-hover table-bordered mb-0 align-middle table-ledger"
+            style="font-size: 13px; min-width: 1500px"
+          >
+            <thead
+              class="table-primary text-center"
+              style="position: sticky; top: 0; z-index: 4"
+            >
+              <tr>
+                <th rowspan="2">Image</th>
+                <th rowspan="2">Component (Location)</th>
+                <th rowspan="2">Task</th>
+                <th colspan="4">Standards</th>
+                <th colspan="52">Calendar 52 Weeks</th>
+              </tr>
+              <tr style="font-size: 11px">
+                <th>Class</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Min</th>
+                <script>
+                  for (let i = 1; i <= 52; i++)
+                    document.write(`<th>W${i}</th>`);
+                </script>
+              </tr>
+            </thead>
+            <tbody id="globalCalendarTableBody"></tbody>
           </table>
         </div>
       </div>
@@ -2196,5 +2299,60 @@
     >
       <span class="material-symbols-rounded fs-3">engineering</span>
     </button>
+
+    <!-- Modal เลือก Line สำหรับ Global Calendar -->
+    <div class="modal fade" id="globalCalendarModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title fw-bold">
+              <span class="material-symbols-rounded align-middle me-2"
+                >list_alt</span
+              >เลือกไลน์เพื่อแสดง Calendar รวม
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body bg-light">
+            <p class="text-muted small fw-bold mb-3">
+              เลือกไลน์การผลิตที่คุณต้องการดึงข้อมูลแผน PM มารวมกัน
+              (ออกแบบมาเพื่อรองรับ Desktop เป็นหลัก)
+            </p>
+            <div id="globalLineCheckboxes" class="row g-3">
+              <!-- Checkbox จะถูก Generate ด้วย JS ที่นี่ -->
+            </div>
+          </div>
+          <div class="modal-footer border-0 bg-white">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="toggleAllGlobalLines(true)"
+            >
+              เลือกทั้งหมด
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              onclick="toggleAllGlobalLines(false)"
+            >
+              ล้าง
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary fw-bold px-4"
+              onclick="loadGlobalCalendar()"
+            >
+              <span class="material-symbols-rounded align-middle fs-5 me-1"
+                >sync</span
+              >
+              โหลดข้อมูล
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
   </body>
 </html>

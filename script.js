@@ -2586,7 +2586,6 @@ function create52WeekImageBase64(t, r, b, l) {
   return canvas.toDataURL("image/png");
 }
 
-
 function createLegendImageBase64() {
   const canvas = document.createElement("canvas");
   canvas.width = 400;
@@ -2654,8 +2653,6 @@ function createLegendImageBase64() {
 
   return canvas.toDataURL("image/png");
 }
-
-
 
 // ==========================================
 // 🔴 Helper: ระบบแจ้งสถานะ Loading อัจฉริยะ
@@ -3075,4 +3072,143 @@ async function handleExportLineZip() {
   } finally {
     hideLoading();
   }
+}
+
+// นำฟังก์ชันนี้ไปครอบจุดที่ต้องการเรียก API (เช่น ก่อน loadDataFromDatabase)
+async function checkQueueAndLoadData() {
+  // สมมติฐาน: สุ่มความหนาแน่นของผู้ใช้ (ถ้าใช้งานจริงสามารถให้ GAS ส่งค่า active_users กลับมาได้)
+  let isBusy = Math.random() > 0.7; // โอกาส 30% ที่จะติดคิว (ปรับเปลี่ยนได้)
+
+  if (isBusy) {
+    document.getElementById("queueOverlay").style.display = "flex";
+    let fakeQueue = Math.floor(Math.random() * 10) + 1; // สุ่มคิว 1-10
+
+    let queueInterval = setInterval(() => {
+      document.getElementById("queueNumber").innerText = fakeQueue;
+      fakeQueue--;
+      if (fakeQueue <= 0) {
+        clearInterval(queueInterval);
+        document.getElementById("queueOverlay").style.display = "none";
+        loadDataFromDatabase(); // โหลดข้อมูลจริงเมื่อถึงคิว
+      }
+    }, 2000); // อัปเดตคิวทุกๆ 2 วินาที
+  } else {
+    loadDataFromDatabase();
+  }
+}
+
+// แก้ไข window.onload เดิมให้เรียกผ่านระบบคิวแทน
+window.onload = () => {
+  checkQueueAndLoadData();
+};
+
+// =========================================================
+// ฟังก์ชันสำหรับ Global Calendar
+// =========================================================
+
+// 1. เปิด Modal และสร้าง Checkbox จาก dbData
+function openGlobalCalendarModal() {
+  const container = document.getElementById("globalLineCheckboxes");
+  container.innerHTML = "";
+  
+  if (Object.keys(dbData).length === 0) {
+    showModalAlert("แจ้งเตือน", "ยังไม่มีข้อมูลในระบบ หรือข้อมูลยังโหลดไม่เสร็จ", true);
+    return;
+  }
+
+  for (let dept in dbData) {
+    let deptHtml = `<div class="col-md-6"><div class="card shadow-sm p-3 h-100"><h6 class="fw-bold text-primary border-bottom pb-2">${dept}</h6>`;
+    for (let line in dbData[dept]) {
+      deptHtml += `
+        <div class="form-check mb-2">
+          <input class="form-check-input global-line-checkbox" type="checkbox" value="${dept}|${line}" id="chk_${dept}_${line}">
+          <label class="form-check-label text-dark fw-bold" for="chk_${dept}_${line}">
+            ${line} <span class="badge bg-secondary ms-1">${Object.keys(dbData[dept][line].machines || {}).length} เครื่อง</span>
+          </label>
+        </div>`;
+    }
+    deptHtml += `</div></div>`;
+    container.innerHTML += deptHtml;
+  }
+  
+  new bootstrap.Modal(document.getElementById("globalCalendarModal")).show();
+}
+
+// 2. เลือก/ล้าง Checkbox ทั้งหมด
+function toggleAllGlobalLines(isCheck) {
+  document.querySelectorAll(".global-line-checkbox").forEach(chk => chk.checked = isCheck);
+}
+
+// 3. โหลดและแสดงตารางรวม
+function loadGlobalCalendar() {
+  let selectedLines = [];
+  document.querySelectorAll(".global-line-checkbox:checked").forEach(chk => {
+    let parts = chk.value.split("|");
+    selectedLines.push({ dept: parts[0], line: parts[1] });
+  });
+
+  if (selectedLines.length === 0) {
+    showModalAlert("แจ้งเตือน", "กรุณาเลือกอย่างน้อย 1 ไลน์เพื่อดูข้อมูล", true);
+    return;
+  }
+
+  bootstrap.Modal.getInstance(document.getElementById("globalCalendarModal")).hide();
+  showLoading("กำลังประมวลผล Global Calendar...");
+
+  setTimeout(() => {
+    let tbody = document.getElementById("globalCalendarTableBody");
+    tbody.innerHTML = "";
+    let lineNames = [];
+
+    // วนลูปดึงข้อมูลจากไลน์ที่เลือก
+    selectedLines.forEach(sel => {
+      lineNames.push(sel.line);
+      let lineData = dbData[sel.dept][sel.line];
+      if (!lineData.machines) return;
+
+      for (let machName in lineData.machines) {
+        let machData = lineData.machines[machName];
+        if (!machData.subassemblies) continue;
+
+        for (let subName in machData.subassemblies) {
+          let comps = machData.subassemblies[subName].components;
+          if (!comps) continue;
+
+          comps.forEach(c => {
+            let weeksHtml = "";
+            c.weeks.forEach(w => {
+              weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`;
+            });
+
+            let imgHtml = c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
+              ? `<img src="${c.imgComp}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">`
+              : `<span class="material-symbols-rounded text-muted">image</span>`;
+
+            // แสดงชื่ออะไหล่ พร้อมระบุว่ามาจาก เครื่องไหน/ระบบย่อยไหน
+            let locationTag = `<div class="text-muted" style="font-size: 10px;">[${sel.line}] ${machName} > ${subName}</div>`;
+
+            tbody.innerHTML += `
+              <tr>
+                <td class="text-center align-middle">${imgHtml}</td>
+                <td class="fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
+                <td style="font-size: 11px;" class="align-middle">${escapeHTML(c.task || "-")}</td>
+                <td class="text-center align-middle">${c.class || "-"}</td>
+                <td class="text-center align-middle">${c.std || "-"}</td>
+                <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
+                <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
+                ${weeksHtml}
+              </tr>`;
+          });
+        }
+      }
+    });
+
+    document.getElementById("globalCalendarDesc").innerText = `ข้อมูลจาก: ${lineNames.join(", ")}`;
+    
+    // สลับ View
+    document.querySelectorAll(".view-section").forEach(v => v.classList.remove("active"));
+    document.getElementById("view-global-calendar").classList.add("active");
+    
+    hideLoading();
+  }, 500); // ดีเลย์เล็กน้อยเพื่อให้ UI ไม่ค้างตอนสลับหน้า
 }
