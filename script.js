@@ -3106,7 +3106,7 @@ window.onload = () => {
 // ฟังก์ชันสำหรับ Global Calendar
 // =========================================================
 
-// 1. เปิด Modal และสร้าง Checkbox จาก dbData
+// 1. เปิด Modal และสร้าง Checkbox เป็น Block Cards
 function openGlobalCalendarModal() {
   const container = document.getElementById("globalLineCheckboxes");
   container.innerHTML = "";
@@ -3117,13 +3117,25 @@ function openGlobalCalendarModal() {
   }
 
   for (let dept in dbData) {
-    let deptHtml = `<div class="col-md-6"><div class="card shadow-sm p-3 h-100"><h6 class="fw-bold text-primary border-bottom pb-2">${dept}</h6>`;
+    let deptHtml = `
+      <div class="col-12">
+        <h6 class="fw-bold text-primary border-bottom pb-2 mt-3">
+          <span class="material-symbols-rounded align-middle me-2">domain</span>แผนก: ${dept}
+        </h6>
+        <div class="row g-2 mt-1">
+    `;
+    
     for (let line in dbData[dept]) {
+      let mCount = Object.keys(dbData[dept][line].machines || {}).length;
       deptHtml += `
-        <div class="form-check mb-2">
-          <input class="form-check-input global-line-checkbox" type="checkbox" value="${dept}|${line}" id="chk_${dept}_${line}">
-          <label class="form-check-label text-dark fw-bold" for="chk_${dept}_${line}">
-            ${line} <span class="badge bg-secondary ms-1">${Object.keys(dbData[dept][line].machines || {}).length} เครื่อง</span>
+        <div class="col-md-4 col-sm-6">
+          <label class="line-toggle-btn">
+            <input type="checkbox" class="d-none global-line-checkbox" value="${dept}|${line}" 
+                   onchange="this.parentElement.classList.toggle('active', this.checked)">
+            <div class="content">
+              <span class="line-name">${line}</span>
+              <span class="badge bg-secondary ms-2">${mCount} เครื่อง</span>
+            </div>
           </label>
         </div>`;
     }
@@ -3134,12 +3146,15 @@ function openGlobalCalendarModal() {
   new bootstrap.Modal(document.getElementById("globalCalendarModal")).show();
 }
 
-// 2. เลือก/ล้าง Checkbox ทั้งหมด
+// 2. เลือก/ล้าง Checkbox ทั้งหมด (อัปเดตสถานะ Active ด้วย)
 function toggleAllGlobalLines(isCheck) {
-  document.querySelectorAll(".global-line-checkbox").forEach(chk => chk.checked = isCheck);
+  document.querySelectorAll(".global-line-checkbox").forEach(chk => {
+    chk.checked = isCheck;
+    chk.parentElement.classList.toggle('active', isCheck);
+  });
 }
 
-// 3. โหลดและแสดงตารางรวม
+// 3. โหลดและแสดงตารางรวม (แบ่งบรรทัดแยกไลน์ชัดเจน และดึง Task/EWO มาแสดง)
 function loadGlobalCalendar() {
   let selectedLines = [];
   document.querySelectorAll(".global-line-checkbox:checked").forEach(chk => {
@@ -3160,11 +3175,20 @@ function loadGlobalCalendar() {
     tbody.innerHTML = "";
     let lineNames = [];
 
-    // วนลูปดึงข้อมูลจากไลน์ที่เลือก
     selectedLines.forEach(sel => {
       lineNames.push(sel.line);
       let lineData = dbData[sel.dept][sel.line];
       if (!lineData.machines) return;
+
+      // 🔴 แถบแบ่งบรรทัดคั่นระหว่างไลน์ให้ดูง่ายๆ
+      tbody.innerHTML += `
+        <tr class="table-secondary">
+          <td colspan="60" class="fw-bold text-dark fs-6 py-2 px-3 border-bottom border-top" style="background-color: #e2e8f0;">
+            <span class="material-symbols-rounded align-middle me-2 text-primary">dns</span> 
+            ไลน์ผลิต (Line): <span class="text-primary">${sel.line}</span> (แผนก ${sel.dept})
+          </td>
+        </tr>
+      `;
 
       for (let machName in lineData.machines) {
         let machData = lineData.machines[machName];
@@ -3176,39 +3200,48 @@ function loadGlobalCalendar() {
 
           comps.forEach(c => {
             let weeksHtml = "";
-            c.weeks.forEach(w => {
+            let taskList = [];
+
+            // ประมวลผลปฏิทิน 52 สัปดาห์ และดึง Task ย่อยออกมา
+            c.weeks.forEach((w, idx) => {
               weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`;
+              if (w.remark && w.remark.trim() !== "") {
+                taskList.push(`<div style="white-space: nowrap;"><span class="badge bg-light text-dark border me-1">W${idx + 1}</span> : ${escapeHTML(w.remark)}</div>`);
+              }
             });
 
-            let imgHtml = c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
-              ? `<img src="${c.imgComp}" style="width: 40px; height: 40px; object-fit: cover; border-radius: 6px;">`
-              : `<span class="material-symbols-rounded text-muted">image</span>`;
+            let displayTask = taskList.length > 0 ? taskList.join("") : "-";
+            let safeRemark = escapeHTML(c.remarkEwo || "-");
 
-            // แสดงชื่ออะไหล่ พร้อมระบุว่ามาจาก เครื่องไหน/ระบบย่อยไหน
-            let locationTag = `<div class="text-muted" style="font-size: 10px;">[${sel.line}] ${machName} > ${subName}</div>`;
+            let imgHtml = c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
+              ? `<img src="${c.imgComp}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: zoom-in;" onclick="window.open('${c.imgComp}')">`
+              : `<span class="material-symbols-rounded text-muted" style="font-size:28px;">image_not_supported</span>`;
+
+            let locationTag = `<div class="text-muted mt-1" style="font-size: 10.5px;">เครื่อง: <b>${machName}</b> > ${subName}</div>`;
 
             tbody.innerHTML += `
               <tr>
                 <td class="text-center align-middle">${imgHtml}</td>
                 <td class="fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
-                <td style="font-size: 11px;" class="align-middle">${escapeHTML(c.task || "-")}</td>
+                <td style="font-size: 11px;" class="align-middle">${displayTask}</td>
                 <td class="text-center align-middle">${c.class || "-"}</td>
                 <td class="text-center align-middle">${c.std || "-"}</td>
                 <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
                 <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
                 ${weeksHtml}
+                <td class="text-muted fw-bold align-middle" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
               </tr>`;
           });
         }
       }
     });
 
-    document.getElementById("globalCalendarDesc").innerText = `ข้อมูลจาก: ${lineNames.join(", ")}`;
+    document.getElementById("globalCalendarDesc").innerText = `แสดงข้อมูลจาก: ${lineNames.join(", ")}`;
     
-    // สลับ View
+    // สลับหน้า
     document.querySelectorAll(".view-section").forEach(v => v.classList.remove("active"));
     document.getElementById("view-global-calendar").classList.add("active");
     
     hideLoading();
-  }, 500); // ดีเลย์เล็กน้อยเพื่อให้ UI ไม่ค้างตอนสลับหน้า
+  }, 300);
 }

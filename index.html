@@ -47,51 +47,47 @@
     <!-- Modern Loading Overlay สไตล์ SMP -->
     <div id="loadingOverlay" style="display: none">
       <div class="modern-spinner"></div>
-      <!-- Modern Loading Overlay สไตล์ SMP -->
-      <div id="loadingOverlay" style="display: none">
-        <div class="modern-spinner"></div>
-        <!-- 🔴 อัปเดต: เพิ่ม id="loadingText" -->
-        <div
-          id="loadingText"
-          class="loading-pulse mt-3"
-          style="font-size: 1.1rem; color: #005eb8"
+      <!-- 🔴 อัปเดต: เพิ่ม id="loadingText" -->
+      <div
+        id="loadingText"
+        class="loading-pulse mt-3"
+        style="font-size: 1.1rem; color: #005eb8"
+      >
+        กำลังโหลดข้อมูล...
+      </div>
+      <!-- ระบบคิว (Queue Overlay) -->
+      <div
+        id="queueOverlay"
+        style="
+          display: none;
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: rgba(255, 255, 255, 0.95);
+          backdrop-filter: blur(10px);
+          z-index: 10000;
+          flex-direction: column;
+          justify-content: center;
+          align-items: center;
+        "
+      >
+        <span
+          class="material-symbols-rounded text-primary mb-3"
+          style="font-size: 64px; animation: pulse 1.5s infinite"
+          >hourglass_empty</span
         >
-          กำลังโหลดข้อมูล...
-        </div>
-        <!-- ระบบคิว (Queue Overlay) -->
-        <div
-          id="queueOverlay"
-          style="
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-            z-index: 10000;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-          "
-        >
-          <span
-            class="material-symbols-rounded text-primary mb-3"
-            style="font-size: 64px; animation: pulse 1.5s infinite"
-            >hourglass_empty</span
-          >
-          <h3 class="fw-bold text-dark">ระบบกำลังมีผู้ใช้งานจำนวนมาก</h3>
-          <p class="text-muted fs-5 mb-4">
-            กรุณารอสักครู่ คุณอยู่ในคิวที่
-            <span id="queueNumber" class="text-primary fw-bold fs-4">...</span>
-          </p>
-          <div class="progress w-25" style="height: 10px; border-radius: 5px">
-            <div
-              class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
-              style="width: 100%"
-            ></div>
-          </div>
+        <h3 class="fw-bold text-dark">ระบบกำลังมีผู้ใช้งานจำนวนมาก</h3>
+        <p class="text-muted fs-5 mb-4">
+          กรุณารอสักครู่ คุณอยู่ในคิวที่
+          <span id="queueNumber" class="text-primary fw-bold fs-4">...</span>
+        </p>
+        <div class="progress w-25" style="height: 10px; border-radius: 5px">
+          <div
+            class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+            style="width: 100%"
+          ></div>
         </div>
       </div>
     </div>
@@ -658,9 +654,10 @@
               <tr>
                 <th rowspan="2">Image</th>
                 <th rowspan="2">Component (Location)</th>
-                <th rowspan="2">Task</th>
+                <th rowspan="2">Task (รายสัปดาห์)</th>
                 <th colspan="4">Standards</th>
                 <th colspan="52">Calendar 52 Weeks</th>
+                <th rowspan="2">EWO / Remark</th>
               </tr>
               <tr style="font-size: 11px">
                 <th>Class</th>
