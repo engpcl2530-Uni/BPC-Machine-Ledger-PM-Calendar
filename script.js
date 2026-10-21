@@ -3112,9 +3112,13 @@ window.onload = () => {
 function openGlobalCalendarModal() {
   const container = document.getElementById("globalLineCheckboxes");
   container.innerHTML = "";
-  
+
   if (Object.keys(dbData).length === 0) {
-    showModalAlert("แจ้งเตือน", "ยังไม่มีข้อมูลในระบบ หรือข้อมูลยังโหลดไม่เสร็จ", true);
+    showModalAlert(
+      "แจ้งเตือน",
+      "ยังไม่มีข้อมูลในระบบ หรือข้อมูลยังโหลดไม่เสร็จ",
+      true,
+    );
     return;
   }
 
@@ -3126,7 +3130,7 @@ function openGlobalCalendarModal() {
         </h6>
         <div class="row g-2 mt-1">
     `;
-    
+
     for (let line in dbData[dept]) {
       let mCount = Object.keys(dbData[dept][line].machines || {}).length;
       deptHtml += `
@@ -3144,32 +3148,38 @@ function openGlobalCalendarModal() {
     deptHtml += `</div></div>`;
     container.innerHTML += deptHtml;
   }
-  
+
   new bootstrap.Modal(document.getElementById("globalCalendarModal")).show();
 }
 
 // 2. เลือก/ล้าง Checkbox ทั้งหมด (อัปเดตสถานะ Active ด้วย)
 function toggleAllGlobalLines(isCheck) {
-  document.querySelectorAll(".global-line-checkbox").forEach(chk => {
+  document.querySelectorAll(".global-line-checkbox").forEach((chk) => {
     chk.checked = isCheck;
-    chk.parentElement.classList.toggle('active', isCheck);
+    chk.parentElement.classList.toggle("active", isCheck);
   });
 }
 
 // 3. โหลดและแสดงตารางรวม (แบ่งบรรทัดแยกไลน์ชัดเจน และดึง Task/EWO มาแสดง)
 function loadGlobalCalendar() {
   let selectedLines = [];
-  document.querySelectorAll(".global-line-checkbox:checked").forEach(chk => {
+  document.querySelectorAll(".global-line-checkbox:checked").forEach((chk) => {
     let parts = chk.value.split("|");
     selectedLines.push({ dept: parts[0], line: parts[1] });
   });
 
   if (selectedLines.length === 0) {
-    showModalAlert("แจ้งเตือน", "กรุณาเลือกอย่างน้อย 1 ไลน์เพื่อดูข้อมูล", true);
+    showModalAlert(
+      "แจ้งเตือน",
+      "กรุณาเลือกอย่างน้อย 1 ไลน์เพื่อดูข้อมูล",
+      true,
+    );
     return;
   }
 
-  bootstrap.Modal.getInstance(document.getElementById("globalCalendarModal")).hide();
+  bootstrap.Modal.getInstance(
+    document.getElementById("globalCalendarModal"),
+  ).hide();
   showLoading("กำลังประมวลผล Global Calendar...");
 
   setTimeout(() => {
@@ -3177,7 +3187,7 @@ function loadGlobalCalendar() {
     tbody.innerHTML = "";
     let lineNames = [];
 
-    selectedLines.forEach(sel => {
+    selectedLines.forEach((sel) => {
       lineNames.push(sel.line);
       let lineData = dbData[sel.dept][sel.line];
       if (!lineData.machines) return;
@@ -3200,50 +3210,79 @@ function loadGlobalCalendar() {
           let comps = machData.subassemblies[subName].components;
           if (!comps) continue;
 
-          comps.forEach(c => {
+          comps.forEach((c) => {
             let weeksHtml = "";
-            let taskList = [];
 
-            // ประมวลผลปฏิทิน 52 สัปดาห์ และดึง Task ย่อยออกมา
+            // ประมวลผลปฏิทิน 52 สัปดาห์ พร้อมสร้าง Tooltip
             c.weeks.forEach((w, idx) => {
-              weeksHtml += `<td class="text-center p-1">${getTriangleSVGOnly(w)}</td>`;
+              let hasTaskInfo = false;
+              let tooltipTitle = ``;
+              let highlightClass = ``;
+
+              // เช็คว่าสัปดาห์นี้มีหมายเหตุ (Remark/EWO) หรือมีการลงสีไว้หรือไม่
               if (w.remark && w.remark.trim() !== "") {
-                taskList.push(`<div style="white-space: nowrap;"><span class="badge bg-light text-dark border me-1">W${idx + 1}</span> : ${escapeHTML(w.remark)}</div>`);
+                hasTaskInfo = true;
+                tooltipTitle = `[Week ${idx + 1}] ${w.remark}`;
+              } else if (w.t || w.r || w.b || w.l) {
+                hasTaskInfo = true;
+                let statusList = [];
+                if (w.t) statusList.push("ทำ PM แล้ว");
+                if (w.b) statusList.push("แผน PM");
+                if (w.r) statusList.push("เครื่องเสีย (EWO)");
+                if (w.l) statusList.push("งานแทรก");
+                tooltipTitle = `[Week ${idx + 1}] สถานะ: ${statusList.join(", ")}`;
+              }
+
+              if (hasTaskInfo) {
+                highlightClass = `week-has-task`;
+                // สร้าง Tooltip ของ Bootstrap
+                weeksHtml += `<td class="text-center p-1 week-cell ${highlightClass}" 
+                        data-bs-toggle="tooltip" 
+                        data-bs-placement="top" 
+                        title="${escapeHTML(tooltipTitle)}">
+                      ${getTriangleSVGOnly(w)}
+                    </td>`;
+              } else {
+                // ช่องที่ไม่มีงาน ไม่ต้องใส่ Tooltip
+                weeksHtml += `<td class="text-center p-1 week-cell">${getTriangleSVGOnly(w)}</td>`;
               }
             });
 
-            let displayTask = taskList.length > 0 ? taskList.join("") : "-";
             let safeRemark = escapeHTML(c.remarkEwo || "-");
-
-            let imgHtml = c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
-              ? `<img src="${c.imgComp}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: zoom-in;" onclick="window.open('${c.imgComp}')">`
-              : `<span class="material-symbols-rounded text-muted" style="font-size:28px;">image_not_supported</span>`;
+            let imgHtml =
+              c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
+                ? `<img src="${c.imgComp}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: zoom-in;" onclick="window.open('${c.imgComp}')">`
+                : `<span class="material-symbols-rounded text-muted" style="font-size:28px;">image_not_supported</span>`;
 
             let locationTag = `<div class="text-muted mt-1" style="font-size: 10.5px;">เครื่อง: <b>${machName}</b> > ${subName}</div>`;
 
+            // 🔴 สังเกตว่าคอลัมน์ Task จะแสดงแค่ c.task (งานหลัก) ไม่แสดงเป็น list ยาวๆ แล้ว เพราะเราย้ายไปอยู่ตอน Hover แทน
             tbody.innerHTML += `
-              <tr>
-                <td class="text-center align-middle">${imgHtml}</td>
-                <td class="fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
-                <td style="font-size: 11px;" class="align-middle">${displayTask}</td>
-                <td class="text-center align-middle">${c.class || "-"}</td>
-                <td class="text-center align-middle">${c.std || "-"}</td>
-                <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
-                <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
-                ${weeksHtml}
-                <td class="text-muted fw-bold align-middle" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
-              </tr>`;
+            <tr>
+              <td class="text-center align-middle">${imgHtml}</td>
+              <td class="fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
+              <td style="font-size: 11px;" class="align-middle text-wrap">${escapeHTML(c.task || "-")}</td>
+              <td class="text-center align-middle">${c.class || "-"}</td>
+              <td class="text-center align-middle">${c.std || "-"}</td>
+              <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
+              <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
+              ${weeksHtml}
+              <td class="text-muted fw-bold align-middle text-wrap" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
+            </tr>`;
           });
         }
       }
     });
 
-    document.getElementById("globalCalendarDesc").innerText = `แสดงข้อมูลจาก: ${lineNames.join(", ")}`;
-    
+    document.getElementById("globalCalendarDesc").innerText =
+      `แสดงข้อมูลจาก: ${lineNames.join(", ")}`;
+
     // สลับหน้า
-    document.querySelectorAll(".view-section").forEach(v => v.classList.remove("active"));
+    document
+      .querySelectorAll(".view-section")
+      .forEach((v) => v.classList.remove("active"));
     document.getElementById("view-global-calendar").classList.add("active");
-    
+
     hideLoading();
   }, 300);
 }
@@ -3252,26 +3291,29 @@ function initAppWithQueueAndStatus() {
   document.getElementById("loadingOverlay").style.display = "flex";
   document.getElementById("loadingZone").style.display = "flex";
   document.getElementById("queueZone").style.display = "none";
-  
-  updateLoadingStatus("กำลังตรวจสอบสถานะเซิร์ฟเวอร์...", "Connecting to Server...");
+
+  updateLoadingStatus(
+    "กำลังตรวจสอบสถานะเซิร์ฟเวอร์...",
+    "Connecting to Server...",
+  );
 
   // จำลองความล่าช้าในการเชื่อมต่อเล็กน้อย เพื่อเช็คคิว
   setTimeout(() => {
     // สมมติโอกาส 30% ที่จะติดคิว (ถ้าใช้งานจริง สามารถให้ GAS คืนค่าจำนวน user กลับมาเช็คได้)
-    let isBusy = Math.random() > 0.7; 
+    let isBusy = Math.random() > 0.7;
 
     if (isBusy) {
       // === เข้าสู่ระบบคิว ===
       document.getElementById("loadingZone").style.display = "none";
       document.getElementById("queueZone").style.display = "flex";
-      
+
       let fakeQueue = Math.floor(Math.random() * 5) + 3; // สุ่มคิวเริ่มต้น (เช่น คิวที่ 3 ถึง 7)
       document.getElementById("queueNumber").innerText = fakeQueue;
-      
+
       let queueInterval = setInterval(() => {
         fakeQueue--;
         document.getElementById("queueNumber").innerText = fakeQueue;
-        
+
         if (fakeQueue <= 0) {
           clearInterval(queueInterval);
           // ออกจากคิว กลับไปหน้าดาวน์โหลด
@@ -3289,16 +3331,19 @@ function initAppWithQueueAndStatus() {
 
 // แก้ไขฟังก์ชันนี้ในไฟล์ JS ของคุณ
 function startDownloadingData() {
-  updateLoadingStatus("กำลังดาวน์โหลดข้อมูล...", "Downloading Data from Database...");
-  
+  updateLoadingStatus(
+    "กำลังดาวน์โหลดข้อมูล...",
+    "Downloading Data from Database...",
+  );
+
   // ----------------------------------------------------
   // ลบส่วนที่เป็น setTimeout (โค้ดจำลอง) ของเดิมออกให้หมด
   // และให้นำฟังก์ชันดึงข้อมูลของจริงของคุณมาเรียกใช้ตรงนี้แทนครับ
   // ----------------------------------------------------
-  
+
   // ตัวอย่างที่ 1: ถ้าเดิมคุณมีฟังก์ชันชื่อนี้อยู่แล้ว ให้เรียกใช้เลย
-  loadDataFromDatabase(); 
-  
+  loadDataFromDatabase();
+
   /* 
   // ตัวอย่างที่ 2: หรือถ้าเดิมคุณใช้ google.script.run ตรงๆ ให้นำมาวางแบบนี้
   google.script.run

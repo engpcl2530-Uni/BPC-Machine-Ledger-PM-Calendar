@@ -1215,3 +1215,21 @@ body {
   background: var(--secondary) !important;
   color: white !important;
 }
+/* =========================================================
+   Hover Effect สำหรับ 52 Weeks Grid
+   ========================================================= */
+.week-cell {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+/* ไฮไลต์เฉพาะช่องที่มีงาน */
+.week-has-task {
+  cursor: help; /* เปลี่ยนเมาส์เป็นรูปเครื่องหมายคำถามหรือมือ */
+}
+.week-has-task:hover {
+  background-color: #f1f5f9;
+  transform: scale(1.2); /* ขยายใหญ่ขึ้น 20% ตอนชี้ */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+  position: relative;
+}
