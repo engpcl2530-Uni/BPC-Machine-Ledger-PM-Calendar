@@ -3076,10 +3076,9 @@ async function handleExportLineZip() {
   }
 }
 
-
 // แก้ไข window.onload เดิมให้เรียกผ่านระบบคิวแทน
 window.onload = () => {
-  initAppWithQueueAndStatus(); 
+  initAppWithQueueAndStatus();
 };
 
 // =========================================================
@@ -3170,12 +3169,14 @@ function loadGlobalCalendar() {
       let lineData = dbData[sel.dept][sel.line];
       if (!lineData.machines) return;
 
-      // แถบสีเทาคั่นแบ่งบรรทัดของแต่ละไลน์
+      // 🔴 แถบสีเทาคั่นแบ่งบรรทัดของแต่ละไลน์ (ปรับให้ข้อความ Sticky ล็อกติดซ้าย)
       tbody.innerHTML += `
         <tr class="table-secondary">
-          <td colspan="61" class="fw-bold text-dark fs-6 py-2 px-3 border-bottom border-top" style="background-color: #e2e8f0;">
-            <span class="material-symbols-rounded align-middle me-2 text-primary">dns</span> 
-            ไลน์ผลิต (Line): <span class="text-primary">${sel.line}</span> (แผนก ${sel.dept})
+          <td colspan="59" class="p-0 border-bottom border-top" style="background-color: #e2e8f0;">
+            <div class="fw-bold text-dark fs-6 py-2 px-3 sticky-line-header">
+              <span class="material-symbols-rounded align-middle me-2 text-primary">dns</span> 
+              ไลน์ผลิต (Line): <span class="text-primary">${sel.line}</span> <span class="text-muted fs-6 fw-normal">(แผนก ${sel.dept})</span>
+            </div>
           </td>
         </tr>
       `;
@@ -3191,19 +3192,16 @@ function loadGlobalCalendar() {
           comps.forEach((c) => {
             let weeksHtml = "";
 
-            // 🔴 ประมวลผล 52 สัปดาห์ และเตรียมข้อมูลสำหรับ Tooltip
+            // ประมวลผล 52 สัปดาห์ และเตรียมข้อมูลสำหรับ Tooltip
             c.weeks.forEach((w, idx) => {
               let hasTaskInfo = false;
               let tooltipTitle = ``;
               let highlightClass = ``;
 
-              // ถ้ามีการเขียน Remark/Task เอาไว้
               if (w.remark && w.remark.trim() !== "") {
                 hasTaskInfo = true;
                 tooltipTitle = `[W${idx + 1}] ${w.remark}`;
-              }
-              // ถ้าไม่มีข้อความ แต่มีการลงสี (ตอกสถานะ) เอาไว้
-              else if (w.t || w.r || w.b || w.l) {
+              } else if (w.t || w.r || w.b || w.l) {
                 hasTaskInfo = true;
                 let statusList = [];
                 if (w.t) statusList.push("ทำ PM แล้ว");
@@ -3213,7 +3211,6 @@ function loadGlobalCalendar() {
                 tooltipTitle = `[W${idx + 1}] สถานะ: ${statusList.join(", ")}`;
               }
 
-              // ถ้าช่องนี้มีข้อมูลงาน ให้ใส่คลาส Tooltip เข้าไป
               if (hasTaskInfo) {
                 highlightClass = `week-has-task`;
                 weeksHtml += `<td class="text-center p-1 week-cell ${highlightClass}" 
@@ -3223,7 +3220,6 @@ function loadGlobalCalendar() {
                                 ${getTriangleSVGOnly(w)}
                               </td>`;
               } else {
-                // ถ้าไม่มีข้อมูล ให้เป็นช่องธรรมดา ชี้แล้วไม่มีอะไรเด้ง
                 weeksHtml += `<td class="text-center p-1 week-cell">${getTriangleSVGOnly(w)}</td>`;
               }
             });
@@ -3236,12 +3232,11 @@ function loadGlobalCalendar() {
 
             let locationTag = `<div class="text-muted mt-1" style="font-size: 10.5px;">เครื่อง: <b>${machName}</b> > ${subName}</div>`;
 
-            // สร้างแถวตาราง
+            // 🔴 สร้างแถวตาราง (เอา Task ออก และใส่ class: sticky-col ให้คอลัมน์ 1 และ 2)
             tbody.innerHTML += `
               <tr>
-                <td class="text-center align-middle">${imgHtml}</td>
-                <td class="fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
-                <td style="font-size: 11px;" class="align-middle text-wrap">${escapeHTML(c.task || "-")}</td>
+                <td class="sticky-col-1 text-center align-middle">${imgHtml}</td>
+                <td class="sticky-col-2 fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
                 <td class="text-center align-middle">${c.class || "-"}</td>
                 <td class="text-center align-middle">${c.std || "-"}</td>
                 <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
@@ -3263,7 +3258,7 @@ function loadGlobalCalendar() {
       .forEach((v) => v.classList.remove("active"));
     document.getElementById("view-global-calendar").classList.add("active");
 
-    // 🔴 โค้ดสำคัญ: สั่งให้ Bootstrap แปลง attribute เป็น Tooltip สีดำสวยๆ
+    // 🔴 โค้ดสำคัญ: สั่งให้ Bootstrap แปลง attribute เป็น Tooltip
     let tooltipTriggerList = [].slice.call(
       document.querySelectorAll('[data-bs-toggle="tooltip"]'),
     );
