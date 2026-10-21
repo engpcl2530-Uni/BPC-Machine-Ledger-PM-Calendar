@@ -3287,43 +3287,34 @@ function initAppWithQueueAndStatus() {
   }, 1000);
 }
 
+// แก้ไขฟังก์ชันนี้ในไฟล์ JS ของคุณ
 function startDownloadingData() {
   updateLoadingStatus("กำลังดาวน์โหลดข้อมูล...", "Downloading Data from Database...");
   
-  // เรียกใช้งาน google.script.run ของจริงตรงนี้
-  // ตัวอย่างเช่น:
-  /*
+  // ----------------------------------------------------
+  // ลบส่วนที่เป็น setTimeout (โค้ดจำลอง) ของเดิมออกให้หมด
+  // และให้นำฟังก์ชันดึงข้อมูลของจริงของคุณมาเรียกใช้ตรงนี้แทนครับ
+  // ----------------------------------------------------
+  
+  // ตัวอย่างที่ 1: ถ้าเดิมคุณมีฟังก์ชันชื่อนี้อยู่แล้ว ให้เรียกใช้เลย
+  loadDataFromDatabase(); 
+  
+  /* 
+  // ตัวอย่างที่ 2: หรือถ้าเดิมคุณใช้ google.script.run ตรงๆ ให้นำมาวางแบบนี้
   google.script.run
-    .withSuccessHandler(function(response) {
-      updateLoadingStatus("ดาวน์โหลดสำเร็จ กำลังสร้างตารางแสดงผล...", "Rendering Table...");
+    .withSuccessHandler(function(data) {
+      updateLoadingStatus("ดาวน์โหลดเสร็จสิ้น!", "กำลังสร้างตาราง...");
+      
+      // ... โค้ดประมวลผลข้อมูลลงหน้าเว็บของคุณ ...
+
+      // อย่าลืมใส่คำสั่งปิดหน้า Loading เมื่อแสดงผลข้อมูลเสร็จแล้ว
       setTimeout(() => {
-         // ประมวลผลข้อมูลลงตาราง...
-         // ...
-         
-         // เมื่อเสร็จสิ้น ปิดหน้าโหลด
          document.getElementById("loadingOverlay").style.display = "none";
       }, 500);
     })
     .withFailureHandler(function(error) {
-      updateLoadingStatus("เกิดข้อผิดพลาดในการโหลดข้อมูล", error.message);
+      updateLoadingStatus("เกิดข้อผิดพลาด", "ไม่สามารถดึงข้อมูลได้");
     })
-    .getYourDatabaseFunction(); // ชื่อฟังก์ชันใน .gs ของคุณ
+    .getYourDatabaseFunction(); 
   */
-
-  // ----------------------------------------------------
-  // *โค้ดจำลองสถานะ (ลบออกได้ถ้าใช้ google.script.run ของจริงแล้ว)*
-  setTimeout(() => {
-    updateLoadingStatus("ดาวน์โหลดเสร็จสิ้น!", "กำลังเรนเดอร์โครงสร้างตาราง (Rendering UI)...");
-    
-    setTimeout(() => {
-      // ปิดหน้าจอโหลดเมื่อเสร็จ
-      document.getElementById("loadingOverlay").style.display = "none";
-    }, 1200);
-  }, 2500);
-  // ----------------------------------------------------
 }
-
-// ผูกฟังก์ชันนี้ตอนเปิดหน้าเว็บ
-window.onload = () => {
-  initAppWithQueueAndStatus();
-};
