@@ -3076,32 +3076,10 @@ async function handleExportLineZip() {
   }
 }
 
-// นำฟังก์ชันนี้ไปครอบจุดที่ต้องการเรียก API (เช่น ก่อน loadDataFromDatabase)
-async function checkQueueAndLoadData() {
-  // สมมติฐาน: สุ่มความหนาแน่นของผู้ใช้ (ถ้าใช้งานจริงสามารถให้ GAS ส่งค่า active_users กลับมาได้)
-  let isBusy = Math.random() > 0.7; // โอกาส 30% ที่จะติดคิว (ปรับเปลี่ยนได้)
-
-  if (isBusy) {
-    document.getElementById("queueOverlay").style.display = "flex";
-    let fakeQueue = Math.floor(Math.random() * 10) + 1; // สุ่มคิว 1-10
-
-    let queueInterval = setInterval(() => {
-      document.getElementById("queueNumber").innerText = fakeQueue;
-      fakeQueue--;
-      if (fakeQueue <= 0) {
-        clearInterval(queueInterval);
-        document.getElementById("queueOverlay").style.display = "none";
-        loadDataFromDatabase(); // โหลดข้อมูลจริงเมื่อถึงคิว
-      }
-    }, 2000); // อัปเดตคิวทุกๆ 2 วินาที
-  } else {
-    loadDataFromDatabase();
-  }
-}
 
 // แก้ไข window.onload เดิมให้เรียกผ่านระบบคิวแทน
 window.onload = () => {
-  checkQueueAndLoadData();
+  initAppWithQueueAndStatus(); 
 };
 
 // =========================================================
