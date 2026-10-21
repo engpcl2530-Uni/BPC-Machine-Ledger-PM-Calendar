@@ -1233,3 +1233,21 @@ body {
   z-index: 10;
   position: relative;
 }
+/* =========================================================
+   Hover Effect สำหรับช่อง SVG ในตาราง 52 สัปดาห์
+   ========================================================= */
+.week-cell {
+  transition: all 0.2s ease;
+  border-radius: 4px;
+}
+/* ไฮไลต์เฉพาะช่องที่มีงาน */
+.week-has-task {
+  cursor: pointer;
+}
+.week-has-task:hover {
+  background-color: #f1f5f9;
+  transform: scale(1.3); /* ขยายใหญ่ขึ้นตอนเอาเมาส์ชี้ */
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+  z-index: 10;
+  position: relative;
+}

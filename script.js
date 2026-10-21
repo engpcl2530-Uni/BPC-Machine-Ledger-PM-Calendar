@@ -3160,7 +3160,7 @@ function toggleAllGlobalLines(isCheck) {
   });
 }
 
-// 3. โหลดและแสดงตารางรวม (แบ่งบรรทัดแยกไลน์ชัดเจน และดึง Task/EWO มาแสดง)
+// โหลดและแสดงตารางรวม (แบบ Table และมี Tooltip เมื่อชี้ช่อง SVG)
 function loadGlobalCalendar() {
   let selectedLines = [];
   document.querySelectorAll(".global-line-checkbox:checked").forEach((chk) => {
@@ -3180,7 +3180,7 @@ function loadGlobalCalendar() {
   bootstrap.Modal.getInstance(
     document.getElementById("globalCalendarModal"),
   ).hide();
-  showLoading("กำลังประมวลผล Global Calendar...");
+  showLoading("กำลังประมวลผลตาราง Calendar...");
 
   setTimeout(() => {
     let tbody = document.getElementById("globalCalendarTableBody");
@@ -3192,10 +3192,10 @@ function loadGlobalCalendar() {
       let lineData = dbData[sel.dept][sel.line];
       if (!lineData.machines) return;
 
-      // 🔴 แถบแบ่งบรรทัดคั่นระหว่างไลน์ให้ดูง่ายๆ
+      // แถบสีเทาคั่นแบ่งบรรทัดของแต่ละไลน์
       tbody.innerHTML += `
         <tr class="table-secondary">
-          <td colspan="60" class="fw-bold text-dark fs-6 py-2 px-3 border-bottom border-top" style="background-color: #e2e8f0;">
+          <td colspan="61" class="fw-bold text-dark fs-6 py-2 px-3 border-bottom border-top" style="background-color: #e2e8f0;">
             <span class="material-symbols-rounded align-middle me-2 text-primary">dns</span> 
             ไลน์ผลิต (Line): <span class="text-primary">${sel.line}</span> (แผนก ${sel.dept})
           </td>
@@ -3213,37 +3213,39 @@ function loadGlobalCalendar() {
           comps.forEach((c) => {
             let weeksHtml = "";
 
-            // ประมวลผลปฏิทิน 52 สัปดาห์ พร้อมสร้าง Tooltip
+            // 🔴 ประมวลผล 52 สัปดาห์ และเตรียมข้อมูลสำหรับ Tooltip
             c.weeks.forEach((w, idx) => {
               let hasTaskInfo = false;
               let tooltipTitle = ``;
               let highlightClass = ``;
 
-              // เช็คว่าสัปดาห์นี้มีหมายเหตุ (Remark/EWO) หรือมีการลงสีไว้หรือไม่
+              // ถ้ามีการเขียน Remark/Task เอาไว้
               if (w.remark && w.remark.trim() !== "") {
                 hasTaskInfo = true;
-                tooltipTitle = `[Week ${idx + 1}] ${w.remark}`;
-              } else if (w.t || w.r || w.b || w.l) {
+                tooltipTitle = `[W${idx + 1}] ${w.remark}`;
+              }
+              // ถ้าไม่มีข้อความ แต่มีการลงสี (ตอกสถานะ) เอาไว้
+              else if (w.t || w.r || w.b || w.l) {
                 hasTaskInfo = true;
                 let statusList = [];
                 if (w.t) statusList.push("ทำ PM แล้ว");
                 if (w.b) statusList.push("แผน PM");
                 if (w.r) statusList.push("เครื่องเสีย (EWO)");
                 if (w.l) statusList.push("งานแทรก");
-                tooltipTitle = `[Week ${idx + 1}] สถานะ: ${statusList.join(", ")}`;
+                tooltipTitle = `[W${idx + 1}] สถานะ: ${statusList.join(", ")}`;
               }
 
+              // ถ้าช่องนี้มีข้อมูลงาน ให้ใส่คลาส Tooltip เข้าไป
               if (hasTaskInfo) {
                 highlightClass = `week-has-task`;
-                // สร้าง Tooltip ของ Bootstrap
                 weeksHtml += `<td class="text-center p-1 week-cell ${highlightClass}" 
-                        data-bs-toggle="tooltip" 
-                        data-bs-placement="top" 
-                        title="${escapeHTML(tooltipTitle)}">
-                      ${getTriangleSVGOnly(w)}
-                    </td>`;
+                                  data-bs-toggle="tooltip" 
+                                  data-bs-placement="top" 
+                                  title="${escapeHTML(tooltipTitle)}">
+                                ${getTriangleSVGOnly(w)}
+                              </td>`;
               } else {
-                // ช่องที่ไม่มีงาน ไม่ต้องใส่ Tooltip
+                // ถ้าไม่มีข้อมูล ให้เป็นช่องธรรมดา ชี้แล้วไม่มีอะไรเด้ง
                 weeksHtml += `<td class="text-center p-1 week-cell">${getTriangleSVGOnly(w)}</td>`;
               }
             });
@@ -3256,19 +3258,19 @@ function loadGlobalCalendar() {
 
             let locationTag = `<div class="text-muted mt-1" style="font-size: 10.5px;">เครื่อง: <b>${machName}</b> > ${subName}</div>`;
 
-            // 🔴 สังเกตว่าคอลัมน์ Task จะแสดงแค่ c.task (งานหลัก) ไม่แสดงเป็น list ยาวๆ แล้ว เพราะเราย้ายไปอยู่ตอน Hover แทน
+            // สร้างแถวตาราง
             tbody.innerHTML += `
-            <tr>
-              <td class="text-center align-middle">${imgHtml}</td>
-              <td class="fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
-              <td style="font-size: 11px;" class="align-middle text-wrap">${escapeHTML(c.task || "-")}</td>
-              <td class="text-center align-middle">${c.class || "-"}</td>
-              <td class="text-center align-middle">${c.std || "-"}</td>
-              <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
-              <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
-              ${weeksHtml}
-              <td class="text-muted fw-bold align-middle text-wrap" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
-            </tr>`;
+              <tr>
+                <td class="text-center align-middle">${imgHtml}</td>
+                <td class="fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
+                <td style="font-size: 11px;" class="align-middle text-wrap">${escapeHTML(c.task || "-")}</td>
+                <td class="text-center align-middle">${c.class || "-"}</td>
+                <td class="text-center align-middle">${c.std || "-"}</td>
+                <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
+                <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
+                ${weeksHtml}
+                <td class="text-muted fw-bold align-middle text-wrap" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
+              </tr>`;
           });
         }
       }
@@ -3277,11 +3279,19 @@ function loadGlobalCalendar() {
     document.getElementById("globalCalendarDesc").innerText =
       `แสดงข้อมูลจาก: ${lineNames.join(", ")}`;
 
-    // สลับหน้า
+    // สลับมาแสดง View Calendar
     document
       .querySelectorAll(".view-section")
       .forEach((v) => v.classList.remove("active"));
     document.getElementById("view-global-calendar").classList.add("active");
+
+    // 🔴 โค้ดสำคัญ: สั่งให้ Bootstrap แปลง attribute เป็น Tooltip สีดำสวยๆ
+    let tooltipTriggerList = [].slice.call(
+      document.querySelectorAll('[data-bs-toggle="tooltip"]'),
+    );
+    tooltipTriggerList.map(function (tooltipTriggerEl) {
+      return new bootstrap.Tooltip(tooltipTriggerEl);
+    });
 
     hideLoading();
   }, 300);
