@@ -44,50 +44,93 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   </head>
   <body>
-    <!-- Modern Loading Overlay สไตล์ SMP -->
-    <div id="loadingOverlay" style="display: none">
-      <div class="modern-spinner"></div>
-      <!-- 🔴 อัปเดต: เพิ่ม id="loadingText" -->
+    <!-- ระบบ Loading, สถานะการดาวน์โหลด และ ระบบคิว -->
+    <div
+      id="loadingOverlay"
+      style="
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(244, 247, 249, 0.95);
+        backdrop-filter: blur(8px);
+        z-index: 10000;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <!-- โซนที่ 1: หมุนโหลดปกติ และแจ้งสถานะ -->
       <div
-        id="loadingText"
-        class="loading-pulse mt-3"
-        style="font-size: 1.1rem; color: #005eb8"
+        id="loadingZone"
+        style="display: flex; flex-direction: column; align-items: center"
       >
-        กำลังโหลดข้อมูล...
+        <div
+          class="modern-spinner mb-3"
+          style="
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e2e8f0;
+            border-top-color: #005eb8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          "
+        ></div>
+        <div
+          id="loadingText"
+          class="mt-2"
+          style="
+            font-size: 1.2rem;
+            color: #005eb8;
+            font-weight: 600;
+            text-align: center;
+          "
+        >
+          กำลังเตรียมความพร้อมของระบบ...
+        </div>
+        <div
+          id="loadingSubText"
+          class="mt-1 text-muted"
+          style="font-size: 0.9rem"
+        >
+          กรุณารอสักครู่
+        </div>
       </div>
-      <!-- ระบบคิว (Queue Overlay) -->
+
+      <!-- โซนที่ 2: ระบบคิว (จะแสดงเมื่อระบบหน่วง/คนเยอะ) -->
       <div
-        id="queueOverlay"
+        id="queueZone"
         style="
           display: none;
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          background: rgba(255, 255, 255, 0.95);
-          backdrop-filter: blur(10px);
-          z-index: 10000;
           flex-direction: column;
-          justify-content: center;
           align-items: center;
+          text-align: center;
         "
       >
         <span
-          class="material-symbols-rounded text-primary mb-3"
+          class="material-symbols-rounded text-warning mb-3"
           style="font-size: 64px; animation: pulse 1.5s infinite"
-          >hourglass_empty</span
+          >hourglass_top</span
         >
-        <h3 class="fw-bold text-dark">ระบบกำลังมีผู้ใช้งานจำนวนมาก</h3>
+        <h3 class="fw-bold text-dark">ระบบมีผู้ใช้งานพร้อมกันจำนวนมาก</h3>
         <p class="text-muted fs-5 mb-4">
-          กรุณารอสักครู่ คุณอยู่ในคิวที่
-          <span id="queueNumber" class="text-primary fw-bold fs-4">...</span>
+          คุณกำลังอยู่ในคิวที่
+          <span id="queueNumber" class="text-danger fw-bold fs-2 mx-2"
+            >...</span
+          >
         </p>
-        <div class="progress w-25" style="height: 10px; border-radius: 5px">
+        <div
+          class="progress w-100 shadow-sm"
+          style="height: 12px; border-radius: 6px; max-width: 300px"
+        >
           <div
-            class="progress-bar progress-bar-striped progress-bar-animated bg-primary"
+            class="progress-bar progress-bar-striped progress-bar-animated bg-warning text-dark fw-bold"
             style="width: 100%"
-          ></div>
+          >
+            กำลังรอคิว...
+          </div>
         </div>
       </div>
     </div>

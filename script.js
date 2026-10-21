@@ -2657,9 +2657,11 @@ function createLegendImageBase64() {
 // ==========================================
 // 🔴 Helper: ระบบแจ้งสถานะ Loading อัจฉริยะ
 // ==========================================
-function updateLoadingStatus(text) {
-  const textEl = document.getElementById("loadingText");
-  if (textEl) textEl.innerText = text;
+function updateLoadingStatus(mainText, subText = "กรุณารอสักครู่...") {
+  const mainEl = document.getElementById("loadingText");
+  const subEl = document.getElementById("loadingSubText");
+  if (mainEl) mainEl.innerText = mainText;
+  if (subEl) subEl.innerText = subText;
 }
 
 function showLoading(text = "กำลังโหลดข้อมูล...") {
@@ -3245,3 +3247,83 @@ function loadGlobalCalendar() {
     hideLoading();
   }, 300);
 }
+
+function initAppWithQueueAndStatus() {
+  document.getElementById("loadingOverlay").style.display = "flex";
+  document.getElementById("loadingZone").style.display = "flex";
+  document.getElementById("queueZone").style.display = "none";
+  
+  updateLoadingStatus("กำลังตรวจสอบสถานะเซิร์ฟเวอร์...", "Connecting to Server...");
+
+  // จำลองความล่าช้าในการเชื่อมต่อเล็กน้อย เพื่อเช็คคิว
+  setTimeout(() => {
+    // สมมติโอกาส 30% ที่จะติดคิว (ถ้าใช้งานจริง สามารถให้ GAS คืนค่าจำนวน user กลับมาเช็คได้)
+    let isBusy = Math.random() > 0.7; 
+
+    if (isBusy) {
+      // === เข้าสู่ระบบคิว ===
+      document.getElementById("loadingZone").style.display = "none";
+      document.getElementById("queueZone").style.display = "flex";
+      
+      let fakeQueue = Math.floor(Math.random() * 5) + 3; // สุ่มคิวเริ่มต้น (เช่น คิวที่ 3 ถึง 7)
+      document.getElementById("queueNumber").innerText = fakeQueue;
+      
+      let queueInterval = setInterval(() => {
+        fakeQueue--;
+        document.getElementById("queueNumber").innerText = fakeQueue;
+        
+        if (fakeQueue <= 0) {
+          clearInterval(queueInterval);
+          // ออกจากคิว กลับไปหน้าดาวน์โหลด
+          document.getElementById("queueZone").style.display = "none";
+          document.getElementById("loadingZone").style.display = "flex";
+          startDownloadingData();
+        }
+      }, 1500); // คิวลดลงทุกๆ 1.5 วินาที
+    } else {
+      // === ไม่ติดคิว เริ่มโหลดข้อมูลทันที ===
+      startDownloadingData();
+    }
+  }, 1000);
+}
+
+function startDownloadingData() {
+  updateLoadingStatus("กำลังดาวน์โหลดข้อมูล...", "Downloading Data from Database...");
+  
+  // เรียกใช้งาน google.script.run ของจริงตรงนี้
+  // ตัวอย่างเช่น:
+  /*
+  google.script.run
+    .withSuccessHandler(function(response) {
+      updateLoadingStatus("ดาวน์โหลดสำเร็จ กำลังสร้างตารางแสดงผล...", "Rendering Table...");
+      setTimeout(() => {
+         // ประมวลผลข้อมูลลงตาราง...
+         // ...
+         
+         // เมื่อเสร็จสิ้น ปิดหน้าโหลด
+         document.getElementById("loadingOverlay").style.display = "none";
+      }, 500);
+    })
+    .withFailureHandler(function(error) {
+      updateLoadingStatus("เกิดข้อผิดพลาดในการโหลดข้อมูล", error.message);
+    })
+    .getYourDatabaseFunction(); // ชื่อฟังก์ชันใน .gs ของคุณ
+  */
+
+  // ----------------------------------------------------
+  // *โค้ดจำลองสถานะ (ลบออกได้ถ้าใช้ google.script.run ของจริงแล้ว)*
+  setTimeout(() => {
+    updateLoadingStatus("ดาวน์โหลดเสร็จสิ้น!", "กำลังเรนเดอร์โครงสร้างตาราง (Rendering UI)...");
+    
+    setTimeout(() => {
+      // ปิดหน้าจอโหลดเมื่อเสร็จ
+      document.getElementById("loadingOverlay").style.display = "none";
+    }, 1200);
+  }, 2500);
+  // ----------------------------------------------------
+}
+
+// ผูกฟังก์ชันนี้ตอนเปิดหน้าเว็บ
+window.onload = () => {
+  initAppWithQueueAndStatus();
+};
