@@ -158,7 +158,7 @@
           <span class="material-symbols-rounded align-middle fs-5 me-1"
             >event_note</span
           >
-          Calendar รวม
+          <span data-i18n="btn_global_calendar">Calendar รวม</span>
         </button>
         <!-- กลุ่มปุ่มด้านขวา: สลับภาษา + กลับ BPC Hub -->
         <div class="d-flex align-items-center gap-3">
@@ -531,7 +531,7 @@
               onclick="navigateTo()"
             >
               <span class="material-symbols-rounded fs-5">arrow_back</span>
-              กลับหน้าไลน์ผลิต
+              <span data-i18n="btn_back_line">กลับหน้าไลน์ผลิต</span>
             </button>
             <h3 class="fw-bold mb-1 text-primary" id="lbl-line-title">
               Line Name
@@ -634,13 +634,15 @@
           >
             <thead class="table-primary text-center">
               <tr>
-                <th rowspan="2">Image</th>
-                <th rowspan="2">Component Name</th>
-                <th rowspan="2">Task</th>
-                <th colspan="4">Standards</th>
-                <th rowspan="2">Safety/PPE</th>
-                <th colspan="52">Calendar 52 Weeks</th>
-                <th rowspan="2">EWO / Remark</th>
+                <th rowspan="2" data-i18n="th_image">Image</th>
+                <th rowspan="2" data-i18n="th_comp_name">Component Name</th>
+                <th rowspan="2" data-i18n="th_task">Task</th>
+                <th colspan="4" data-i18n="th_standards">Standards</th>
+                <th rowspan="2" data-i18n="th_safety">Safety/PPE</th>
+                <th colspan="52" data-i18n="th_calendar_52">
+                  Calendar 52 Weeks
+                </th>
+                <th rowspan="2" data-i18n="th_remark">EWO / Remark</th>
               </tr>
               <tr style="font-size: 11px">
                 <th>Class</th>
@@ -690,17 +692,17 @@
             class="table table-hover table-bordered mb-0 align-middle table-ledger"
             style="font-size: 13px; min-width: 1500px"
           >
-            <thead
-              class="table-primary text-center"
-              style="position: sticky; top: 0; z-index: 4"
-            >
+            <thead class="table-primary text-center">
               <tr>
-                <th class="sticky-col-1" rowspan="2">Image</th>
-                <th class="sticky-col-2" rowspan="2">Component (Location)</th>
-                <!-- ลบ th Task ออกไปแล้ว -->
-                <th colspan="4">Standards</th>
-                <th colspan="52">Calendar 52 Weeks</th>
-                <th rowspan="2">EWO / Remark</th>
+                <th rowspan="2" data-i18n="th_image">Image</th>
+                <th rowspan="2" data-i18n="th_comp_name">Component Name</th>
+                <th rowspan="2" data-i18n="th_task">Task</th>
+                <th colspan="4" data-i18n="th_standards">Standards</th>
+                <th rowspan="2" data-i18n="th_safety">Safety/PPE</th>
+                <th colspan="52" data-i18n="th_calendar_52">
+                  Calendar 52 Weeks
+                </th>
+                <th rowspan="2" data-i18n="th_remark">EWO / Remark</th>
               </tr>
               <tr style="font-size: 11px">
                 <th>Class</th>
