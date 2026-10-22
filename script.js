@@ -309,6 +309,9 @@ function updateDashboardStats() {
     "%",
   );
   updateTrendUI("dash-trend-ewo", stats.currEwo, stats.prevEwo, prevWeekIndex);
+
+  const weekCardEl = document.getElementById("currentWeekDisplayCard");
+  if (weekCardEl) weekCardEl.innerText = getCurrentWeekNumber();
 }
 
 function updateTrendUI(
@@ -914,6 +917,8 @@ function renderComponentTable() {
         <td class="text-muted fw-bold align-middle" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
       </tr>`;
   });
+
+  setTimeout(initPopovers, 200);
 }
 
 // ================= 3. ระบบอัจฉริยะ (FAB / Copy / Drag & Drop / Import) =================
@@ -1419,107 +1424,6 @@ function showModalConfirm(title, message, onConfirm) {
     if (onConfirm) onConfirm();
   });
   modal.show();
-}
-
-// =========================================================
-// 🔴 ฟังก์ชันเพิ่มงานลง 52 สัปดาห์ (addPlanEntry)
-// =========================================================
-function parseWeeks(str) {
-  let weeks = [];
-  let parts = str.split(",");
-  for (let part of parts) {
-    part = part.trim();
-    if (part.includes("-")) {
-      let [start, end] = part.split("-");
-      start = parseInt(start);
-      end = parseInt(end);
-      if (!isNaN(start) && !isNaN(end)) {
-        for (let i = start; i <= end; i++) weeks.push(i);
-      }
-    } else {
-      let w = parseInt(part);
-      if (!isNaN(w)) weeks.push(w);
-    }
-  }
-  return weeks;
-}
-
-function addPlanEntry() {
-  let weekStr = document.getElementById("inputWeeks").value;
-  if (!weekStr) {
-    showModalAlert(
-      "แจ้งเตือน",
-      "กรุณาระบุสัปดาห์ที่ต้องการเพิ่มงาน (เช่น 1, 5, 10-15)",
-      true,
-    );
-    return;
-  }
-
-  let weeks = parseWeeks(weekStr);
-  let taskText = document.getElementById("inputTaskText").value.trim();
-  let ewoText = document.getElementById("inputEwoText").value.trim();
-
-  let remarkArr = [];
-  if (taskText) remarkArr.push(`Task: ${taskText}`);
-  if (ewoText) remarkArr.push(`EWO: ${ewoText}`);
-  let finalRemark = remarkArr.join(" | ");
-
-  let added = false;
-  weeks.forEach((w) => {
-    let idx = w - 1; // สัปดาห์ที่ 1 คือ index 0
-    if (idx >= 0 && idx < 52) {
-      tempWeekData[idx].t = smartColorState.t ? 1 : tempWeekData[idx].t;
-      tempWeekData[idx].r = smartColorState.r ? 1 : tempWeekData[idx].r;
-      tempWeekData[idx].b = smartColorState.b ? 1 : tempWeekData[idx].b;
-      tempWeekData[idx].l = smartColorState.l ? 1 : tempWeekData[idx].l;
-
-      if (finalRemark) {
-        tempWeekData[idx].remark = tempWeekData[idx].remark
-          ? tempWeekData[idx].remark + " \n " + finalRemark
-          : finalRemark;
-      }
-      added = true;
-    }
-  });
-
-  if (added) {
-    updatePreviewAndList();
-    document.getElementById("inputWeeks").value = "";
-    document.getElementById("inputTaskText").value = "";
-    document.getElementById("inputEwoText").value = "";
-    resetSmartColorSelector();
-  } else {
-    showModalAlert(
-      "แจ้งเตือน",
-      "รูปแบบสัปดาห์ไม่ถูกต้อง (ต้องเป็นเลข 1-52)",
-      true,
-    );
-  }
-}
-
-// 🔴 อัปเดต Preview & Summary เป็น 2 ภาษา
-function updatePreviewAndList() {
-  const lang = localStorage.getItem("app_lang") || "th";
-  const t = translations[lang];
-
-  let grid = document.getElementById("weekPreviewGrid");
-  let summary = document.getElementById("weekRemarksSummary");
-  grid.innerHTML = "";
-  summary.innerHTML = "";
-  let hasRemarks = false;
-
-  for (let i = 0; i < 52; i++) {
-    let d = tempWeekData[i];
-    grid.innerHTML += `<div class="preview-box" onclick="removePlanWeek(${i})" style="cursor:pointer;" title="ลบข้อมูล">W${i + 1}${getTriangleSVGOnly(d)}</div>`;
-
-    if (d.remark && d.remark.trim() !== "") {
-      hasRemarks = true;
-      summary.innerHTML += `<div class="mb-2 border-bottom pb-1"><span class="fw-bold text-primary">${t.week_prefix || "Week"} ${i + 1}</span> : ${escapeHTML(d.remark)}</div>`;
-    }
-  }
-  // ถ้าไม่มีงาน ให้ดึงคำแปลมาโชว์
-  if (!hasRemarks)
-    summary.innerHTML = `<span class="text-muted fst-italic">${t.no_task_week || "ไม่มีงานระบุในสัปดาห์ใดๆ"}</span>`;
 }
 
 // 🔴 อัปเดตตอนกดลบรายสัปดาห์ (เรียก Modal แทน Confirm ดำ)
@@ -3444,6 +3348,7 @@ function loadGlobalCalendar() {
 
     hideLoading();
   }, 300);
+  setTimeout(initPopovers, 500);
 }
 
 function initAppWithQueueAndStatus() {
@@ -3543,27 +3448,6 @@ function initPopovers() {
       }),
   );
 }
-
-// แทร็กฟังก์ชัน initPopovers() ให้ทำงานอัตโนมัติหลังสร้างตารางเสร็จ
-const originalLoadGlobalCalendar = loadGlobalCalendar;
-loadGlobalCalendar = function () {
-  originalLoadGlobalCalendar();
-  setTimeout(initPopovers, 500); // ดีเลย์นิดนึงรอตาราง Render เสร็จ
-};
-
-const originalRenderComponentTable = renderComponentTable;
-renderComponentTable = function () {
-  originalRenderComponentTable();
-  setTimeout(initPopovers, 200);
-};
-
-// นำสัปดาห์ปัจจุบันไปแสดงที่การ์ด Global Calendar หน้าแรก
-const originalUpdateDashboardStats = updateDashboardStats;
-updateDashboardStats = function () {
-  originalUpdateDashboardStats();
-  const weekCardEl = document.getElementById("currentWeekDisplayCard");
-  if (weekCardEl) weekCardEl.innerText = getCurrentWeekNumber();
-};
 
 // =========================================================
 // 2. ระบบ Smart Planner (Interactive Grid 52 สัปดาห์)
@@ -3693,15 +3577,8 @@ function toggleInteractiveWeek(idx) {
   updatePreviewAndList(); // รีเฟรชจอ Preview ด้านขวา
 }
 
-// แทร็กให้ renderInteractiveGrid ทำงานตอนเปิด Modal
-const originalOpenWeekModal = openWeekModal;
-openWeekModal = function (compactGridElement) {
-  originalOpenWeekModal(compactGridElement);
-  renderInteractiveGrid();
-};
-
 // ปิดไม่ให้ Preview ด้านขวากดได้ (ให้ดูอย่างเดียว)
-updatePreviewAndList = function () {
+function updatePreviewAndList() {
   const lang = localStorage.getItem("app_lang") || "th";
   const t = translations[lang] || {};
 
@@ -3729,25 +3606,33 @@ updatePreviewAndList = function () {
   if (!hasRemarks && summary) {
     summary.innerHTML = `<span class="text-muted fst-italic">${t.no_task_week || "ไม่มีงานระบุในสัปดาห์ใดๆ"}</span>`;
   }
-};
+}
 
 // =========================================================
 // ฟังก์ชันสลับหน้าต่าง (Step 1 -> Step 2) ใน Modal 52 สัปดาห์
 // =========================================================
 function openGridSelection() {
   // เช็คก่อนว่าผู้ใช้ได้เลือกสีแล้วหรือยัง?
-  let hasColor = smartColorState.t || smartColorState.r || smartColorState.b || smartColorState.l;
+  let hasColor =
+    smartColorState.t ||
+    smartColorState.r ||
+    smartColorState.b ||
+    smartColorState.l;
   if (!hasColor) {
-      showModalAlert("แจ้งเตือน", "กรุณาเลือกประเภทงาน (แตะเลือกสีด้านบน) ก่อนครับ", true);
-      return;
+    showModalAlert(
+      "แจ้งเตือน",
+      "กรุณาเลือกประเภทงาน (แตะเลือกสีด้านบน) ก่อนครับ",
+      true,
+    );
+    return;
   }
-  
+
   // ปิดหน้าเลือกสี เปิดหน้าตาราง
   let step1 = document.getElementById("step1_config");
   let step2 = document.getElementById("step2_grid");
   if (step1 && step2) {
-      step1.classList.add("d-none");
-      step2.classList.remove("d-none");
+    step1.classList.add("d-none");
+    step2.classList.remove("d-none");
   }
 }
 
@@ -3756,47 +3641,7 @@ function closeGridSelection() {
   let step1 = document.getElementById("step1_config");
   let step2 = document.getElementById("step2_grid");
   if (step1 && step2) {
-      step2.classList.add("d-none");
-      step1.classList.remove("d-none");
+    step2.classList.add("d-none");
+    step1.classList.remove("d-none");
   }
-}
-
-// 🔴 อัปเดต openWeekModal เพื่อรีเซ็ตหน้าจอให้กลับไป Step 1 เสมอเมื่อเปิดขึ้นมาใหม่
-function openWeekModal(compactGridElement) {
-  currentCompactGrid = compactGridElement;
-  currentWeekInput = compactGridElement.nextElementSibling;
-  
-  try {
-    let loadedData = safeJSONParse(currentWeekInput.value);
-    tempWeekData = loadedData.map((w) => ({
-      t: w.t || 0,
-      r: w.r || 0,
-      b: w.b || 0,
-      l: w.l || 0,
-      remark: w.remark || "",
-    }));
-  } catch (e) {
-    tempWeekData = Array(52)
-      .fill()
-      .map(() => ({ t: 0, r: 0, b: 0, l: 0, remark: "" }));
-  }
-  
-  resetSmartColorSelector();
-  
-  let inputTask = document.getElementById("inputTaskText");
-  if (inputTask) inputTask.value = "";
-  
-  let inputEwo = document.getElementById("inputEwoText");
-  if (inputEwo) inputEwo.value = "";
-
-  updatePreviewAndList();
-  
-  if (typeof renderInteractiveGrid === "function") {
-      renderInteractiveGrid();
-  }
-  
-  // สั่งให้แน่ใจว่าเปิดมาจะเป็นหน้า Step 1 เสมอ
-  closeGridSelection();
-
-  new bootstrap.Modal(document.getElementById("weekModal")).show();
 }
