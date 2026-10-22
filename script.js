@@ -1358,6 +1358,7 @@ function toggleSmartColor(side) {
 function openWeekModal(compactGridElement) {
   currentCompactGrid = compactGridElement;
   currentWeekInput = compactGridElement.nextElementSibling;
+
   try {
     let loadedData = safeJSONParse(currentWeekInput.value);
     tempWeekData = loadedData.map((w) => ({
@@ -1372,11 +1373,23 @@ function openWeekModal(compactGridElement) {
       .fill()
       .map(() => ({ t: 0, r: 0, b: 0, l: 0, remark: "" }));
   }
+
   resetSmartColorSelector();
-  document.getElementById("inputWeeks").value = "";
-  document.getElementById("inputTaskText").value = "";
-  document.getElementById("inputEwoText").value = "";
+
+  // เช็คก่อนว่ามีช่องข้อมูลเหล่านี้อยู่ไหม เพื่อป้องกัน Error (Cannot set properties of null)
+  let inputTask = document.getElementById("inputTaskText");
+  if (inputTask) inputTask.value = "";
+
+  let inputEwo = document.getElementById("inputEwoText");
+  if (inputEwo) inputEwo.value = "";
+
   updatePreviewAndList();
+
+  // หากมีระบบตารางใหม่ (Interactive Grid) ให้ทำการวาดตาราง
+  if (typeof renderInteractiveGrid === "function") {
+    renderInteractiveGrid();
+  }
+
   new bootstrap.Modal(document.getElementById("weekModal")).show();
 }
 
