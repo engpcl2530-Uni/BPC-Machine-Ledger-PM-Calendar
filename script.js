@@ -3358,19 +3358,25 @@ function loadGlobalCalendar() {
                 w.t === 1 || w.b === 1 || w.r === 1 || w.l === 1 || w.remark;
               let hoverCardClass = hasTaskWk ? "week-has-task" : ""; // ดึงคลาส Hover จาก CSS
 
-              // สร้างข้อความ Tooltip
-              let tooltipText = `Week ${i + 1}`;
+              let popoverTitle = `Week ${i + 1}`;
+              let popoverContent = "";
               if (hasTaskWk && w.remark) {
-                tooltipText += ` | งาน: ${escapeHTML(w.remark)}`;
+                popoverContent = escapeHTML(w.remark).replace(/\n/g, "<br>");
               } else if (hasTaskWk) {
-                tooltipText += ` | มีแผน PM (ไม่มีรายละเอียด)`;
+                popoverContent = `<span class="text-muted">มีแผน PM (ไม่มีรายละเอียด)</span>`;
               }
 
+              // ซ่อนแอตทริบิวต์ Popover ถ้าไม่มีงานในสัปดาห์นั้น
+              let popoverAttr = hasTaskWk
+                ? `data-bs-toggle="popover" data-bs-title="${popoverTitle}" data-bs-content="${popoverContent}"`
+                : "";
+
+              // ลบ attribute title="..." ออก เปลี่ยนมาใช้ popoverAttr แทน
               weeksTd += `<td class="text-center align-middle week-cell ${isCurrentWkClass} ${hoverCardClass}" 
-                              style="padding: 2px;" 
-                              title="${tooltipText}">
-                            <div style="width:24px; height:24px; margin: 0 auto;">${svg}</div>
-                          </td>`;
+                  style="padding: 2px;" 
+                  ${popoverAttr}>
+                <div style="width:24px; height:24px; margin: 0 auto;">${svg}</div>
+              </td>`;
             }
 
             // ประกอบแถว (คอลัมน์ทั้งหมดลดลงเหลือ 60 ช่อง เพราะนำ PPE ออก และย้าย Remark ไปท้ายสุด)
@@ -3503,3 +3509,211 @@ function startDownloadingData() {
     .getYourDatabaseFunction(); 
   */
 }
+// =========================================================
+// 1. ระบบ Popover (กล่องคำพูดสำหรับ Hover และ Touch บนมือถือ)
+// =========================================================
+function initPopovers() {
+  // ล้าง Popover เดิมทิ้งก่อนสร้างใหม่ป้องกันการซ้อนทับ
+  const popoverTriggerList = document.querySelectorAll(
+    '[data-bs-toggle="popover"]',
+  );
+  popoverTriggerList.forEach((el) => {
+    let popover = bootstrap.Popover.getInstance(el);
+    if (popover) popover.dispose();
+  });
+  // สร้าง Popover ใหม่
+  [...popoverTriggerList].map(
+    (popoverTriggerEl) =>
+      new bootstrap.Popover(popoverTriggerEl, {
+        html: true,
+        trigger: "hover focus", // ทำให้เมื่อเอานิ้วแตะ (focus) กล่องคำพูดจะเด้งขึ้นมา
+      }),
+  );
+}
+
+// แทร็กฟังก์ชัน initPopovers() ให้ทำงานอัตโนมัติหลังสร้างตารางเสร็จ
+const originalLoadGlobalCalendar = loadGlobalCalendar;
+loadGlobalCalendar = function () {
+  originalLoadGlobalCalendar();
+  setTimeout(initPopovers, 500); // ดีเลย์นิดนึงรอตาราง Render เสร็จ
+};
+
+const originalRenderComponentTable = renderComponentTable;
+renderComponentTable = function () {
+  originalRenderComponentTable();
+  setTimeout(initPopovers, 200);
+};
+
+// นำสัปดาห์ปัจจุบันไปแสดงที่การ์ด Global Calendar หน้าแรก
+const originalUpdateDashboardStats = updateDashboardStats;
+updateDashboardStats = function () {
+  originalUpdateDashboardStats();
+  const weekCardEl = document.getElementById("currentWeekDisplayCard");
+  if (weekCardEl) weekCardEl.innerText = getCurrentWeekNumber();
+};
+
+// =========================================================
+// 2. ระบบ Smart Planner (Interactive Grid 52 สัปดาห์)
+// =========================================================
+function renderInteractiveGrid() {
+  let grid = document.getElementById("interactiveWeekGrid");
+  if (!grid) return;
+  grid.innerHTML = "";
+
+  const monthSpans = [
+    { name: "Jan", span: 5 },
+    { name: "Feb", span: 4 },
+    { name: "Mar", span: 4 },
+    { name: "Apr", span: 4 },
+    { name: "May", span: 5 },
+    { name: "Jun", span: 4 },
+    { name: "Jul", span: 4 },
+    { name: "Aug", span: 5 },
+    { name: "Sep", span: 4 },
+    { name: "Oct", span: 5 },
+    { name: "Nov", span: 4 },
+    { name: "Dec", span: 4 },
+  ];
+
+  let weekIdx = 0;
+  monthSpans.forEach((m) => {
+    // ป้ายกำกับเดือน
+    grid.innerHTML += `<div class="w-100 mt-2 mb-1"><span class="badge bg-secondary text-uppercase">${m.name}</span></div>`;
+
+    let flexContainer = document.createElement("div");
+    flexContainer.className = "d-flex flex-wrap gap-1 w-100";
+
+    for (let i = 0; i < m.span; i++) {
+      if (weekIdx >= 52) break;
+      let w = tempWeekData[weekIdx] || { t: 0, r: 0, b: 0, l: 0 };
+      let svg = getTriangleSVGOnly(w);
+
+      let box = document.createElement("div");
+      // สไตล์ของกล่องสัปดาห์ที่สามารถกดได้
+      box.style.cssText =
+        "width: 45px; height: 50px; border: 1px solid #cbd5e1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; transition: 0.2s;";
+      box.onmouseover = () => {
+        box.style.background = "#f1f5f9";
+        box.style.borderColor = "#94a3b8";
+        box.style.transform = "scale(1.05)";
+      };
+      box.onmouseout = () => {
+        box.style.background = "white";
+        box.style.borderColor = "#cbd5e1";
+        box.style.transform = "scale(1)";
+      };
+
+      box.innerHTML = `<span style="font-size:10px; font-weight:bold; color:#475569;">W${weekIdx + 1}</span><div style="width:20px; height:20px;">${svg}</div>`;
+
+      let currentIdx = weekIdx;
+      box.onclick = () => toggleInteractiveWeek(currentIdx); // ผูก Event เมื่อกดคลิก
+
+      flexContainer.appendChild(box);
+      weekIdx++;
+    }
+    grid.appendChild(flexContainer);
+  });
+}
+
+function toggleInteractiveWeek(idx) {
+  // 1. ตรวจสอบว่ามีการเลือกสี (ประเภทงาน) หรือยัง?
+  let hasColor =
+    smartColorState.t ||
+    smartColorState.r ||
+    smartColorState.b ||
+    smartColorState.l;
+  if (!hasColor) {
+    showModalAlert(
+      "แจ้งเตือน",
+      "กรุณาเลือกประเภทงาน (เลือกสีด้านบน) ก่อนกดเลือกสัปดาห์ครับ",
+      true,
+    );
+    return;
+  }
+
+  let d = tempWeekData[idx];
+  let taskText = document.getElementById("inputTaskText")
+    ? document.getElementById("inputTaskText").value.trim()
+    : "";
+  let ewoText = document.getElementById("inputEwoText")
+    ? document.getElementById("inputEwoText").value.trim()
+    : "";
+
+  let remarkArr = [];
+  if (taskText) remarkArr.push(`Task: ${taskText}`);
+  if (ewoText) remarkArr.push(`EWO: ${ewoText}`);
+  let finalRemark = remarkArr.join(" | ");
+
+  // 2. ตรวจสอบว่าสีที่เลือก ถูกเปิดไว้ในสัปดาห์นี้ทั้งหมดแล้วหรือยัง
+  let allSelectedAreOn = true;
+  if (smartColorState.t && d.t === 0) allSelectedAreOn = false;
+  if (smartColorState.r && d.r === 0) allSelectedAreOn = false;
+  if (smartColorState.b && d.b === 0) allSelectedAreOn = false;
+  if (smartColorState.l && d.l === 0) allSelectedAreOn = false;
+
+  if (allSelectedAreOn) {
+    // 🟢 กรณีกดซ้ำ (ปิดงานที่เลือก)
+    if (smartColorState.t) d.t = 0;
+    if (smartColorState.r) d.r = 0;
+    if (smartColorState.b) d.b = 0;
+    if (smartColorState.l) d.l = 0;
+    // ถ้ายกเลิกจนไม่มีสีไหนเหลือเลย ให้ลบ Remark ทิ้งด้วย
+    if (d.t === 0 && d.r === 0 && d.b === 0 && d.l === 0) {
+      d.remark = "";
+    }
+  } else {
+    // 🟢 กรณีเลือกสีใหม่ (เปิดงาน)
+    if (smartColorState.t) d.t = 1;
+    if (smartColorState.r) d.r = 1;
+    if (smartColorState.b) d.b = 1;
+    if (smartColorState.l) d.l = 1;
+
+    if (finalRemark) {
+      if (!d.remark) d.remark = finalRemark;
+      else if (!d.remark.includes(finalRemark))
+        d.remark += " \n " + finalRemark;
+    }
+  }
+
+  tempWeekData[idx] = d;
+  renderInteractiveGrid(); // รีเฟรชตารางที่กด
+  updatePreviewAndList(); // รีเฟรชจอ Preview ด้านขวา
+}
+
+// แทร็กให้ renderInteractiveGrid ทำงานตอนเปิด Modal
+const originalOpenWeekModal = openWeekModal;
+openWeekModal = function (compactGridElement) {
+  originalOpenWeekModal(compactGridElement);
+  renderInteractiveGrid();
+};
+
+// ปิดไม่ให้ Preview ด้านขวากดได้ (ให้ดูอย่างเดียว)
+updatePreviewAndList = function () {
+  const lang = localStorage.getItem("app_lang") || "th";
+  const t = translations[lang] || {};
+
+  let grid = document.getElementById("weekPreviewGrid");
+  let summary = document.getElementById("weekRemarksSummary");
+  if (grid) grid.innerHTML = "";
+  if (summary) summary.innerHTML = "";
+  let hasRemarks = false;
+
+  for (let i = 0; i < 52; i++) {
+    let d = tempWeekData[i];
+    // นำ onclick="removePlanWeek(i)" ออก เพื่อให้เป็น Preview เท่านั้น
+    if (grid) {
+      grid.innerHTML += `<div class="preview-box" title="W${i + 1}">W${i + 1}${getTriangleSVGOnly(d)}</div>`;
+    }
+
+    if (d.remark && d.remark.trim() !== "") {
+      hasRemarks = true;
+      if (summary) {
+        summary.innerHTML += `<div class="mb-2 border-bottom pb-1"><span class="fw-bold text-primary">${t.week_prefix || "Week"} ${i + 1}</span> : ${escapeHTML(d.remark).replace(/\n/g, "<br>")}</div>`;
+      }
+    }
+  }
+
+  if (!hasRemarks && summary) {
+    summary.innerHTML = `<span class="text-muted fst-italic">${t.no_task_week || "ไม่มีงานระบุในสัปดาห์ใดๆ"}</span>`;
+  }
+};

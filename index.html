@@ -150,16 +150,6 @@
             </div>
           </div>
         </div>
-        <button
-          class="btn btn-warning fw-bold shadow-sm"
-          style="border-radius: 8px"
-          onclick="openGlobalCalendarModal()"
-        >
-          <span class="material-symbols-rounded align-middle fs-5 me-1"
-            >event_note</span
-          >
-          <span data-i18n="btn_global_calendar">Calendar รวม</span>
-        </button>
         <!-- กลุ่มปุ่มด้านขวา: สลับภาษา + กลับ BPC Hub -->
         <div class="d-flex align-items-center gap-3">
           <!-- ปุ่มสลับภาษา -->
@@ -405,6 +395,56 @@
               placeholder="ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่..."
               onkeyup="handleRouting()"
             />
+          </div>
+          <!-- 🔴 Global Calendar Card (ย้ายมาไว้ตรงนี้) -->
+          <div
+            class="card mb-4 border-0 shadow-sm no-print"
+            style="
+              border-radius: 16px;
+              background: linear-gradient(to right, #ffffff, #f8fafc);
+              border-left: 6px solid #f59e0b !important;
+            "
+          >
+            <div
+              class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-center"
+            >
+              <div class="d-flex align-items-center mb-3 mb-md-0">
+                <div
+                  class="bg-warning bg-opacity-25 text-warning rounded-circle d-flex justify-content-center align-items-center me-3"
+                  style="width: 55px; height: 55px"
+                >
+                  <span class="material-symbols-rounded" style="font-size: 30px"
+                    >calendar_month</span
+                  >
+                </div>
+                <div>
+                  <h5 class="fw-bold text-dark mb-1">
+                    Global Calendar
+                    <span class="badge bg-primary ms-2" style="font-size: 12px"
+                      >แผนรวมประจำปี</span
+                    >
+                  </h5>
+                  <p class="text-muted small mb-0 fw-bold">
+                    ขณะนี้กำลังอยู่ใน:
+                    <span class="text-danger fs-6"
+                      >Week <span id="currentWeekDisplayCard">--</span></span
+                    >
+                  </p>
+                </div>
+              </div>
+              <button
+                class="btn btn-warning fw-bold shadow-sm px-4 py-2"
+                style="border-radius: 10px"
+                onclick="openGlobalCalendarModal()"
+              >
+                <span class="material-symbols-rounded align-middle fs-5 me-1"
+                  >event_note</span
+                >
+                <span data-i18n="btn_global_calendar"
+                  >เปิดตาราง Calendar รวม</span
+                >
+              </button>
+            </div>
           </div>
 
           <div class="row g-3">
@@ -1916,16 +1956,25 @@
                   <label
                     class="form-label fw-bold text-dark small"
                     data-i18n="modal_52_step2"
-                    >2. ระบุสัปดาห์ (1-52)</label
+                    >2. แตะเลือกสัปดาห์ที่ต้องการ (แตะซ้ำเพื่อยกเลิก)</label
                   >
-                  <input
-                    type="text"
-                    class="form-control form-control-sm mb-3 border-primary"
-                    id="inputWeeks"
-                    data-i18n-placeholder="placeholder_weeks"
-                    placeholder="เช่น 25, 30, 35 หรือ 10-15"
-                    required
-                  />
+                  <!-- ตาราง 52 สัปดาห์สำหรับกดเลือก -->
+                  <div
+                    id="interactiveWeekGrid"
+                    class="mb-3"
+                    style="
+                      max-height: 250px;
+                      overflow-y: auto;
+                      padding: 10px;
+                      border: 2px solid #e2e8f0;
+                      border-radius: 10px;
+                      background: #f8fafc;
+                    "
+                  >
+                    <!-- JS จะสร้างตาราง 52 ช่องพร้อมเดือนให้ที่นี่ -->
+                  </div>
+
+                  <!-- (ไม่ต้องมีปุ่ม "เพิ่มงานลงในสัปดาห์" แล้ว เพราะการกดที่ตารางด้านบนคือการเพิ่มทันที) -->
 
                   <div
                     id="boxTaskDetail"
