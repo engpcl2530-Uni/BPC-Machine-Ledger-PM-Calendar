@@ -3730,3 +3730,73 @@ updatePreviewAndList = function () {
     summary.innerHTML = `<span class="text-muted fst-italic">${t.no_task_week || "ไม่มีงานระบุในสัปดาห์ใดๆ"}</span>`;
   }
 };
+
+// =========================================================
+// ฟังก์ชันสลับหน้าต่าง (Step 1 -> Step 2) ใน Modal 52 สัปดาห์
+// =========================================================
+function openGridSelection() {
+  // เช็คก่อนว่าผู้ใช้ได้เลือกสีแล้วหรือยัง?
+  let hasColor = smartColorState.t || smartColorState.r || smartColorState.b || smartColorState.l;
+  if (!hasColor) {
+      showModalAlert("แจ้งเตือน", "กรุณาเลือกประเภทงาน (แตะเลือกสีด้านบน) ก่อนครับ", true);
+      return;
+  }
+  
+  // ปิดหน้าเลือกสี เปิดหน้าตาราง
+  let step1 = document.getElementById("step1_config");
+  let step2 = document.getElementById("step2_grid");
+  if (step1 && step2) {
+      step1.classList.add("d-none");
+      step2.classList.remove("d-none");
+  }
+}
+
+function closeGridSelection() {
+  // ปิดหน้าตาราง กลับไปหน้าเลือกสี
+  let step1 = document.getElementById("step1_config");
+  let step2 = document.getElementById("step2_grid");
+  if (step1 && step2) {
+      step2.classList.add("d-none");
+      step1.classList.remove("d-none");
+  }
+}
+
+// 🔴 อัปเดต openWeekModal เพื่อรีเซ็ตหน้าจอให้กลับไป Step 1 เสมอเมื่อเปิดขึ้นมาใหม่
+function openWeekModal(compactGridElement) {
+  currentCompactGrid = compactGridElement;
+  currentWeekInput = compactGridElement.nextElementSibling;
+  
+  try {
+    let loadedData = safeJSONParse(currentWeekInput.value);
+    tempWeekData = loadedData.map((w) => ({
+      t: w.t || 0,
+      r: w.r || 0,
+      b: w.b || 0,
+      l: w.l || 0,
+      remark: w.remark || "",
+    }));
+  } catch (e) {
+    tempWeekData = Array(52)
+      .fill()
+      .map(() => ({ t: 0, r: 0, b: 0, l: 0, remark: "" }));
+  }
+  
+  resetSmartColorSelector();
+  
+  let inputTask = document.getElementById("inputTaskText");
+  if (inputTask) inputTask.value = "";
+  
+  let inputEwo = document.getElementById("inputEwoText");
+  if (inputEwo) inputEwo.value = "";
+
+  updatePreviewAndList();
+  
+  if (typeof renderInteractiveGrid === "function") {
+      renderInteractiveGrid();
+  }
+  
+  // สั่งให้แน่ใจว่าเปิดมาจะเป็นหน้า Step 1 เสมอ
+  closeGridSelection();
+
+  new bootstrap.Modal(document.getElementById("weekModal")).show();
+}

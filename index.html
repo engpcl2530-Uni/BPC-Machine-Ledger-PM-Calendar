@@ -1880,178 +1880,197 @@
                 </h6>
 
                 <div class="bg-white p-3 border rounded shadow-sm mb-3">
-                  <div class="text-center mb-4">
-                    <label
-                      class="form-label fw-bold text-dark small mb-3"
-                      data-i18n="modal_52_step1"
-                      >1. แตะเลือกประเภทงาน (เลือกได้หลายข้อ)</label
-                    >
-                    <div class="selector-grid">
-                      <div
-                        class="lbl-text lbl-top text-dark fw-bold"
-                        id="lbl-t"
-                        onclick="toggleSmartColor('t')"
+                  <!-- 🔴 STEP 1: หน้าตั้งค่างาน (เลือกสีและพิมพ์ข้อความ) -->
+                  <div id="step1_config">
+                    <div class="text-center mb-4">
+                      <label
+                        class="form-label fw-bold text-dark small mb-3"
+                        data-i18n="modal_52_step1"
+                        >1. แตะเลือกประเภทงาน (เลือกได้หลายข้อ)</label
                       >
-                        Planned Maint.<br />Executed
-                      </div>
-                      <div
-                        class="lbl-text lbl-left text-primary fw-bold"
-                        id="lbl-l"
-                        onclick="toggleSmartColor('l')"
-                      >
-                        Unplanned<br />Extra
-                      </div>
-                      <div class="svg-center position-relative">
-                        <svg
-                          viewBox="0 0 100 100"
-                          width="120"
-                          height="120"
-                          style="
-                            filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
-                          "
+                      <div class="selector-grid">
+                        <div
+                          class="lbl-text lbl-top text-dark fw-bold"
+                          id="lbl-t"
+                          onclick="toggleSmartColor('t')"
                         >
-                          <polygon
-                            id="tri-t"
-                            points="0,0 100,0 50,50"
-                            class="smart-tri inactive"
-                            onclick="toggleSmartColor('t')"
-                          />
-                          <polygon
-                            id="tri-r"
-                            points="100,0 100,100 50,50"
-                            class="smart-tri inactive"
-                            onclick="toggleSmartColor('r')"
-                          />
-                          <polygon
-                            id="tri-b"
-                            points="100,100 0,100 50,50"
-                            class="smart-tri inactive"
-                            onclick="toggleSmartColor('b')"
-                          />
-                          <polygon
-                            id="tri-l"
-                            points="0,100 0,0 50,50"
-                            class="smart-tri inactive"
-                            onclick="toggleSmartColor('l')"
-                          />
-                        </svg>
-                      </div>
-                      <div
-                        class="lbl-text lbl-right text-danger fw-bold"
-                        id="lbl-r"
-                        onclick="toggleSmartColor('r')"
-                      >
-                        Breakdown<br />Maint.
-                      </div>
-                      <div
-                        class="lbl-text lbl-bottom text-warning fw-bold"
-                        id="lbl-b"
-                        onclick="toggleSmartColor('b')"
-                      >
-                        Planned<br />Maintenance
+                          Planned Maint.<br />Executed
+                        </div>
+                        <div
+                          class="lbl-text lbl-left text-primary fw-bold"
+                          id="lbl-l"
+                          onclick="toggleSmartColor('l')"
+                        >
+                          Unplanned<br />Extra
+                        </div>
+                        <div class="svg-center position-relative">
+                          <svg
+                            viewBox="0 0 100 100"
+                            width="120"
+                            height="120"
+                            style="
+                              filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+                            "
+                          >
+                            <polygon
+                              id="tri-t"
+                              points="0,0 100,0 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('t')"
+                            />
+                            <polygon
+                              id="tri-r"
+                              points="100,0 100,100 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('r')"
+                            />
+                            <polygon
+                              id="tri-b"
+                              points="100,100 0,100 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('b')"
+                            />
+                            <polygon
+                              id="tri-l"
+                              points="0,100 0,0 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('l')"
+                            />
+                          </svg>
+                        </div>
+                        <div
+                          class="lbl-text lbl-right text-danger fw-bold"
+                          id="lbl-r"
+                          onclick="toggleSmartColor('r')"
+                        >
+                          Breakdown<br />Maint.
+                        </div>
+                        <div
+                          class="lbl-text lbl-bottom text-warning fw-bold"
+                          id="lbl-b"
+                          onclick="toggleSmartColor('b')"
+                        >
+                          Planned<br />Maintenance
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  <label
-                    class="form-label fw-bold text-dark small"
-                    data-i18n="modal_52_step2"
-                    >2. แตะเลือกสัปดาห์ที่ต้องการ (แตะซ้ำเพื่อยกเลิก)</label
-                  >
-                  <!-- ตาราง 52 สัปดาห์สำหรับกดเลือก -->
-                  <div
-                    id="interactiveWeekGrid"
-                    class="mb-3"
-                    style="
-                      max-height: 250px;
-                      overflow-y: auto;
-                      padding: 10px;
-                      border: 2px solid #e2e8f0;
-                      border-radius: 10px;
-                      background: #f8fafc;
-                    "
-                  >
-                    <!-- JS จะสร้างตาราง 52 ช่องพร้อมเดือนให้ที่นี่ -->
-                  </div>
+                    <!-- กล่องกรอกรายละเอียด (Task/EWO) -->
+                    <div
+                      id="boxTaskDetail"
+                      class="mb-3 d-none p-2 bg-warning bg-opacity-10 border border-warning rounded"
+                    >
+                      <label
+                        class="form-label fw-bold text-warning-emphasis small"
+                      >
+                        <span
+                          class="material-symbols-rounded align-middle me-1"
+                          style="font-size: 16px"
+                          >build</span
+                        >
+                        <span data-i18n="modal_52_task"
+                          >ระบุ Task (งานที่ต้องทำ):</span
+                        >
+                      </label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="inputTaskText"
+                        data-i18n-placeholder="placeholder_task"
+                        placeholder="เช่น Lube, Inspect"
+                      />
+                    </div>
 
-                  <!-- (ไม่ต้องมีปุ่ม "เพิ่มงานลงในสัปดาห์" แล้ว เพราะการกดที่ตารางด้านบนคือการเพิ่มทันที) -->
+                    <div
+                      id="boxEwoDetail"
+                      class="mb-3 d-none p-2 bg-danger bg-opacity-10 border border-danger rounded"
+                    >
+                      <label
+                        class="form-label fw-bold text-danger-emphasis small"
+                      >
+                        <span
+                          class="material-symbols-rounded align-middle me-1"
+                          style="font-size: 16px"
+                          >warning</span
+                        >
+                        <span data-i18n="modal_52_ewo"
+                          >รหัส EWO (กรณี Breakdown):</span
+                        >
+                      </label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="inputEwoText"
+                        data-i18n-placeholder="placeholder_ewo"
+                        placeholder="เช่น EWO-12345"
+                      />
+                    </div>
 
-                  <div
-                    id="boxTaskDetail"
-                    class="mb-3 d-none p-2 bg-warning bg-opacity-10 border border-warning rounded"
-                  >
-                    <label
-                      class="form-label fw-bold text-warning-emphasis small"
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm w-100 fw-bold py-2 mt-2 shadow-sm"
+                      onclick="openGridSelection()"
                     >
                       <span
                         class="material-symbols-rounded align-middle me-1"
-                        style="font-size: 16px"
-                        >build</span
+                        style="font-size: 18px"
+                        >event_available</span
                       >
-                      <span data-i18n="modal_52_task"
-                        >ระบุ Task (งานที่ต้องทำ):</span
-                      >
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control form-control-sm"
-                      id="inputTaskText"
-                      data-i18n-placeholder="placeholder_task"
-                      placeholder="เช่น Lube, Inspect"
-                    />
-                  </div>
-
-                  <div
-                    id="boxEwoDetail"
-                    class="mb-3 d-none p-2 bg-danger bg-opacity-10 border border-danger rounded"
-                  >
-                    <label
-                      class="form-label fw-bold text-danger-emphasis small"
+                      เพิ่มงานลงในสัปดาห์
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm w-100 mt-2"
+                      onclick="clearAllPlans()"
                     >
                       <span
                         class="material-symbols-rounded align-middle me-1"
-                        style="font-size: 16px"
-                        >warning</span
+                        style="font-size: 18px"
+                        >delete</span
                       >
-                      <span data-i18n="modal_52_ewo"
-                        >รหัส EWO (กรณี Breakdown):</span
+                      <span data-i18n="clear_all_52"
+                        >ล้างข้อมูล 52 สัปดาห์ทั้งหมด</span
                       >
-                    </label>
-                    <input
-                      type="text"
-                      class="form-control form-control-sm"
-                      id="inputEwoText"
-                      data-i18n-placeholder="placeholder_ewo"
-                      placeholder="เช่น EWO-12345"
-                    />
+                    </button>
                   </div>
 
-                  <button
-                    type="button"
-                    class="btn btn-primary btn-sm w-100 fw-bold py-2 mt-2"
-                    onclick="addPlanEntry()"
-                  >
-                    <span
-                      class="material-symbols-rounded align-middle me-1"
-                      style="font-size: 18px"
-                      >add</span
+                  <!-- 🔴 STEP 2: หน้าต่างเลือกสัปดาห์ (จะแสดงเมื่อกดปุ่มเพิ่มงานด้านบน) -->
+                  <div id="step2_grid" class="d-none">
+                    <div
+                      class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"
                     >
-                    <span data-i18n="add_task_week">เพิ่มงานลงในสัปดาห์</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-outline-danger btn-sm w-100 mt-2"
-                    onclick="clearAllPlans()"
-                  >
-                    <span
-                      class="material-symbols-rounded align-middle me-1"
-                      style="font-size: 18px"
-                      >delete</span
+                      <label class="form-label fw-bold text-primary small mb-0"
+                        >2. แตะเลือกสัปดาห์ (แตะซ้ำเพื่อยกเลิก)</label
+                      >
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-light text-secondary border fw-bold shadow-sm"
+                        onclick="closeGridSelection()"
+                      >
+                        <span
+                          class="material-symbols-rounded align-middle"
+                          style="font-size: 16px"
+                          >arrow_back</span
+                        >
+                        กลับไปตั้งค่า
+                      </button>
+                    </div>
+
+                    <!-- ตาราง 52 สัปดาห์สำหรับกดเลือก -->
+                    <div
+                      id="interactiveWeekGrid"
+                      style="
+                        max-height: 320px;
+                        overflow-y: auto;
+                        padding: 10px;
+                        border: 2px solid #e2e8f0;
+                        border-radius: 10px;
+                        background: #f8fafc;
+                      "
                     >
-                    <span data-i18n="clear_all_52"
-                      >ล้างข้อมูล 52 สัปดาห์ทั้งหมด</span
-                    >
-                  </button>
+                      <!-- JS จะสร้างตาราง 52 ช่องพร้อมเดือนให้ที่นี่ -->
+                    </div>
+                  </div>
                 </div>
               </div>
 
