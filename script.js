@@ -3195,8 +3195,7 @@ function toggleAllGlobalLines(isCheck) {
   });
 }
 
-// โหลดและแสดงตารางรวม (แบบ Table ดึงเฉพาะสัปดาห์ปัจจุบัน)
-// โหลดและแสดงตารางรวม 52 สัปดาห์ พร้อมช่องแจ้งเตือน Task ปัจจุบัน
+// โหลดและแสดงตารางรวม 52 สัปดาห์ (อัปเดตตาม Requirement ใหม่)
 function loadGlobalCalendar() {
   let selectedLines = [];
   document.querySelectorAll(".global-line-checkbox:checked").forEach((chk) => {
@@ -3226,31 +3225,55 @@ function loadGlobalCalendar() {
     let currentWeekIndex = getCurrentWeekNumber() - 1; // หา index ของสัปดาห์ปัจจุบัน (0-51)
     let lineNames = [];
 
-    // --- 1. สร้างหัวตาราง (Thead) แบบไดนามิก เพื่อป้องกันปัญหาคอลัมน์เลื่อน ---
+    // --- 1.1 สร้างกลุ่มเดือน (Months Grouping) สำหรับ 52 สัปดาห์ ---
+    // การแบ่งสัปดาห์ในแต่ละเดือน (รวม 52 สัปดาห์)
+    const monthSpans = [
+      { name: "Jan", span: 5 },
+      { name: "Feb", span: 4 },
+      { name: "Mar", span: 4 },
+      { name: "Apr", span: 4 },
+      { name: "May", span: 5 },
+      { name: "Jun", span: 4 },
+      { name: "Jul", span: 4 },
+      { name: "Aug", span: 5 },
+      { name: "Sep", span: 4 },
+      { name: "Oct", span: 5 },
+      { name: "Nov", span: 4 },
+      { name: "Dec", span: 4 },
+    ];
+
+    let monthTh = "";
+    monthSpans.forEach((m) => {
+      monthTh += `<th colspan="${m.span}" class="align-middle text-center border-end border-light" style="background:#003a70; color:white; font-size:12px; padding:4px;">${m.name}</th>`;
+    });
+
+    // --- 1.2 สร้างหัวตาราง (Thead) แบบไดนามิก ---
     let weeksTh = "";
     for (let i = 1; i <= 52; i++) {
-      // ไฮไลต์สีหัวตารางสัปดาห์ปัจจุบัน
       let isCurrentWk =
         i === currentWeekIndex + 1 ? "bg-warning text-dark border-warning" : "";
       let titleWk = i === currentWeekIndex + 1 ? "Current Week" : `Week ${i}`;
-      weeksTh += `<th class="align-middle ${isCurrentWk}" style="min-width:40px; cursor:pointer;" title="${titleWk}">${i}</th>`;
+      weeksTh += `<th class="align-middle ${isCurrentWk}" style="min-width:40px; cursor:pointer; padding:4px;" title="${titleWk}">${i}</th>`;
     }
 
+    // อัปเดตตาราง: นำ PPE ออก, ย้าย EWO ไปขวาสุด, เพิ่มหัวตารางเดือน
     thead.innerHTML = `
       <tr>
-        <th rowspan="2" class="sticky-col-1 align-middle z-3" style="min-width: 70px;">Image</th>
-        <th rowspan="2" class="sticky-col-2 align-middle z-3" style="min-width: 250px;">Component Name</th>
-        <th rowspan="2" class="text-primary align-middle z-3" style="min-width: 140px;">งานสัปดาห์ปัจจุบัน<br/>(Task W${currentWeekIndex + 1})</th>
+        <th rowspan="3" class="sticky-col-1 align-middle z-3" style="min-width: 70px;">Image</th>
+        <th rowspan="3" class="sticky-col-2 align-middle z-3" style="min-width: 250px;">Component Name</th>
+        <th rowspan="3" class="text-primary align-middle z-3" style="min-width: 140px;">งานสัปดาห์ปัจจุบัน<br/>(Task W${currentWeekIndex + 1})</th>
         <th colspan="4" class="align-middle text-center">Standards</th>
-        <th rowspan="2" class="align-middle text-center" style="min-width: 80px;">Safety/PPE</th>
-        <th rowspan="2" class="align-middle text-center" style="min-width: 120px;">EWO / Remark</th>
-        <th colspan="52" class="align-middle text-center" style="background:#005eb8; color:white;">Week (52 สัปดาห์)</th>
+        <th colspan="52" class="align-middle text-center" style="background:#005eb8; color:white; padding:4px;">ปฏิทินแผนงานซ่อมบำรุงประจำปี (52 Weeks)</th>
+        <th rowspan="3" class="align-middle text-center" style="min-width: 130px;">EWO / Remark</th>
+      </tr>
+      <tr>
+        <th rowspan="2" class="align-middle text-center" style="min-width: 50px;">Class</th>
+        <th rowspan="2" class="align-middle text-center" style="min-width: 60px;">Type</th>
+        <th rowspan="2" class="align-middle text-center" style="min-width: 60px;">Status</th>
+        <th rowspan="2" class="align-middle text-center" style="min-width: 50px;">Min</th>
+        ${monthTh}
       </tr>
       <tr style="font-size: 11px" class="text-center">
-        <th class="align-middle" style="min-width: 50px;">Class</th>
-        <th class="align-middle" style="min-width: 60px;">Type</th>
-        <th class="align-middle" style="min-width: 60px;">Status</th>
-        <th class="align-middle" style="min-width: 50px;">Min</th>
         ${weeksTh}
       </tr>
     `;
@@ -3273,64 +3296,95 @@ function loadGlobalCalendar() {
 
           comps.forEach((c) => {
             lineHasComps = true;
-
             let safeRemark = escapeHTML(c.remarkEwo || "-");
             let imgHtml =
               c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
                 ? `<img src="${c.imgComp}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: zoom-in;" onclick="window.open('${c.imgComp}')">`
                 : `<span class="material-symbols-rounded text-muted" style="font-size:28px;">image_not_supported</span>`;
-
             let locationTag = `<div class="text-muted mt-1" style="font-size: 10.5px;">เครื่อง: <b>${machName}</b> > ${subName}</div>`;
 
-            // --- ส่วนของคอลัมน์ Task สัปดาห์ปัจจุบัน ---
-            let cw = c.weeks[currentWeekIndex];
+            // --- จัดการสถานะ Run / Stop พื้นหลังเขียวแดง (Req 3) ---
+            let statusBadge = "";
+            let currentStatus = (c.stat || "Run").trim().toLowerCase();
+            if (currentStatus === "stop") {
+              statusBadge = `<span class="badge bg-danger">Stop</span>`;
+            } else {
+              statusBadge = `<span class="badge bg-success">${c.stat || "Run"}</span>`;
+            }
+
+            // --- คอลัมน์ Task สัปดาห์ปัจจุบัน และ ไฮไลท์แดง Class AA (Req 4) ---
+            let cw = c.weeks[currentWeekIndex] || {
+              t: 0,
+              r: 0,
+              b: 0,
+              l: 0,
+              remark: "",
+            };
             let taskHtml = `<span class="text-muted">-</span>`;
-            if (
-              cw &&
-              (cw.t === 1 ||
-                cw.b === 1 ||
-                cw.r === 1 ||
-                cw.l === 1 ||
-                (cw.remark && cw.remark.trim() !== ""))
-            ) {
+            let taskBgColor = "#f0f7ff"; // สีฟ้าอ่อนเริ่มต้น
+
+            let hasCurrentTask =
+              cw.t === 1 ||
+              cw.b === 1 ||
+              cw.r === 1 ||
+              cw.l === 1 ||
+              (cw.remark && cw.remark.trim() !== "");
+
+            if (hasCurrentTask) {
               let taskSvg = getTriangleSVGOnly(cw);
               let taskDesc = cw.remark ? escapeHTML(cw.remark) : "PM / ตรวจสอบ";
               taskHtml = `<div class="d-flex flex-column align-items-center justify-content-center">
                             <div style="width:24px; height:24px;">${taskSvg}</div>
                             <span class="mt-1 fw-bold text-center" style="font-size:10px; color:#005eb8;">${taskDesc}</span>
                           </div>`;
+
+              // ไฮไลท์แดงหาก Class เป็น AA และมีงานสัปดาห์นี้
+              if ((c.class || "").trim().toUpperCase() === "AA") {
+                taskBgColor = "#ffe5e5"; // สีแดงอ่อนแจ้งเตือน
+              }
             }
 
-            // --- ส่วนของการวนลูปสร้างคอลัมน์ 52 สัปดาห์ ---
+            // --- ส่วนของการวนลูปสร้างคอลัมน์ 52 สัปดาห์ พร้อมระบบ Hover (Req 5) ---
             let weeksTd = "";
             for (let i = 0; i < 52; i++) {
               let w = c.weeks[i] || { t: 0, b: 0, r: 0, l: 0, remark: "" };
               let svg = getTriangleSVGOnly(w);
-
-              // ไฮไลต์พื้นหลังให้คอลัมน์ของสัปดาห์ปัจจุบัน
               let isCurrentWkClass =
                 i === currentWeekIndex
                   ? "bg-warning-subtle border-warning"
                   : "";
 
-              weeksTd += `<td class="text-center align-middle ${isCurrentWkClass}" style="padding: 2px;">
+              let hasTaskWk =
+                w.t === 1 || w.b === 1 || w.r === 1 || w.l === 1 || w.remark;
+              let hoverCardClass = hasTaskWk ? "week-has-task" : ""; // ดึงคลาส Hover จาก CSS
+
+              // สร้างข้อความ Tooltip
+              let tooltipText = `Week ${i + 1}`;
+              if (hasTaskWk && w.remark) {
+                tooltipText += ` | งาน: ${escapeHTML(w.remark)}`;
+              } else if (hasTaskWk) {
+                tooltipText += ` | มีแผน PM (ไม่มีรายละเอียด)`;
+              }
+
+              weeksTd += `<td class="text-center align-middle week-cell ${isCurrentWkClass} ${hoverCardClass}" 
+                              style="padding: 2px;" 
+                              title="${tooltipText}">
                             <div style="width:24px; height:24px; margin: 0 auto;">${svg}</div>
                           </td>`;
             }
 
-            // ประกอบแถวของชิ้นส่วน (รวมทั้งหมด 61 คอลัมน์ จะตรงกับ Head พอดีเป๊ะ)
+            // ประกอบแถว (คอลัมน์ทั้งหมดลดลงเหลือ 60 ช่อง เพราะนำ PPE ออก และย้าย Remark ไปท้ายสุด)
             lineHtml += `
               <tr>
                 <td class="sticky-col-1 text-center align-middle bg-white">${imgHtml}</td>
                 <td class="sticky-col-2 fw-bold text-primary align-middle bg-white">${escapeHTML(c.name)} ${locationTag}</td>
-                <td class="text-center align-middle" style="background:#f0f7ff;">${taskHtml}</td>
+                <td class="text-center align-middle" style="background:${taskBgColor}; transition: background 0.3s;">${taskHtml}</td>
                 <td class="text-center align-middle">${c.class || "-"}</td>
                 <td class="text-center align-middle">${c.std || "-"}</td>
-                <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
+                <td class="text-center align-middle">${statusBadge}</td>
                 <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
-                <td class="text-center align-middle text-wrap" style="font-size:10px;">${c.ppe || "-"}</td>
-                <td class="text-muted fw-bold align-middle text-wrap" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
                 ${weeksTd}
+                <td class="text-muted fw-bold align-middle text-wrap border-start" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
               </tr>`;
           });
         }
@@ -3341,8 +3395,8 @@ function loadGlobalCalendar() {
         tbody.innerHTML +=
           `
           <tr class="table-secondary">
-            <!-- คอลัมน์ 61 ช่องเพื่อให้ครอบคลุมทั้งตาราง -->
-            <td colspan="61" class="p-0 border-bottom border-top" style="background-color: #e2e8f0;">
+            <!-- ปรับลด colspan เป็น 60 -->
+            <td colspan="60" class="p-0 border-bottom border-top" style="background-color: #e2e8f0;">
               <div class="fw-bold text-dark fs-6 py-2 px-3 sticky-line-header" style="position: sticky; left: 0; display: inline-block;">
                 <span class="material-symbols-rounded align-middle me-2 text-primary">dns</span> 
                 ไลน์ผลิต (Line): <span class="text-primary">${sel.line}</span> <span class="text-muted fs-6 fw-normal">(แผนก ${sel.dept})</span>
@@ -3360,7 +3414,7 @@ function loadGlobalCalendar() {
     } else {
       document.getElementById("globalCalendarDesc").innerHTML =
         `<span class="text-danger fw-bold">ไม่มีข้อมูลสำหรับไลน์ที่เลือก</span>`;
-      tbody.innerHTML = `<tr><td colspan="61" class="text-center text-muted p-5">ไม่มีข้อมูลประกอบ</td></tr>`;
+      tbody.innerHTML = `<tr><td colspan="60" class="text-center text-muted p-5">ไม่มีข้อมูลประกอบ</td></tr>`;
     }
 
     // แสดงตาราง
