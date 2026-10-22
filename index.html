@@ -677,7 +677,9 @@
               <span class="material-symbols-rounded fs-5">arrow_back</span>
               กลับหน้าหลัก
             </button>
-            <h3 class="fw-bold mb-1 text-primary">Global Calendar (แผนรวม)</h3>
+            <h3 class="fw-bold mb-1 text-primary">
+              Global Calendar (แผนรวม 52 สัปดาห์)
+            </h3>
             <p class="text-muted small mb-0" id="globalCalendarDesc">
               ข้อมูลจากไลน์ที่เลือก...
             </p>
@@ -688,28 +690,16 @@
           class="table-responsive bg-white rounded shadow-sm border mt-3"
           style="max-height: 75vh; overflow-y: auto"
         >
-          <!-- ปรับ min-width จาก 1500px เป็น 1000px เพราะเราตัด 52 สัปดาห์ออกไปแล้ว -->
+          <!-- ขยาย min-width เป็น 2500px เพื่อให้รองรับ 52 สัปดาห์ได้เต็มที่ไม่บีบอัด -->
           <table
             class="table table-hover table-bordered mb-0 align-middle table-ledger"
-            style="font-size: 13px; min-width: 1000px"
+            style="font-size: 13px; min-width: 2500px"
           >
-            <thead class="table-primary text-center">
-              <tr>
-                <th rowspan="2" data-i18n="th_image">Image</th>
-                <th rowspan="2" data-i18n="th_comp_name">Component Name</th>
-                <th rowspan="2" class="text-primary">
-                  งานสัปดาห์ปัจจุบัน (Task)
-                </th>
-                <th colspan="4" data-i18n="th_standards">Standards</th>
-                <th rowspan="2" data-i18n="th_safety">Safety/PPE</th>
-                <th rowspan="2" data-i18n="th_remark">EWO / Remark</th>
-              </tr>
-              <tr style="font-size: 11px">
-                <th>Class</th>
-                <th>Type</th>
-                <th>Status</th>
-                <th>Min</th>
-              </tr>
+            <thead
+              id="globalCalendarThead"
+              class="table-primary text-center sticky-top z-3"
+            >
+              <!-- โค้ดหัวตารางจะถูกสร้างโดย Javascript เพื่อให้คอลัมน์ตรงกัน 100% -->
             </thead>
             <tbody id="globalCalendarTableBody"></tbody>
           </table>
