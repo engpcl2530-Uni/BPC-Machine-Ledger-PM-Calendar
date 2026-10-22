@@ -3450,35 +3450,72 @@ function initPopovers() {
 }
 
 // =========================================================
-// 2. ระบบ Smart Planner (Interactive Grid 52 สัปดาห์)
+// 2. ระบบ Smart Planner (FL Studio Sequencer Style)
 // =========================================================
+
+// ตัวแปรควบคุมระบบลากระบาย (Drag & Paint)
+let isPainting = false;
+let paintMode = null; // 'add' หรือ 'remove'
+let lastPaintedIdx = -1; // กันการทำงานซ้ำในช่องเดิมตอนลากผ่าน
+
+// จับ Event ปล่อยเมาส์ที่ระดับ Document เพื่อให้รู้ว่าหยุดลากแล้ว
+document.addEventListener("mouseup", () => {
+  if (isPainting) {
+    isPainting = false;
+    lastPaintedIdx = -1;
+    updatePreviewAndList(); // อัปเดตพรีวิวรวมฝั่งขวาทีเดียวตอนปล่อยเมาส์
+  }
+});
+document.addEventListener("touchend", () => {
+  if (isPainting) {
+    isPainting = false;
+    lastPaintedIdx = -1;
+    updatePreviewAndList();
+  }
+});
+
 function renderInteractiveGrid() {
   let grid = document.getElementById("interactiveWeekGrid");
   if (!grid) return;
   grid.innerHTML = "";
 
+  // ป้องกันการลากคลุม Text (Text Selection) ที่จะทำให้เมาส์หลุดตอนลาก
+  grid.style.userSelect = "none";
+  grid.style.WebkitUserSelect = "none";
+
+  // กำหนดสีพื้นหลัง Pastel แบ่งตามเดือนให้ดูง่ายเหมือน Timeline
   const monthSpans = [
-    { name: "Jan", span: 5 },
-    { name: "Feb", span: 4 },
-    { name: "Mar", span: 4 },
-    { name: "Apr", span: 4 },
-    { name: "May", span: 5 },
-    { name: "Jun", span: 4 },
-    { name: "Jul", span: 4 },
-    { name: "Aug", span: 5 },
-    { name: "Sep", span: 4 },
-    { name: "Oct", span: 5 },
-    { name: "Nov", span: 4 },
-    { name: "Dec", span: 4 },
+    { name: "Jan", span: 5, color: "#f1f5f9" }, // เทาอ่อน
+    { name: "Feb", span: 4, color: "#e0f2fe" }, // ฟ้าอ่อน
+    { name: "Mar", span: 4, color: "#dcfce7" }, // เขียวอ่อน
+    { name: "Apr", span: 4, color: "#fef9c3" }, // เหลืองอ่อน
+    { name: "May", span: 5, color: "#ffedd5" }, // ส้มอ่อน
+    { name: "Jun", span: 4, color: "#ffe4e6" }, // แดงอ่อน
+    { name: "Jul", span: 4, color: "#f3e8ff" }, // ม่วงอ่อน
+    { name: "Aug", span: 5, color: "#fae8ff" }, // ชมพูอ่อน
+    { name: "Sep", span: 4, color: "#cffafe" }, // ฟ้าคราม
+    { name: "Oct", span: 5, color: "#ecfccb" }, // เขียวมะนาว
+    { name: "Nov", span: 4, color: "#fce7f3" }, // ชมพูพาสเทล
+    { name: "Dec", span: 4, color: "#e0e7ff" }, // ครามพาสเทล
   ];
 
+  // กล่องหลักสำหรับจัดเรียงแนวนอนแบบยาวๆ
+  grid.innerHTML = `<div id="sequencerContainer" class="d-flex flex-wrap gap-2 w-100 justify-content-start pb-2"></div>`;
+  let container = document.getElementById("sequencerContainer");
   let weekIdx = 0;
-  monthSpans.forEach((m) => {
-    // ป้ายกำกับเดือน
-    grid.innerHTML += `<div class="w-100 mt-2 mb-1"><span class="badge bg-secondary text-uppercase">${m.name}</span></div>`;
 
-    let flexContainer = document.createElement("div");
-    flexContainer.className = "d-flex flex-wrap gap-1 w-100";
+  monthSpans.forEach((m) => {
+    // สร้าง Block ของแต่ละเดือน (ไฮไลท์พื้นหลัง)
+    let monthGroup = document.createElement("div");
+    monthGroup.className = "d-flex p-1 rounded align-items-center shadow-sm";
+    monthGroup.style.backgroundColor = m.color;
+    monthGroup.style.border = "1px solid rgba(0,0,0,0.05)";
+
+    // ป้ายชื่อเดือน หมุนเป็นแนวตั้งเพื่อให้ประหยัดพื้นที่
+    monthGroup.innerHTML = `<div class="fw-bold text-secondary me-2 ms-1" style="font-size: 11px; writing-mode: vertical-rl; transform: rotate(180deg);">${m.name}</div>`;
+
+    let weeksContainer = document.createElement("div");
+    weeksContainer.className = "d-flex gap-1";
 
     for (let i = 0; i < m.span; i++) {
       if (weekIdx >= 52) break;
@@ -3486,95 +3523,121 @@ function renderInteractiveGrid() {
       let svg = getTriangleSVGOnly(w);
 
       let box = document.createElement("div");
-      // สไตล์ของกล่องสัปดาห์ที่สามารถกดได้
+      box.id = `week-box-${weekIdx}`;
+      // css ป้องกันการเกิด Event กับลูกข้างในด้วย pointer-events: none (สำหรับ text และรูป)
       box.style.cssText =
-        "width: 45px; height: 50px; border: 1px solid #cbd5e1; border-radius: 6px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; transition: 0.2s;";
-      box.onmouseover = () => {
-        box.style.background = "#f1f5f9";
-        box.style.borderColor = "#94a3b8";
-        box.style.transform = "scale(1.05)";
+        "width: 38px; height: 48px; border: 1px solid #cbd5e1; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; transition: background 0.1s; touch-action: none;";
+      
+      box.innerHTML = `<span style="font-size:10px; font-weight:bold; color:#475569; pointer-events:none;">W${weekIdx + 1}</span>
+                       <div class="svg-container" style="width:20px; height:20px; pointer-events:none;">${svg}</div>`;
+
+      let currentIdx = weekIdx;
+
+      // 🖱️ Event เริ่มคลิก (กำหนดว่าจะเป็น Mode ลบ หรือ Mode เพิ่ม)
+      box.onmousedown = (e) => {
+        e.preventDefault(); // กันลากภาพ
+        let hasColor = smartColorState.t || smartColorState.r || smartColorState.b || smartColorState.l;
+        if (!hasColor) {
+          showModalAlert("แจ้งเตือน", "กรุณาเลือกประเภทงาน (เลือกสีด้านบน) ก่อนครับ", true);
+          return;
+        }
+        isPainting = true;
+        lastPaintedIdx = -1;
+        
+        let d = tempWeekData[currentIdx];
+        let isAlreadyOn = false;
+        if (smartColorState.t && d.t === 1) isAlreadyOn = true;
+        if (smartColorState.r && d.r === 1) isAlreadyOn = true;
+        if (smartColorState.b && d.b === 1) isAlreadyOn = true;
+        if (smartColorState.l && d.l === 1) isAlreadyOn = true;
+
+        paintMode = isAlreadyOn ? 'remove' : 'add';
+        paintInteractiveWeek(currentIdx, paintMode);
       };
-      box.onmouseout = () => {
+
+      // 🖱️ Event ลากผ่าน (Paint)
+      box.onmouseenter = () => {
+        box.style.background = "#f8fafc";
+        box.style.transform = "scale(1.05)";
+        if (isPainting) {
+          paintInteractiveWeek(currentIdx, paintMode);
+        }
+      };
+
+      box.onmouseleave = () => {
         box.style.background = "white";
-        box.style.borderColor = "#cbd5e1";
         box.style.transform = "scale(1)";
       };
 
-      box.innerHTML = `<span style="font-size:10px; font-weight:bold; color:#475569;">W${weekIdx + 1}</span><div style="width:20px; height:20px;">${svg}</div>`;
+      // 📱 Event สำหรับมือถือ/แท็บเล็ต (Touch Drag)
+      box.ontouchstart = (e) => {
+         e.preventDefault();
+         box.onmousedown(e);
+      };
+      
+      // การลากนิ้วบนมือถือ ต้องใช้ elementFromPoint เพื่อหาว่าลากผ่านกล่องไหนอยู่
+      box.ontouchmove = (e) => {
+         e.preventDefault();
+         if (!isPainting) return;
+         let touch = e.touches[0];
+         let element = document.elementFromPoint(touch.clientX, touch.clientY);
+         if (element && element.id && element.id.startsWith("week-box-")) {
+            let targetIdx = parseInt(element.id.replace("week-box-", ""));
+            if (!isNaN(targetIdx)) {
+                paintInteractiveWeek(targetIdx, paintMode);
+            }
+         }
+      };
 
-      let currentIdx = weekIdx;
-      box.onclick = () => toggleInteractiveWeek(currentIdx); // ผูก Event เมื่อกดคลิก
-
-      flexContainer.appendChild(box);
+      weeksContainer.appendChild(box);
       weekIdx++;
     }
-    grid.appendChild(flexContainer);
+    monthGroup.appendChild(weeksContainer);
+    container.appendChild(monthGroup);
   });
 }
 
-function toggleInteractiveWeek(idx) {
-  // 1. ตรวจสอบว่ามีการเลือกสี (ประเภทงาน) หรือยัง?
-  let hasColor =
-    smartColorState.t ||
-    smartColorState.r ||
-    smartColorState.b ||
-    smartColorState.l;
-  if (!hasColor) {
-    showModalAlert(
-      "แจ้งเตือน",
-      "กรุณาเลือกประเภทงาน (เลือกสีด้านบน) ก่อนกดเลือกสัปดาห์ครับ",
-      true,
-    );
-    return;
-  }
+// ฟังก์ชันสำหรับ "ระบายสี" เฉพาะช่องที่ถูกลากผ่าน (ทำงานไวขึ้นเพราะไม่เรนเดอร์ตารางใหม่ทั้งหมด)
+function paintInteractiveWeek(idx, mode) {
+  if (idx === lastPaintedIdx) return; // ป้องกันการทำซ้ำในช่องเดิมขณะลาก
+  lastPaintedIdx = idx;
 
   let d = tempWeekData[idx];
-  let taskText = document.getElementById("inputTaskText")
-    ? document.getElementById("inputTaskText").value.trim()
-    : "";
-  let ewoText = document.getElementById("inputEwoText")
-    ? document.getElementById("inputEwoText").value.trim()
-    : "";
+  let taskText = document.getElementById("inputTaskText") ? document.getElementById("inputTaskText").value.trim() : "";
+  let ewoText = document.getElementById("inputEwoText") ? document.getElementById("inputEwoText").value.trim() : "";
 
   let remarkArr = [];
   if (taskText) remarkArr.push(`Task: ${taskText}`);
   if (ewoText) remarkArr.push(`EWO: ${ewoText}`);
   let finalRemark = remarkArr.join(" | ");
 
-  // 2. ตรวจสอบว่าสีที่เลือก ถูกเปิดไว้ในสัปดาห์นี้ทั้งหมดแล้วหรือยัง
-  let allSelectedAreOn = true;
-  if (smartColorState.t && d.t === 0) allSelectedAreOn = false;
-  if (smartColorState.r && d.r === 0) allSelectedAreOn = false;
-  if (smartColorState.b && d.b === 0) allSelectedAreOn = false;
-  if (smartColorState.l && d.l === 0) allSelectedAreOn = false;
-
-  if (allSelectedAreOn) {
-    // 🟢 กรณีกดซ้ำ (ปิดงานที่เลือก)
+  if (mode === 'remove') {
     if (smartColorState.t) d.t = 0;
     if (smartColorState.r) d.r = 0;
     if (smartColorState.b) d.b = 0;
     if (smartColorState.l) d.l = 0;
-    // ถ้ายกเลิกจนไม่มีสีไหนเหลือเลย ให้ลบ Remark ทิ้งด้วย
-    if (d.t === 0 && d.r === 0 && d.b === 0 && d.l === 0) {
-      d.remark = "";
-    }
-  } else {
-    // 🟢 กรณีเลือกสีใหม่ (เปิดงาน)
+    if (d.t === 0 && d.r === 0 && d.b === 0 && d.l === 0) d.remark = "";
+  } else if (mode === 'add') {
     if (smartColorState.t) d.t = 1;
     if (smartColorState.r) d.r = 1;
     if (smartColorState.b) d.b = 1;
     if (smartColorState.l) d.l = 1;
-
     if (finalRemark) {
       if (!d.remark) d.remark = finalRemark;
-      else if (!d.remark.includes(finalRemark))
-        d.remark += " \n " + finalRemark;
+      else if (!d.remark.includes(finalRemark)) d.remark += " \n " + finalRemark;
     }
   }
 
   tempWeekData[idx] = d;
-  renderInteractiveGrid(); // รีเฟรชตารางที่กด
-  updatePreviewAndList(); // รีเฟรชจอ Preview ด้านขวา
+
+  // เปลี่ยนรูป SVG ภายในกล่องนั้นทันที โดยไม่ต้องโหลดใหม่ทั้งแผง (In-place update)
+  let box = document.getElementById(`week-box-${idx}`);
+  if (box) {
+    let svgContainer = box.querySelector('.svg-container');
+    if (svgContainer) {
+      svgContainer.innerHTML = getTriangleSVGOnly(d);
+    }
+  }
 }
 
 // ปิดไม่ให้ Preview ด้านขวากดได้ (ให้ดูอย่างเดียว)
