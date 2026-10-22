@@ -1917,6 +1917,10 @@ const translations = {
     loading_process_excel: "กำลังประมวลผลไฟล์ Excel (อาจใช้เวลาสักครู่)...",
     loading_prep_zip: "กำลังเตรียมไฟล์ ZIP...",
     loading_zip_done: "รวบรวมไฟล์เสร็จสิ้น กำลังบีบอัดเป็น ZIP...",
+    upcoming_tasks_title: "แจ้งเตือนงานที่ใกล้เข้ามา",
+    upcoming_tasks_desc: "มีงาน PM ที่กำลังจะถึงกำหนดในอีก",
+    days: "วัน",
+    no_upcoming_tasks: "ไม่มีงาน PM ที่ใกล้ถึงกำหนด",
   },
   en: {
     // --- ส่วนที่เพิ่มใหม่สำหรับ Dashboard & Filter ---
@@ -2082,7 +2086,10 @@ const translations = {
     loading_process_excel: "Processing Excel file (this may take a moment)...",
     loading_prep_zip: "Preparing ZIP file...",
     loading_zip_done: "Files collected. Compressing to ZIP...",
-
+    upcoming_tasks_title: "Upcoming Tasks Notification",
+    upcoming_tasks_desc: "There are PM tasks due in",
+    days: "days",
+    no_upcoming_tasks: "No upcoming PM tasks",
   },
 };
 
@@ -3188,7 +3195,7 @@ function toggleAllGlobalLines(isCheck) {
   });
 }
 
-// โหลดและแสดงตารางรวม (แบบ Table และมี Tooltip เมื่อชี้ช่อง SVG)
+// โหลดและแสดงตารางรวม (แบบ Table ดึงเฉพาะสัปดาห์ปัจจุบัน)
 function loadGlobalCalendar() {
   let selectedLines = [];
   document.querySelectorAll(".global-line-checkbox:checked").forEach((chk) => {
@@ -3215,22 +3222,15 @@ function loadGlobalCalendar() {
     tbody.innerHTML = "";
     let lineNames = [];
 
+    // หาสัปดาห์ปัจจุบันของปี
+    let currentWeekIndex = getCurrentWeekNumber() - 1;
+
     selectedLines.forEach((sel) => {
-      lineNames.push(sel.line);
       let lineData = dbData[sel.dept][sel.line];
       if (!lineData.machines) return;
 
-      // 🔴 แถบสีเทาคั่นแบ่งบรรทัดของแต่ละไลน์ (ปรับให้ข้อความ Sticky ล็อกติดซ้าย)
-      tbody.innerHTML += `
-        <tr class="table-secondary">
-          <td colspan="59" class="p-0 border-bottom border-top" style="background-color: #e2e8f0;">
-            <div class="fw-bold text-dark fs-6 py-2 px-3 sticky-line-header">
-              <span class="material-symbols-rounded align-middle me-2 text-primary">dns</span> 
-              ไลน์ผลิต (Line): <span class="text-primary">${sel.line}</span> <span class="text-muted fs-6 fw-normal">(แผนก ${sel.dept})</span>
-            </div>
-          </td>
-        </tr>
-      `;
+      let lineHasTask = false;
+      let lineHtml = "";
 
       for (let machName in lineData.machines) {
         let machData = lineData.machines[machName];
@@ -3241,81 +3241,87 @@ function loadGlobalCalendar() {
           if (!comps) continue;
 
           comps.forEach((c) => {
-            let weeksHtml = "";
+            // เช็คข้อมูลของสัปดาห์ปัจจุบัน
+            let w = c.weeks[currentWeekIndex];
 
-            // ประมวลผล 52 สัปดาห์ และเตรียมข้อมูลสำหรับ Tooltip
-            c.weeks.forEach((w, idx) => {
-              let hasTaskInfo = false;
-              let tooltipTitle = ``;
-              let highlightClass = ``;
+            // ตรวจสอบว่าสัปดาห์นี้ "มีงานที่ต้องทำ" หรือไม่ (มีสีใดสีหนึ่งเปิดอยู่ หรือ มี Remark ระบุไว้)
+            if (
+              w &&
+              (w.t === 1 ||
+                w.b === 1 ||
+                w.r === 1 ||
+                w.l === 1 ||
+                (w.remark && w.remark.trim() !== ""))
+            ) {
+              lineHasTask = true;
 
-              if (w.remark && w.remark.trim() !== "") {
-                hasTaskInfo = true;
-                tooltipTitle = `[W${idx + 1}] ${w.remark}`;
-              } else if (w.t || w.r || w.b || w.l) {
-                hasTaskInfo = true;
-                let statusList = [];
-                if (w.t) statusList.push("ทำ PM แล้ว");
-                if (w.b) statusList.push("แผน PM");
-                if (w.r) statusList.push("เครื่องเสีย (EWO)");
-                if (w.l) statusList.push("งานแทรก");
-                tooltipTitle = `[W${idx + 1}] สถานะ: ${statusList.join(", ")}`;
-              }
+              let safeRemark = escapeHTML(c.remarkEwo || "-");
+              let imgHtml =
+                c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
+                  ? `<img src="${c.imgComp}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: zoom-in;" onclick="window.open('${c.imgComp}')">`
+                  : `<span class="material-symbols-rounded text-muted" style="font-size:28px;">image_not_supported</span>`;
 
-              if (hasTaskInfo) {
-                highlightClass = `week-has-task`;
-                weeksHtml += `<td class="text-center p-1 week-cell ${highlightClass}" 
-                                  data-bs-toggle="tooltip" 
-                                  data-bs-placement="top" 
-                                  title="${escapeHTML(tooltipTitle)}">
-                                ${getTriangleSVGOnly(w)}
-                              </td>`;
-              } else {
-                weeksHtml += `<td class="text-center p-1 week-cell">${getTriangleSVGOnly(w)}</td>`;
-              }
-            });
+              let locationTag = `<div class="text-muted mt-1" style="font-size: 10.5px;">เครื่อง: <b>${machName}</b> > ${subName}</div>`;
 
-            let safeRemark = escapeHTML(c.remarkEwo || "-");
-            let imgHtml =
-              c.imgComp && c.imgComp.indexOf("NO+IMAGE") === -1
-                ? `<img src="${c.imgComp}" style="width: 45px; height: 45px; object-fit: cover; border-radius: 6px; cursor: zoom-in;" onclick="window.open('${c.imgComp}')">`
-                : `<span class="material-symbols-rounded text-muted" style="font-size:28px;">image_not_supported</span>`;
+              // สร้างเนื้อหาสำหรับคอลัมน์ Task (สัญลักษณ์ 4 สี + ข้อความ)
+              let taskSvg = getTriangleSVGOnly(w);
+              let taskDesc = w.remark ? escapeHTML(w.remark) : "PM / ตรวจสอบ";
+              let taskHtml = `<div class="d-flex flex-column align-items-center justify-content-center">
+                                <div style="width:28px; height:28px;">${taskSvg}</div>
+                                <span class="mt-1 fw-bold text-center" style="font-size:10.5px; color:#005eb8; max-width: 140px; white-space: normal;">${taskDesc}</span>
+                              </div>`;
 
-            let locationTag = `<div class="text-muted mt-1" style="font-size: 10.5px;">เครื่อง: <b>${machName}</b> > ${subName}</div>`;
-
-            // 🔴 สร้างแถวตาราง (เอา Task ออก และใส่ class: sticky-col ให้คอลัมน์ 1 และ 2)
-            tbody.innerHTML += `
-              <tr>
-                <td class="sticky-col-1 text-center align-middle">${imgHtml}</td>
-                <td class="sticky-col-2 fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
-                <td class="text-center align-middle">${c.class || "-"}</td>
-                <td class="text-center align-middle">${c.std || "-"}</td>
-                <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
-                <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
-                ${weeksHtml}
-                <td class="text-muted fw-bold align-middle text-wrap" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
-              </tr>`;
+              // ประกอบแถวตาราง (แก้บั๊กคอลัมน์เลื่อนโดยใส่ td ให้ครบทั้ง 9 ช่องตาม thead)
+              lineHtml += `
+                <tr>
+                  <td class="sticky-col-1 text-center align-middle">${imgHtml}</td>
+                  <td class="sticky-col-2 fw-bold text-primary align-middle">${escapeHTML(c.name)} ${locationTag}</td>
+                  <td class="text-center align-middle" style="background:#f0f7ff;">${taskHtml}</td>
+                  <td class="text-center align-middle">${c.class || "-"}</td>
+                  <td class="text-center align-middle">${c.std || "-"}</td>
+                  <td class="text-center align-middle"><span class="badge bg-success">${c.stat || "Run"}</span></td>
+                  <td class="text-center fw-bold text-danger align-middle">${c.time || "-"}</td>
+                  <td class="text-center align-middle" style="font-size:10px;">${c.ppe || "-"}</td>
+                  <td class="text-muted fw-bold align-middle text-wrap" style="font-size:11px; color:#E53E3E !important;">${safeRemark}</td>
+                </tr>`;
+            }
           });
         }
       }
+
+      // นำ Header ของไลน์มาแทรก เฉพาะเมื่อไลน์นั้นมีชิ้นส่วนที่ต้องทำ PM ในสัปดาห์นี้
+      if (lineHasTask) {
+        lineNames.push(sel.line);
+        tbody.innerHTML +=
+          `
+          <tr class="table-secondary">
+            <!-- ปรับ colspan เป็น 9 ให้พอดีกับจำนวนคอลัมน์ -->
+            <td colspan="9" class="p-0 border-bottom border-top" style="background-color: #e2e8f0;">
+              <div class="fw-bold text-dark fs-6 py-2 px-3 sticky-line-header">
+                <span class="material-symbols-rounded align-middle me-2 text-primary">dns</span> 
+                ไลน์ผลิต (Line): <span class="text-primary">${sel.line}</span> <span class="text-muted fs-6 fw-normal">(แผนก ${sel.dept})</span>
+              </div>
+            </td>
+          </tr>
+        ` + lineHtml;
+      }
     });
 
-    document.getElementById("globalCalendarDesc").innerText =
-      `แสดงข้อมูลจาก: ${lineNames.join(", ")}`;
+    // อัปเดตข้อความรายละเอียดด้านบน
+    if (lineNames.length > 0) {
+      document.getElementById("globalCalendarDesc").innerHTML =
+        `แสดงเฉพาะงานของ <span class="fw-bold text-primary">สัปดาห์ปัจจุบัน (Week ${currentWeekIndex + 1})</span> จากไลน์: ${lineNames.join(", ")}`;
+    } else {
+      document.getElementById("globalCalendarDesc").innerHTML =
+        `<span class="text-danger fw-bold">ไม่มีแผนงาน PM ในสัปดาห์ปัจจุบัน (Week ${currentWeekIndex + 1}) สำหรับไลน์ที่เลือก</span>`;
+      tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted p-5"><span class="material-symbols-rounded fs-1 d-block mb-2">done_all</span>ไม่มีงาน PM ในสัปดาห์นี้</td></tr>`;
+    }
 
     // สลับมาแสดง View Calendar
     document
       .querySelectorAll(".view-section")
       .forEach((v) => v.classList.remove("active"));
     document.getElementById("view-global-calendar").classList.add("active");
-
-    // 🔴 โค้ดสำคัญ: สั่งให้ Bootstrap แปลง attribute เป็น Tooltip
-    let tooltipTriggerList = [].slice.call(
-      document.querySelectorAll('[data-bs-toggle="tooltip"]'),
-    );
-    tooltipTriggerList.map(function (tooltipTriggerEl) {
-      return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
 
     hideLoading();
   }, 300);

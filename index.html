@@ -688,20 +688,20 @@
           class="table-responsive bg-white rounded shadow-sm border mt-3"
           style="max-height: 75vh; overflow-y: auto"
         >
+          <!-- ปรับ min-width จาก 1500px เป็น 1000px เพราะเราตัด 52 สัปดาห์ออกไปแล้ว -->
           <table
             class="table table-hover table-bordered mb-0 align-middle table-ledger"
-            style="font-size: 13px; min-width: 1500px"
+            style="font-size: 13px; min-width: 1000px"
           >
             <thead class="table-primary text-center">
               <tr>
                 <th rowspan="2" data-i18n="th_image">Image</th>
                 <th rowspan="2" data-i18n="th_comp_name">Component Name</th>
-                <th rowspan="2" data-i18n="th_task">Task</th>
+                <th rowspan="2" class="text-primary">
+                  งานสัปดาห์ปัจจุบัน (Task)
+                </th>
                 <th colspan="4" data-i18n="th_standards">Standards</th>
                 <th rowspan="2" data-i18n="th_safety">Safety/PPE</th>
-                <th colspan="52" data-i18n="th_calendar_52">
-                  Calendar 52 Weeks
-                </th>
                 <th rowspan="2" data-i18n="th_remark">EWO / Remark</th>
               </tr>
               <tr style="font-size: 11px">
@@ -709,10 +709,6 @@
                 <th>Type</th>
                 <th>Status</th>
                 <th>Min</th>
-                <script>
-                  for (let i = 1; i <= 52; i++)
-                    document.write(`<th>W${i}</th>`);
-                </script>
               </tr>
             </thead>
             <tbody id="globalCalendarTableBody"></tbody>
@@ -792,7 +788,7 @@
                   >แผนก (Department) <span class="required-star">*</span></label
                 >
                 <select id="f_department" class="form-select" required>
-                  <option value="" disabled selected>-- เลือกแผนก --</option>
+                  <option value="" disabled selected>-- Department --</option>
                   <option value="PCL">PCL</option>
                   <option value="CO">CO</option>
                 </select>
