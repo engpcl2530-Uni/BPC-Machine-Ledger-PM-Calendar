@@ -1169,13 +1169,9 @@ function addSubsystemCard() {
   const clone = document
     .getElementById("subSystemTemplate")
     .content.cloneNode(true);
-
-  // เปลี่ยนจาก appendChild เป็น prepend เพื่อแทรกการ์ดใหม่ไว้ด้านบนสุด
-  container.prepend(clone);
-
+  container.appendChild(clone);
   addComponentCard(
-    // เปลี่ยนมาดึง child ตัวแรก (firstElementChild) เพราะเราเพิ่งแทรกไว้บนสุด
-    container.firstElementChild.querySelector(".parts-container"),
+    container.lastElementChild.querySelector(".parts-container"),
   );
   window.changeLanguage(localStorage.getItem("app_lang") || "th");
 }
@@ -1187,15 +1183,11 @@ function addComponentCard(elementInsideCard) {
   const clone = document
     .getElementById("componentTemplate")
     .content.cloneNode(true);
-
   let defaultData = [];
   for (let i = 0; i < 52; i++) defaultData.push({ t: 0, r: 0, b: 0, l: 0 });
   clone.querySelector(".week-data-input").value = JSON.stringify(defaultData);
   renderCompactGrid(clone.querySelector(".week-compact-grid"), defaultData);
-
-  // เปลี่ยนจาก appendChild เป็น prepend เพื่อแทรกชิ้นส่วนใหม่ไว้ด้านบนสุด
-  container.prepend(clone);
-
+  container.appendChild(clone);
   window.changeLanguage(localStorage.getItem("app_lang") || "th");
 }
 
@@ -2261,10 +2253,9 @@ function editSubassembly(isAppendNewSub = false) {
   // 🔴 4. เพิ่มช่อง Subassembly ใหม่ต่อท้ายอัตโนมัติ (ถ้ามาจากการกดปุ่ม +)
   if (isAppendNewSub === true) {
     addSubsystemCard();
-    // เปลี่ยนเป็น firstElementChild เพราะการ์ดใหม่อยู่บนสุด
     let newlyAddedCard = document.getElementById(
       "subSystemsContainer",
-    ).firstElementChild;
+    ).lastElementChild;
 
     // เปลี่ยนไปที่หน้าฟอร์ม
     document
@@ -3536,7 +3527,7 @@ function renderInteractiveGrid() {
       // css ป้องกันการเกิด Event กับลูกข้างในด้วย pointer-events: none (สำหรับ text และรูป)
       box.style.cssText =
         "width: 38px; height: 48px; border: 1px solid #cbd5e1; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; background: white; transition: background 0.1s; touch-action: none;";
-
+      
       box.innerHTML = `<span style="font-size:10px; font-weight:bold; color:#475569; pointer-events:none;">W${weekIdx + 1}</span>
                        <div class="svg-container" style="width:20px; height:20px; pointer-events:none;">${svg}</div>`;
 
@@ -3545,22 +3536,14 @@ function renderInteractiveGrid() {
       // 🖱️ Event เริ่มคลิก (กำหนดว่าจะเป็น Mode ลบ หรือ Mode เพิ่ม)
       box.onmousedown = (e) => {
         e.preventDefault(); // กันลากภาพ
-        let hasColor =
-          smartColorState.t ||
-          smartColorState.r ||
-          smartColorState.b ||
-          smartColorState.l;
+        let hasColor = smartColorState.t || smartColorState.r || smartColorState.b || smartColorState.l;
         if (!hasColor) {
-          showModalAlert(
-            "แจ้งเตือน",
-            "กรุณาเลือกประเภทงาน (เลือกสีด้านบน) ก่อนครับ",
-            true,
-          );
+          showModalAlert("แจ้งเตือน", "กรุณาเลือกประเภทงาน (เลือกสีด้านบน) ก่อนครับ", true);
           return;
         }
         isPainting = true;
         lastPaintedIdx = -1;
-
+        
         let d = tempWeekData[currentIdx];
         let isAlreadyOn = false;
         if (smartColorState.t && d.t === 1) isAlreadyOn = true;
@@ -3568,7 +3551,7 @@ function renderInteractiveGrid() {
         if (smartColorState.b && d.b === 1) isAlreadyOn = true;
         if (smartColorState.l && d.l === 1) isAlreadyOn = true;
 
-        paintMode = isAlreadyOn ? "remove" : "add";
+        paintMode = isAlreadyOn ? 'remove' : 'add';
         paintInteractiveWeek(currentIdx, paintMode);
       };
 
@@ -3588,22 +3571,22 @@ function renderInteractiveGrid() {
 
       // 📱 Event สำหรับมือถือ/แท็บเล็ต (Touch Drag)
       box.ontouchstart = (e) => {
-        e.preventDefault();
-        box.onmousedown(e);
+         e.preventDefault();
+         box.onmousedown(e);
       };
-
+      
       // การลากนิ้วบนมือถือ ต้องใช้ elementFromPoint เพื่อหาว่าลากผ่านกล่องไหนอยู่
       box.ontouchmove = (e) => {
-        e.preventDefault();
-        if (!isPainting) return;
-        let touch = e.touches[0];
-        let element = document.elementFromPoint(touch.clientX, touch.clientY);
-        if (element && element.id && element.id.startsWith("week-box-")) {
-          let targetIdx = parseInt(element.id.replace("week-box-", ""));
-          if (!isNaN(targetIdx)) {
-            paintInteractiveWeek(targetIdx, paintMode);
-          }
-        }
+         e.preventDefault();
+         if (!isPainting) return;
+         let touch = e.touches[0];
+         let element = document.elementFromPoint(touch.clientX, touch.clientY);
+         if (element && element.id && element.id.startsWith("week-box-")) {
+            let targetIdx = parseInt(element.id.replace("week-box-", ""));
+            if (!isNaN(targetIdx)) {
+                paintInteractiveWeek(targetIdx, paintMode);
+            }
+         }
       };
 
       weeksContainer.appendChild(box);
@@ -3620,33 +3603,28 @@ function paintInteractiveWeek(idx, mode) {
   lastPaintedIdx = idx;
 
   let d = tempWeekData[idx];
-  let taskText = document.getElementById("inputTaskText")
-    ? document.getElementById("inputTaskText").value.trim()
-    : "";
-  let ewoText = document.getElementById("inputEwoText")
-    ? document.getElementById("inputEwoText").value.trim()
-    : "";
+  let taskText = document.getElementById("inputTaskText") ? document.getElementById("inputTaskText").value.trim() : "";
+  let ewoText = document.getElementById("inputEwoText") ? document.getElementById("inputEwoText").value.trim() : "";
 
   let remarkArr = [];
   if (taskText) remarkArr.push(`Task: ${taskText}`);
   if (ewoText) remarkArr.push(`EWO: ${ewoText}`);
   let finalRemark = remarkArr.join(" | ");
 
-  if (mode === "remove") {
+  if (mode === 'remove') {
     if (smartColorState.t) d.t = 0;
     if (smartColorState.r) d.r = 0;
     if (smartColorState.b) d.b = 0;
     if (smartColorState.l) d.l = 0;
     if (d.t === 0 && d.r === 0 && d.b === 0 && d.l === 0) d.remark = "";
-  } else if (mode === "add") {
+  } else if (mode === 'add') {
     if (smartColorState.t) d.t = 1;
     if (smartColorState.r) d.r = 1;
     if (smartColorState.b) d.b = 1;
     if (smartColorState.l) d.l = 1;
     if (finalRemark) {
       if (!d.remark) d.remark = finalRemark;
-      else if (!d.remark.includes(finalRemark))
-        d.remark += " \n " + finalRemark;
+      else if (!d.remark.includes(finalRemark)) d.remark += " \n " + finalRemark;
     }
   }
 
@@ -3655,7 +3633,7 @@ function paintInteractiveWeek(idx, mode) {
   // เปลี่ยนรูป SVG ภายในกล่องนั้นทันที โดยไม่ต้องโหลดใหม่ทั้งแผง (In-place update)
   let box = document.getElementById(`week-box-${idx}`);
   if (box) {
-    let svgContainer = box.querySelector(".svg-container");
+    let svgContainer = box.querySelector('.svg-container');
     if (svgContainer) {
       svgContainer.innerHTML = getTriangleSVGOnly(d);
     }
