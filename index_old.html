@@ -1,0 +1,2454 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="UTF-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, shrink-to-fit=no"
+    />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>BPC Machine Ledger & PM Plan</title>
+    <link rel="icon" type="image/png" href="logo.png" />
+
+    <!-- Bootstrap CSS -->
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+
+    <!-- Google Fonts -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Material Symbols Rounded (ไอคอนแบบโค้งมนสไตล์ SMP) -->
+    <link
+      href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200"
+      rel="stylesheet"
+    />
+
+    <!-- 🔴 เชื่อมต่อไฟล์ CSS (เปลี่ยนชื่อให้ตรงกับไฟล์ในเครื่องของคุณ ถ้าไม่ใช่ style.css) -->
+    <link rel="stylesheet" href="style.css" />
+
+    <style>
+      /* ตั้งค่าเริ่มต้นให้ไอคอน */
+      .material-symbols-rounded {
+        vertical-align: middle;
+        font-size: 1.25rem;
+      }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+  </head>
+  <body>
+    <!-- ระบบ Loading, สถานะการดาวน์โหลด และ ระบบคิว -->
+    <div
+      id="loadingOverlay"
+      style="
+        display: flex;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(244, 247, 249, 0.95);
+        backdrop-filter: blur(8px);
+        z-index: 10000;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+      "
+    >
+      <!-- โซนที่ 1: หมุนโหลดปกติ และแจ้งสถานะ -->
+      <div
+        id="loadingZone"
+        style="display: flex; flex-direction: column; align-items: center"
+      >
+        <div
+          class="modern-spinner mb-3"
+          style="
+            width: 50px;
+            height: 50px;
+            border: 5px solid #e2e8f0;
+            border-top-color: #005eb8;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+          "
+        ></div>
+        <div
+          id="loadingText"
+          class="mt-2"
+          style="
+            font-size: 1.2rem;
+            color: #005eb8;
+            font-weight: 600;
+            text-align: center;
+          "
+        >
+          กำลังเตรียมความพร้อมของระบบ...
+        </div>
+        <div
+          id="loadingSubText"
+          class="mt-1 text-muted"
+          style="font-size: 0.9rem"
+        >
+          กรุณารอสักครู่
+        </div>
+      </div>
+
+      <!-- โซนที่ 2: ระบบคิว (จะแสดงเมื่อระบบหน่วง/คนเยอะ) -->
+      <div
+        id="queueZone"
+        style="
+          display: none;
+          flex-direction: column;
+          align-items: center;
+          text-align: center;
+        "
+      >
+        <span
+          class="material-symbols-rounded text-warning mb-3"
+          style="font-size: 64px; animation: pulse 1.5s infinite"
+          >hourglass_top</span
+        >
+        <h3 class="fw-bold text-dark">ระบบมีผู้ใช้งานพร้อมกันจำนวนมาก</h3>
+        <p class="text-muted fs-5 mb-4">
+          คุณกำลังอยู่ในคิวที่
+          <span id="queueNumber" class="text-danger fw-bold fs-2 mx-2"
+            >...</span
+          >
+        </p>
+        <div
+          class="progress w-100 shadow-sm"
+          style="height: 12px; border-radius: 6px; max-width: 300px"
+        >
+          <div
+            class="progress-bar progress-bar-striped progress-bar-animated bg-warning text-dark fw-bold"
+            style="width: 100%"
+          >
+            กำลังรอคิว...
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="header no-print">
+      <div class="container d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center">
+          <span
+            class="material-symbols-rounded text-warning me-2"
+            style="font-size: 36px"
+            >calendar_month</span
+          >
+          <div>
+            <h4 class="mb-0 fw-bold text-white">Machine Ledger</h4>
+            <div class="text-white opacity-75 small" id="headerBreadcrumb">
+              Dashboard
+            </div>
+          </div>
+        </div>
+        <!-- กลุ่มปุ่มด้านขวา: สลับภาษา + กลับ BPC Hub -->
+        <div class="d-flex align-items-center gap-3">
+          <!-- ปุ่มสลับภาษา -->
+          <div class="d-flex gap-2">
+            <button
+              id="btn-lang-th"
+              class="btn btn-sm btn-light fw-bold text-dark shadow-sm"
+              onclick="changeLanguage('th')"
+              style="border-radius: 6px; padding: 2px 10px"
+            >
+              TH
+            </button>
+            <button
+              id="btn-lang-en"
+              class="btn btn-sm btn-outline-light fw-bold shadow-sm text-white"
+              onclick="changeLanguage('en')"
+              style="border-radius: 6px; padding: 2px 10px"
+            >
+              EN
+            </button>
+          </div>
+
+          <!-- ปุ่มกลับ BPC Hub -->
+          <a
+            href="https://engpcl2530-uni.github.io/BPC-Background-system-Unilever/"
+            class="btn btn-outline-light fw-bold shadow-sm"
+            style="border-radius: 8px"
+          >
+            <span class="material-symbols-rounded align-middle fs-5 me-1"
+              >grid_view</span
+            >
+            <span data-i18n="back_bpc">กลับ BPC Hub</span>
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="container mt-3 mb-5 pb-5">
+      <!-- View 1: Lines -->
+      <div id="view-lines" class="view-section active">
+        <!-- 🔴 Dashboard สรุปสถานะรายสัปดาห์ (Interactive) -->
+        <div class="d-flex justify-content-between align-items-end mb-2">
+          <h5 class="fw-bold text-dark mb-0">
+            <span class="material-symbols-rounded align-middle me-2"
+              >monitoring</span
+            ><span data-i18n="dashboard_title">ภาพรวมสัปดาห์ปัจจุบัน</span>
+          </h5>
+          <!-- ปุ่มล้างตัวกรอง -->
+          <button
+            id="btn-clear-dash"
+            class="btn btn-sm btn-outline-danger fw-bold d-none shadow-sm"
+            onclick="clearDashboardFilter()"
+          >
+            <span class="material-symbols-rounded align-middle fs-6 me-1"
+              >filter_alt_off</span
+            ><span data-i18n="btn_clear_filter">ล้างตัวกรอง</span>
+          </button>
+        </div>
+
+        <div class="row g-3 mb-4" id="weeklyDashboard">
+          <!-- การ์ด 1: แผน PM ทั้งหมด -->
+          <div class="col-md-4">
+            <div
+              class="card dash-card h-100"
+              id="dash-card-plan"
+              onclick="toggleDashboardFilter('PLAN')"
+              style="
+                background: linear-gradient(135deg, #005eb8, #0f0e9a);
+                color: white;
+                border-radius: 16px;
+              "
+            >
+              <div
+                class="card-body d-flex flex-column justify-content-between p-3"
+              >
+                <div class="d-flex align-items-center mb-3">
+                  <div
+                    class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
+                    style="width: 45px; height: 45px"
+                  >
+                    <span class="material-symbols-rounded fs-3"
+                      >calendar_today</span
+                    >
+                  </div>
+                  <div>
+                    <h6 class="mb-1 fw-bold opacity-75" style="font-size: 13px">
+                      <span data-i18n="dash_plan_title">แผน PM สัปดาห์นี้</span>
+                      (W<span id="dash-week">--</span>)
+                    </h6>
+                    <h3 class="mb-0 fw-bold" id="dash-total">
+                      0 <span class="fs-6 fw-normal">งาน</span>
+                    </h3>
+                  </div>
+                </div>
+                <div class="mt-auto">
+                  <div class="d-flex justify-content-between align-items-end">
+                    <span
+                      class="small fw-bold opacity-75"
+                      id="dash-trend-total"
+                    ></span>
+                    <span class="dash-cta small fw-bold">
+                      <span class="material-symbols-rounded fs-6 align-middle"
+                        >ads_click</span
+                      >
+                      <span data-i18n="dash_plan_cta">คลิกเพื่อดูคิวงาน</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- การ์ด 2: ดำเนินการแล้ว -->
+          <div class="col-md-4">
+            <div
+              class="card dash-card h-100"
+              id="dash-card-done"
+              onclick="toggleDashboardFilter('DONE')"
+              style="
+                background: linear-gradient(135deg, #10b981, #059669);
+                color: white;
+                border-radius: 16px;
+              "
+            >
+              <div
+                class="card-body d-flex flex-column justify-content-between p-3"
+              >
+                <div class="d-flex align-items-center mb-2">
+                  <div
+                    class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
+                    style="width: 45px; height: 45px"
+                  >
+                    <span class="material-symbols-rounded fs-3"
+                      >check_circle</span
+                    >
+                  </div>
+                  <div>
+                    <h6
+                      class="mb-1 fw-bold opacity-75"
+                      style="font-size: 13px"
+                      data-i18n="dash_done_title"
+                    >
+                      ดำเนินการแล้ว
+                    </h6>
+                    <h3 class="mb-0 fw-bold">
+                      <span id="dash-completed">0</span>
+                      <span class="fs-6 fw-normal" id="dash-percent">(0%)</span>
+                    </h3>
+                  </div>
+                </div>
+                <div class="mt-auto pt-2">
+                  <div
+                    class="progress mb-2 bg-white bg-opacity-25"
+                    style="height: 6px"
+                  >
+                    <div
+                      id="dash-progress-bar"
+                      class="progress-bar bg-white"
+                      role="progressbar"
+                      style="width: 0%"
+                    ></div>
+                  </div>
+                  <div class="d-flex justify-content-between align-items-end">
+                    <span
+                      class="small fw-bold opacity-75"
+                      id="dash-trend-done"
+                    ></span>
+                    <span class="dash-cta small fw-bold">
+                      <span class="material-symbols-rounded fs-6 align-middle"
+                        >ads_click</span
+                      >
+                      <span data-i18n="dash_done_cta">คลิกดูงานสำเร็จ</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <!-- การ์ด 3: เครื่องเสีย/รอซ่อม (EWO) -->
+          <div class="col-md-4">
+            <div
+              class="card dash-card h-100"
+              id="dash-card-ewo"
+              onclick="toggleDashboardFilter('EWO')"
+              style="
+                background: linear-gradient(135deg, #ef4444, #b91c1c);
+                color: white;
+                border-radius: 16px;
+              "
+            >
+              <div
+                class="card-body d-flex flex-column justify-content-between p-3"
+              >
+                <div class="d-flex align-items-center mb-3">
+                  <div
+                    class="bg-white bg-opacity-25 rounded-circle d-flex justify-content-center align-items-center me-3"
+                    style="width: 45px; height: 45px"
+                  >
+                    <span class="material-symbols-rounded fs-3">warning</span>
+                  </div>
+                  <div>
+                    <h6
+                      class="mb-1 fw-bold opacity-75"
+                      style="font-size: 13px"
+                      data-i18n="dash_ewo_title"
+                    >
+                      เครื่องเสีย / รอซ่อม (EWO)
+                    </h6>
+                    <h3 class="mb-0 fw-bold" id="dash-breakdown">
+                      0 <span class="fs-6 fw-normal">รายการ</span>
+                    </h3>
+                  </div>
+                </div>
+                <div class="mt-auto">
+                  <div class="d-flex justify-content-between align-items-end">
+                    <span
+                      class="small fw-bold opacity-75"
+                      id="dash-trend-ewo"
+                    ></span>
+                    <span class="dash-cta small fw-bold">
+                      <span class="material-symbols-rounded fs-6 align-middle"
+                        >ads_click</span
+                      >
+                      <span data-i18n="dash_ewo_cta">คลิกดูเครื่องเสีย</span>
+                    </span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 🔴 แถบเครื่องมือ Filter & Search -->
+        <div class="premium-filter-card mb-4">
+          <div class="position-relative mb-4">
+            <span class="material-symbols-rounded search-icon-inside"
+              >search</span
+            >
+            <input
+              type="text"
+              id="filterSearch"
+              class="form-control search-bar-lg"
+              data-i18n-placeholder="search_placeholder"
+              placeholder="ค้นหาชื่อเครื่องจักร, ไลน์ผลิต หรือ รหัสชิ้นส่วนที่นี่..."
+              onkeyup="handleRouting()"
+            />
+          </div>
+          <!-- 🔴 Global Calendar Card (ย้ายมาไว้ตรงนี้) -->
+          <div
+            class="card mb-4 border-0 shadow-sm no-print"
+            style="
+              border-radius: 16px;
+              background: linear-gradient(to right, #ffffff, #f8fafc);
+              border-left: 6px solid #f59e0b !important;
+            "
+          >
+            <div
+              class="card-body p-4 d-flex flex-column flex-md-row justify-content-between align-items-center"
+            >
+              <div class="d-flex align-items-center mb-3 mb-md-0">
+                <div
+                  class="bg-warning bg-opacity-25 text-warning rounded-circle d-flex justify-content-center align-items-center me-3"
+                  style="width: 55px; height: 55px"
+                >
+                  <span class="material-symbols-rounded" style="font-size: 30px"
+                    >calendar_month</span
+                  >
+                </div>
+                <div>
+                  <h5 class="fw-bold text-dark mb-1">
+                    Global Calendar
+                    <span class="badge bg-primary ms-2" style="font-size: 12px"
+                      >แผนรวมประจำปี</span
+                    >
+                  </h5>
+                  <p class="text-muted small mb-0 fw-bold">
+                    ขณะนี้กำลังอยู่ใน:
+                    <span class="text-danger fs-6"
+                      >Week <span id="currentWeekDisplayCard">--</span></span
+                    >
+                  </p>
+                </div>
+              </div>
+              <button
+                class="btn btn-warning fw-bold shadow-sm px-4 py-2"
+                style="border-radius: 10px"
+                onclick="openGlobalCalendarModal()"
+              >
+                <span class="material-symbols-rounded align-middle fs-5 me-1"
+                  >event_note</span
+                >
+                <span data-i18n="btn_global_calendar"
+                  >เปิดตาราง Calendar รวม</span
+                >
+              </button>
+            </div>
+          </div>
+
+          <div class="row g-3">
+            <div class="col-md-4">
+              <label class="form-label text-muted fw-bold small mb-2"
+                ><i class="bi bi-building"></i>
+                <span data-i18n="filter_dept_label"
+                  >แผนก (Department)</span
+                ></label
+              >
+              <select
+                id="filterDept"
+                class="form-select filter-select"
+                onchange="updateLineDropdown()"
+              >
+                <option value="ALL" data-i18n="filter_dept_all">
+                  รวมทุกแผนก
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted fw-bold small mb-2"
+                ><i class="bi bi-diagram-3"></i>
+                <span data-i18n="filter_line_label"
+                  >ไลน์ผลิต (Line)</span
+                ></label
+              >
+              <select
+                id="filterLine"
+                class="form-select filter-select"
+                onchange="handleRouting()"
+                disabled
+              >
+                <option value="ALL" data-i18n="filter_line_all">
+                  รวมทุกไลน์
+                </option>
+              </select>
+            </div>
+
+            <div class="col-md-4">
+              <label class="form-label text-muted fw-bold small mb-2"
+                ><i class="bi bi-star"></i>
+                <span data-i18n="filter_class_label"
+                  >ระดับความสำคัญ (Class)</span
+                ></label
+              >
+              <select
+                id="filterClass"
+                class="form-select filter-select"
+                onchange="handleRouting()"
+              >
+                <option value="ALL" data-i18n="filter_class_all">
+                  ทุกระดับ Class
+                </option>
+                <option value="AA">Class AA (สำคัญสูงสุด)</option>
+                <option value="A">Class A</option>
+                <option value="B">Class B</option>
+                <option value="C">Class C</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div
+          id="upcomingAlertBanner"
+          class="d-none alert shadow-sm mb-4"
+          style="
+            background: #fff5f5;
+            border: 1px solid #fc8181;
+            border-radius: 12px;
+          "
+        >
+          <div class="d-flex align-items-center">
+            <div
+              style="
+                width: 48px;
+                height: 48px;
+                background: #fee2e2;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin-right: 15px;
+              "
+            >
+              <span class="material-symbols-rounded fs-3 text-danger"
+                >campaign</span
+              >
+            </div>
+            <div>
+              <h6 class="fw-bold mb-1 text-danger" style="font-size: 16px">
+                ประกาศ: มีแผนงาน PM ที่ต้องดำเนินการในอีก 2 สัปดาห์ข้างหน้า!
+              </h6>
+              <span class="small text-dark fw-bold"
+                >ระบบได้สแกนและไฮไลต์การ์ดด้วยกรอบสีแดง
+                <span class="text-danger">🔥</span> ไว้ให้แล้ว
+                กรุณาตรวจสอบเพื่อเตรียมแผนงานครับ</span
+              >
+            </div>
+          </div>
+        </div>
+
+        <h4 class="fw-bold mb-4 text-dark">
+          <span
+            class="material-symbols-rounded me-2 text-primary align-middle"
+            style="font-size: 28px"
+            >domain</span
+          >
+          <span data-i18n="select_line">เลือกไลน์ผลิต (Lines)</span>
+        </h4>
+        <div class="row g-4" id="lineGrid"></div>
+      </div>
+
+      <!-- View 2: Machines -->
+      <div id="view-machs" class="view-section">
+        <!-- 🔴 อัปเดต: นำปุ่ม Back มาใส่ให้อยู่บรรทัดเดียวกับปุ่ม Export ZIP -->
+        <div
+          class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2"
+        >
+          <div>
+            <button
+              class="btn-back-prominent mb-3 no-print"
+              onclick="navigateTo()"
+            >
+              <span class="material-symbols-rounded fs-5">arrow_back</span>
+              <span data-i18n="btn_back_line">กลับหน้าไลน์ผลิต</span>
+            </button>
+            <h3 class="fw-bold mb-1 text-primary" id="lbl-line-title">
+              Line Name
+            </h3>
+          </div>
+          <!-- ปุ่ม Export ZIP ระดับ Line -->
+          <button
+            class="btn btn-primary fw-bold shadow-sm no-print mb-2"
+            onclick="handleExportLineZip()"
+          >
+            <span class="material-symbols-rounded align-middle fs-5 me-1"
+              >folder_zip</span
+            >
+            โหลดทั้งหมด (ZIP)
+          </button>
+        </div>
+        <div class="row g-4" id="machGrid"></div>
+      </div>
+
+      <!-- View 3: Subassemblies -->
+      <!-- View 3: Subassemblies -->
+      <div id="view-subs" class="view-section">
+        <div
+          class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2"
+        >
+          <div>
+            <button
+              class="btn-back-prominent mb-3 no-print"
+              onclick="navigateTo(currentDept, currentLine)"
+            >
+              <span class="material-symbols-rounded fs-5">arrow_back</span>
+              กลับหน้าเครื่องจักร
+            </button>
+            <h3 class="fw-bold mb-1 text-primary" id="lbl-mach-title">
+              Machine Name
+            </h3>
+            <p class="text-muted small mb-0" style="font-size: 13px">
+              รายชื่อระบบย่อยทั้งหมดในเครื่องจักรนี้
+            </p>
+          </div>
+          <!-- 🔴 เพิ่มปุ่ม Export Excel ในหน้าเครื่องจักร -->
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-success fw-bold shadow-sm no-print"
+              onclick="handleExportExcel()"
+            >
+              <span class="material-symbols-rounded align-middle fs-5 me-1"
+                >download</span
+              >Export Excel
+            </button>
+          </div>
+        </div>
+        <div class="row g-4" id="subGrid"></div>
+      </div>
+
+      <!-- View 4: Components Table -->
+      <div id="view-components" class="view-section">
+        <button
+          class="btn-back-prominent mb-3 no-print"
+          onclick="navigateTo(currentDept, currentLine, currentMach)"
+        >
+          <span class="material-symbols-rounded fs-5">arrow_back</span>
+          กลับหน้าระบบย่อย
+        </button>
+
+        <div
+          class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2"
+        >
+          <div>
+            <h3 class="fw-bold mb-1 text-primary" id="lbl-sub-title">
+              Subassembly Name
+            </h3>
+            <p class="text-muted small mb-0">
+              รายการชิ้นส่วนและปฏิทินบำรุงรักษา
+            </p>
+          </div>
+          <div class="d-flex gap-2">
+            <button
+              class="btn btn-warning fw-bold shadow-sm no-print"
+              onclick="editSubassembly()"
+            >
+              <span class="material-symbols-rounded align-middle fs-5 me-1"
+                >edit_document</span
+              >แก้ไขข้อมูล
+            </button>
+            <button
+              class="btn btn-success fw-bold shadow-sm no-print"
+              onclick="handleExportExcel()"
+            >
+              <span class="material-symbols-rounded align-middle fs-5 me-1"
+                >download</span
+              >Export Excel
+            </button>
+          </div>
+        </div>
+        <div class="table-responsive bg-white rounded shadow-sm border mt-3">
+          <table
+            class="table table-hover table-bordered mb-0 align-middle table-ledger"
+            style="font-size: 13px"
+          >
+            <thead class="table-primary text-center">
+              <tr>
+                <th rowspan="2" data-i18n="th_image">Image</th>
+                <th rowspan="2" data-i18n="th_comp_name">Component Name</th>
+                <th rowspan="2" data-i18n="th_task">Task</th>
+                <th colspan="4" data-i18n="th_standards">Standards</th>
+                <th rowspan="2" data-i18n="th_safety">Safety/PPE</th>
+                <th colspan="52" data-i18n="th_calendar_52">
+                  Calendar 52 Weeks
+                </th>
+                <th rowspan="2" data-i18n="th_remark">EWO / Remark</th>
+              </tr>
+              <tr style="font-size: 11px">
+                <th>Class</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Min</th>
+                <script>
+                  for (let i = 1; i <= 52; i++)
+                    document.write(`<th>W${i}</th>`);
+                </script>
+              </tr>
+            </thead>
+            <tbody id="componentTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="view-global-calendar" class="view-section">
+        <div
+          class="d-flex justify-content-between align-items-end mb-3 border-bottom pb-2"
+        >
+          <div>
+            <button
+              class="btn-back-prominent mb-3 no-print"
+              onclick="
+                document
+                  .getElementById('view-global-calendar')
+                  .classList.remove('active');
+                document.getElementById('view-lines').classList.add('active');
+              "
+            >
+              <span class="material-symbols-rounded fs-5">arrow_back</span>
+              กลับหน้าหลัก
+            </button>
+            <h3 class="fw-bold mb-1 text-primary">
+              Global Calendar (แผนรวม 52 สัปดาห์)
+            </h3>
+            <p class="text-muted small mb-0" id="globalCalendarDesc">
+              ข้อมูลจากไลน์ที่เลือก...
+            </p>
+          </div>
+        </div>
+
+        <div
+          class="table-responsive bg-white rounded shadow-sm border mt-3"
+          style="max-height: 75vh; overflow-y: auto"
+        >
+          <!-- ขยาย min-width เป็น 2500px เพื่อให้รองรับ 52 สัปดาห์ได้เต็มที่ไม่บีบอัด -->
+          <table
+            class="table table-hover table-bordered mb-0 align-middle table-ledger"
+            style="font-size: 13px; min-width: 2500px"
+          >
+            <thead
+              id="globalCalendarThead"
+              class="table-primary text-center sticky-top z-3"
+            >
+              <!-- โค้ดหัวตารางจะถูกสร้างโดย Javascript เพื่อให้คอลัมน์ตรงกัน 100% -->
+            </thead>
+            <tbody id="globalCalendarTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- ================= VIEW 5: Form Add/Edit Data ================= -->
+      <div id="view-form" class="view-section">
+        <div
+          class="d-flex justify-content-between align-items-center mb-4 no-print pb-2 border-bottom"
+        >
+          <h3
+            class="fw-bold mb-0"
+            style="
+              color: var(--primary);
+              display: flex;
+              align-items: center;
+              gap: 8px;
+            "
+          >
+            <span
+              class="material-symbols-rounded"
+              style="color: #d69e2e; font-size: 32px"
+              >edit_document</span
+            >
+            <span data-i18n="form_title">ฟอร์มบันทึกข้อมูล</span>
+          </h3>
+          <button
+            class="btn btn-light shadow-sm text-danger fw-bold border"
+            onclick="cancelFormContext()"
+            style="border-radius: 10px"
+          >
+            <span
+              class="material-symbols-rounded align-middle"
+              style="font-size: 18px"
+              >close</span
+            >
+            <span data-i18n="cancel">ยกเลิก</span>
+          </button>
+        </div>
+
+        <form id="ledgerForm">
+          <div
+            id="formContextBanner"
+            class="alert fw-bold d-none shadow-sm mb-4"
+            style="
+              background: #ebf8ff;
+              color: #2b6cb0;
+              border: 1px solid #90cdf4;
+              font-size: 14px;
+              border-radius: 10px;
+            "
+          >
+            <span class="material-symbols-rounded align-middle fs-5">info</span>
+            <span data-i18n="working_in">กำลังปฏิบัติงานใน</span>
+            <span
+              id="formContextText"
+              class="text-decoration-underline ms-1"
+            ></span>
+          </div>
+
+          <!-- Card 1: ข้อมูลเครื่องจักรหลัก -->
+          <div class="card" id="cardStructure">
+            <div class="card-title">
+              <span class="material-symbols-rounded align-middle me-2"
+                >dns</span
+              >
+              <span data-i18n="general_info"
+                >ส่วนที่ 1: ข้อมูลเครื่องจักรหลัก (General Info)</span
+              >
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" id="box_f_dept">
+                <label
+                  >แผนก (Department) <span class="required-star">*</span></label
+                >
+                <select id="f_department" class="form-select" required>
+                  <option value="" disabled selected>-- Department --</option>
+                  <option value="PCL">PCL</option>
+                  <option value="CO">CO</option>
+                </select>
+              </div>
+
+              <div class="form-group" id="box_f_lineName">
+                <label
+                  ><span data-i18n="label_line_name">ไลน์ผลิต (Line Name)</span>
+                  <span class="required-star">*</span></label
+                >
+
+                <!-- Dropdown จัดกลุ่มตามข้อมูลที่ได้มา -->
+                <select
+                  id="f_lineSelect"
+                  class="form-select"
+                  onchange="toggleCustomLineInput()"
+                  required
+                >
+                  <option value="" disabled selected>
+                    -- เลือกไลน์ผลิต --
+                  </option>
+
+                  <optgroup label="CO">
+                    <option value="R5">R5</option>
+                    <option value="IWK1">IWK1</option>
+                    <option value="CF3">CF3</option>
+                    <option value="R6">R6</option>
+                    <option value="V4">V4</option>
+                  </optgroup>
+
+                  <optgroup label="PCL">
+                    <option value="A1">A1</option>
+                    <option value="A2">A2</option>
+                    <option value="O1">O1</option>
+                    <option value="C1">C1</option>
+                    <option value="C2">C2</option>
+                    <option value="SB">SB</option>
+                    <option value="R1">R1</option>
+                    <option value="R2">R2</option>
+                    <option value="R3">R3</option>
+                    <option value="R4">R4</option>
+                    <option value="IWK2">IWK2</option>
+                    <option value="FGI">FGI</option>
+                    <option value="M1">M1</option>
+                    <option value="EOL">EOL</option>
+                  </optgroup>
+
+                  <optgroup label="Mixing">
+                    <option value="MIXING_CUSTOM">Mixing (ระบุเลข Mix)</option>
+                    <option value="Mix-utility">Mix-utility</option>
+                  </optgroup>
+
+                  <optgroup label="อื่นๆ (Others)">
+                    <option value="Utility">Utility</option>
+                    <option value="Packing">Packing</option>
+                    <option value="Lab">Lab</option>
+                    <option value="OTHER_CUSTOM">เพิ่ม อื่นๆ (ระบุเอง)</option>
+                  </optgroup>
+                </select>
+
+                <!-- ช่อง Text ที่จะโผล่มาเมื่อกดเลือก Mixing หรือ อื่นๆ -->
+                <input
+                  type="text"
+                  id="f_lineCustom"
+                  class="form-control mt-2 d-none"
+                  placeholder="ระบุชื่อไลน์..."
+                />
+              </div>
+              <!-- 🔴 เพิ่มช่องกรอกเครื่องจักรที่หายไปกลับเข้ามา -->
+              <div class="form-group" id="box_f_machineName">
+                <label
+                  ><span data-i18n="label_machine_name"
+                    >ชื่อเครื่องจักร (Machine Name)</span
+                  >
+                  <span class="required-star">*</span></label
+                >
+                <input
+                  type="text"
+                  id="f_machineName"
+                  class="form-control"
+                  required
+                />
+              </div>
+            </div>
+
+            <div class="form-row">
+              <div class="form-group" id="box_f_updatedBy">
+                <label
+                  ><span data-i18n="label_updated_by"
+                    >ชื่อผู้บันทึกข้อมูล / ผู้แก้ไข</span
+                  >
+                  <span class="required-star">*</span></label
+                >
+                <input
+                  type="text"
+                  id="f_updatedBy"
+                  class="form-control"
+                  data-i18n-placeholder="placeholder_updated_by"
+                  placeholder="เช่น นายสมชาย"
+                  required
+                />
+              </div>
+            </div>
+
+            <div
+              class="upload-box-smp mt-2"
+              onclick="this.nextElementSibling.click()"
+              id="box_imgMach"
+            >
+              <div
+                style="
+                  font-size: 14px;
+                  font-weight: 700;
+                  color: var(--primary);
+                  margin-bottom: 5px;
+                "
+              >
+                <span
+                  class="material-symbols-rounded"
+                  style="vertical-align: bottom"
+                  >photo_camera</span
+                >
+                <span data-i18n="main_image"
+                  >ภาพถ่ายเครื่องจักร (Main Image)</span
+                >
+              </div>
+              <div class="text-muted-sm" data-i18n="tap_to_upload">
+                แตะเพื่อถ่ายรูป หรือ เลือกจากอัลบั้ม
+              </div>
+            </div>
+            <input
+              type="file"
+              class="d-none file-img"
+              accept="image/*"
+              onchange="previewDynamicFile(this)"
+            />
+            <img
+              class="preview-img mt-3 shadow-sm border"
+              onclick="this.previousElementSibling.click()"
+              style="
+                width: 100%;
+                max-height: 250px;
+                object-fit: contain;
+                border-radius: 12px;
+                display: none;
+              "
+            />
+          </div>
+
+          <div id="subSystemsContainer"></div>
+
+          <button
+            type="button"
+            id="btnAddSub"
+            class="btn-outline-primary-smp mb-4"
+            onclick="addSubsystemCard()"
+          >
+            <span class="material-symbols-rounded align-middle me-2"
+              >library_add</span
+            >
+            <span data-i18n="add_subsystem"
+              >เพิ่มระบบย่อยใหม่ (Add Sub-system)</span
+            >
+          </button>
+
+          <!-- Submit Button -->
+          <div class="text-center pt-2 pb-5 no-print mt-4">
+            <button
+              type="button"
+              class="btn-primary-smp"
+              onclick="submitFormViaAPI()"
+            >
+              <span class="material-symbols-rounded align-middle me-2"
+                >cloud_upload</span
+              >
+              <span data-i18n="btn_save">ยืนยันและบันทึกข้อมูลทั้งหมด</span>
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- ================= VIEW 6: Execution Mode (โหมดส่งงานผ่านมือถือ) ================= -->
+      <div id="view-execution" class="view-section">
+        <div
+          class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"
+        >
+          <div>
+            <h4 class="fw-bold text-primary mb-1">
+              <i class="bi bi-tools"></i> ส่งงาน PM
+            </h4>
+            <div id="execHeaderDesc" class="text-muted small fw-bold"></div>
+          </div>
+          <button
+            class="btn btn-outline-secondary btn-sm fw-bold"
+            onclick="exitExecutionMode()"
+          >
+            <span class="material-symbols-rounded align-middle fs-6"
+              >logout</span
+            >
+            ออกจากโหมดส่งงาน
+          </button>
+        </div>
+
+        <!-- แบนเนอร์สัปดาห์ปัจจุบัน -->
+        <div
+          class="alert alert-info shadow-sm py-2 px-3 mb-4 d-flex justify-content-between align-items-center"
+          style="border-radius: 12px; border-left: 5px solid #0dcaf0"
+        >
+          <span class="fw-bold text-dark"
+            >สัปดาห์ปัจจุบัน:
+            <span id="execCurrentWeek" class="text-primary fs-5"></span
+          ></span>
+          <span class="badge bg-white text-info border"
+            >แสดงงาน +/- 4 สัปดาห์</span
+          >
+        </div>
+
+        <!-- พื้นที่แสดงการ์ดงานที่ต้องทำ -->
+        <div id="execTasksContainer" class="row g-3"></div>
+      </div>
+
+      <!-- ================= Template: Execution Task Card ================= -->
+      <template id="execTaskTemplate">
+        <div class="col-12">
+          <div
+            class="card shadow-sm border-0 mb-3"
+            style="
+              border-radius: 16px;
+              border-left: 6px solid #eab308 !important;
+            "
+          >
+            <div class="p-3">
+              <!-- ข้อมูลอะไหล่และงาน (Read-only) -->
+              <div
+                class="d-flex justify-content-between align-items-start mb-2 border-bottom pb-2"
+              >
+                <div>
+                  <span class="badge bg-dark mb-1 exec-week-badge"
+                    >Week XX</span
+                  >
+                  <h6 class="fw-bold text-primary mb-1 exec-comp-name">
+                    Component Name
+                  </h6>
+                  <div class="text-danger fw-bold small exec-task-name">
+                    Task: Lube & Inspect
+                  </div>
+                </div>
+                <img
+                  class="exec-comp-img shadow-sm"
+                  src=""
+                  style="
+                    width: 50px;
+                    height: 50px;
+                    object-fit: cover;
+                    border-radius: 8px;
+                    cursor: pointer;
+                  "
+                  onerror="this.style.display = 'none'"
+                />
+              </div>
+
+              <div class="mb-3 bg-light p-2 rounded small">
+                <span class="fw-bold text-success"
+                  ><i class="bi bi-shield-check"></i> PPE:</span
+                >
+                <span class="exec-ppe"></span><br />
+                <span class="fw-bold text-danger"
+                  ><i class="bi bi-exclamation-triangle"></i> Risk:</span
+                >
+                <span class="exec-risk"></span>
+              </div>
+
+              <!-- ฟอร์มส่งงาน (Input) -->
+              <div class="exec-form-block">
+                <label class="form-label fw-bold small text-muted mb-2"
+                  >1. สถานะการทำงาน <span class="text-danger">*</span></label
+                >
+                <select
+                  class="form-select form-select-sm mb-3 exec-status"
+                  onchange="toggleDefectFields(this)"
+                >
+                  <option value="NORMAL" selected>
+                    ✅ ปกติ (ทำ PM เรียบร้อย)
+                  </option>
+                  <option value="DEFECT">
+                    ⚠️ พบอะไหล่ชำรุด (เปลี่ยนทันที)
+                  </option>
+                  <option value="WAITING">
+                    🛑 พบอะไหล่ชำรุด (รออะไหล่ / เปิด WO)
+                  </option>
+                  <option value="BREAKDOWN">🚨 เครื่องเสีย (Breakdown)</option>
+                </select>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <div
+                      class="upload-box-smp text-center p-2 rounded"
+                      onclick="this.nextElementSibling.click()"
+                      style="
+                        border: 2px dashed #cbd5e1;
+                        background: #f8fafc;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        class="material-symbols-rounded text-muted"
+                        style="font-size: 24px"
+                        >add_a_photo</span
+                      ><br />
+                      <span
+                        style="font-size: 10px; font-weight: 600"
+                        class="text-muted"
+                        >ก่อนทำ (Before)</span
+                      >
+                    </div>
+                    <input
+                      type="file"
+                      class="d-none exec-img-before"
+                      accept="image/*"
+                      onchange="previewDynamicFile(this)"
+                    />
+                    <img
+                      class="preview-img mt-1 w-100 rounded shadow-sm"
+                      style="height: 80px; object-fit: cover; display: none"
+                      onclick="this.previousElementSibling.click()"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <div
+                      class="upload-box-smp text-center p-2 rounded"
+                      onclick="this.nextElementSibling.click()"
+                      style="
+                        border: 2px dashed #cbd5e1;
+                        background: #f8fafc;
+                        cursor: pointer;
+                      "
+                    >
+                      <span
+                        class="material-symbols-rounded text-muted"
+                        style="font-size: 24px"
+                        >add_a_photo</span
+                      ><br />
+                      <span
+                        style="font-size: 10px; font-weight: 600"
+                        class="text-muted"
+                        >หลังทำ (After)</span
+                      >
+                    </div>
+                    <input
+                      type="file"
+                      class="d-none exec-img-after"
+                      accept="image/*"
+                      onchange="previewDynamicFile(this)"
+                    />
+                    <img
+                      class="preview-img mt-1 w-100 rounded shadow-sm"
+                      style="height: 80px; object-fit: cover; display: none"
+                      onclick="this.previousElementSibling.click()"
+                    />
+                  </div>
+                </div>
+
+                <div class="row g-2 mb-3">
+                  <div class="col-6">
+                    <label class="form-label fw-bold small text-muted"
+                      >เวลาจริง (นาที)</label
+                    >
+                    <input
+                      type="number"
+                      class="form-control form-control-sm exec-actual-time"
+                      placeholder="เช่น 15"
+                    />
+                  </div>
+                  <div class="col-6">
+                    <label class="form-label fw-bold small text-muted"
+                      >ระบุชื่อผู้เข้าตรวจ</label
+                    >
+                    <input
+                      type="text"
+                      class="form-control form-control-sm exec-mechanic-id"
+                      placeholder="รหัส / ชื่อ"
+                    />
+                  </div>
+                </div>
+
+                <div
+                  class="exec-defect-box d-none mb-3 p-2 bg-warning bg-opacity-10 border border-warning rounded"
+                >
+                  <label class="form-label fw-bold small text-danger"
+                    >รายละเอียดปัญหา / หมายเหตุ (WO)</label
+                  >
+                  <textarea
+                    class="form-control form-control-sm exec-remark"
+                    rows="2"
+                    placeholder="ระบุอาการชำรุด หรือรหัสใบสั่งงาน..."
+                  ></textarea>
+                </div>
+
+                <button
+                  class="btn btn-primary btn-sm w-100 fw-bold py-2 shadow-sm"
+                  onclick="submitExecutionTask(this)"
+                >
+                  <span class="material-symbols-rounded align-middle fs-6 me-1"
+                    >send</span
+                  >
+                  ส่งงาน PM
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ================= Template: Subassembly Card ================= -->
+      <template id="subSystemTemplate">
+        <div
+          class="sub-system-card card"
+          style="border-left: 5px solid var(--secondary)"
+        >
+          <div class="card-title" style="justify-content: space-between">
+            <div class="d-flex align-items-center gap-2">
+              <span class="material-symbols-rounded">account_tree</span>
+              <span data-i18n="subassembly">ระบบย่อย (Subassembly)</span>
+            </div>
+            <button
+              type="button"
+              style="
+                background: #fff5f5;
+                color: #e53e3e;
+                border: 1px solid #fc8181;
+                padding: 4px 12px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+              "
+              onclick="this.closest('.sub-system-card').remove()"
+              data-i18n="delete_subassembly"
+            >
+              ลบระบบย่อย
+            </button>
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label
+                ><span data-i18n="label_sub_name">ชื่อระบบย่อย</span>
+                <span class="required-star">*</span></label
+              >
+              <input
+                type="text"
+                class="form-control input-subname"
+                data-i18n-placeholder="placeholder_sub_name"
+                placeholder="ระบุชื่อระบบย่อย"
+                required
+              />
+            </div>
+          </div>
+
+          <div
+            class="upload-box-smp mt-2 box_imgSub"
+            onclick="this.nextElementSibling.click()"
+          >
+            <div
+              style="font-size: 13px; font-weight: 700; color: var(--text-main)"
+            >
+              <span
+                class="material-symbols-rounded"
+                style="vertical-align: bottom; font-size: 18px"
+                >photo_library</span
+              >
+              <span data-i18n="sub_image">ภาพระบบย่อย</span>
+            </div>
+          </div>
+          <input
+            type="file"
+            class="d-none file-sub-img"
+            accept="image/*"
+            onchange="previewDynamicFile(this)"
+          />
+          <img
+            class="preview-img mt-3 shadow-sm border"
+            onclick="this.previousElementSibling.click()"
+            style="
+              width: 100%;
+              max-height: 200px;
+              object-fit: contain;
+              border-radius: 12px;
+              display: none;
+            "
+          />
+
+          <!-- Risk Assessment -->
+          <div
+            style="
+              background: #fff5f5;
+              border: 1px solid #fc8181;
+              border-radius: 12px;
+              padding: 20px;
+              margin-top: 20px;
+              margin-bottom: 20px;
+            "
+          >
+            <label style="color: #e53e3e; font-weight: 700; font-size: 14px">
+              <span
+                class="material-symbols-rounded"
+                style="vertical-align: bottom; font-size: 20px"
+                >warning</span
+              >
+              <span data-i18n="risk_assessment">ประเมินความเสี่ยง</span>
+            </label>
+            <p class="text-muted-sm mb-3" data-i18n="risk_desc">
+              ค่าเริ่มต้นคือมีความเสี่ยงทั้งหมด แตะ ❌ หากไม่มี
+            </p>
+            <div
+              class="risk-grid d-flex flex-wrap gap-2 justify-content-center"
+            >
+              <div
+                class="icon-checkbox"
+                data-val="จุดหนีบ"
+                onclick="this.classList.toggle('not-used')"
+              >
+                <img
+                  src="PPE File/risk_gear.png"
+                  class="custom-icon-img"
+                  onerror="this.style.display = 'none'"
+                /><span class="label" data-i18n="risk_1">จุดหนีบ</span>
+              </div>
+              <div
+                class="icon-checkbox"
+                data-val="อุปกรณ์"
+                onclick="this.classList.toggle('not-used')"
+              >
+                <img
+                  src="PPE File/risk_wrech.png"
+                  class="custom-icon-img"
+                  onerror="this.style.display = 'none'"
+                /><span class="label" data-i18n="risk_2">อุปกรณ์</span>
+              </div>
+              <div
+                class="icon-checkbox"
+                data-val="ยกของหนัก"
+                onclick="this.classList.toggle('not-used')"
+              >
+                <img
+                  src="PPE File/risk_heavyobject.png"
+                  class="custom-icon-img"
+                  onerror="this.style.display = 'none'"
+                /><span class="label" data-i18n="risk_3">ยกด้วยมือ</span>
+              </div>
+              <div
+                class="icon-checkbox"
+                data-val="ที่สูง"
+                onclick="this.classList.toggle('not-used')"
+              >
+                <img
+                  src="PPE File/risk_highground.png"
+                  class="custom-icon-img"
+                  onerror="this.style.display = 'none'"
+                /><span class="label" data-i18n="risk_4">ที่สูง</span>
+              </div>
+              <div
+                class="icon-checkbox"
+                data-val="สารเคมี"
+                onclick="this.classList.toggle('not-used')"
+              >
+                <img
+                  src="PPE File/risk_chmisrty.png"
+                  class="custom-icon-img"
+                  onerror="this.style.display = 'none'"
+                /><span class="label" data-i18n="risk_5">สารเคมี</span>
+              </div>
+              <div
+                class="icon-checkbox"
+                data-val="เสียงดัง"
+                onclick="this.classList.toggle('not-used')"
+              >
+                <img
+                  src="PPE File/risk_loudnoise.png"
+                  class="custom-icon-img"
+                  onerror="this.style.display = 'none'"
+                /><span class="label" data-i18n="risk_6">เสียงดัง</span>
+              </div>
+              <div
+                class="icon-checkbox"
+                data-val="รถโฟล์คลิฟต์"
+                onclick="this.classList.toggle('not-used')"
+              >
+                <img
+                  src="PPE File/risk_car.png"
+                  class="custom-icon-img"
+                  onerror="this.style.display = 'none'"
+                /><span class="label" data-i18n="risk_7">โฟล์คลิฟต์</span>
+              </div>
+            </div>
+          </div>
+
+          <div
+            style="
+              background: #f7fafc;
+              border: 1px solid #e2e8f0;
+              padding: 15px;
+              border-radius: 12px;
+            "
+          >
+            <h6
+              style="
+                font-weight: 700;
+                color: var(--primary);
+                margin-bottom: 15px;
+                display: flex;
+                align-items: center;
+                gap: 5px;
+              "
+            >
+              <span class="material-symbols-rounded">build</span>
+              <span data-i18n="components_title"
+                >ชิ้นส่วนอะไหล่ (Components)</span
+              >
+            </h6>
+            <div class="parts-container"></div>
+            <div class="text-center mt-3">
+              <button
+                type="button"
+                style="
+                  background: #38a169;
+                  color: white;
+                  border: none;
+                  padding: 8px 16px;
+                  border-radius: 8px;
+                  font-weight: 600;
+                  font-family: &quot;Prompt&quot;;
+                "
+                onclick="addComponentCard(this)"
+              >
+                <span
+                  class="material-symbols-rounded"
+                  style="font-size: 18px; vertical-align: text-bottom"
+                  >add_circle</span
+                >
+                <span data-i18n="add_component">เพิ่ม Component</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </template>
+
+      <!-- ================= Template: Component Card ================= -->
+      <template id="componentTemplate">
+        <div
+          class="part-item bg-white border rounded shadow-sm p-3 mb-3 position-relative"
+          style="border-left: 5px solid #38a169 !important; background: #fafafa"
+        >
+          <button
+            type="button"
+            style="
+              position: absolute;
+              top: 10px;
+              right: 10px;
+              background: #fff5f5;
+              color: #e53e3e;
+              border: 1px solid #fc8181;
+              width: 32px;
+              height: 32px;
+              border-radius: 50%;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+            "
+            onclick="this.closest('.part-item').remove()"
+          >
+            <span class="material-symbols-rounded" style="font-size: 18px"
+              >delete</span
+            >
+          </button>
+
+          <div class="row g-3 mt-1">
+            <!-- Image Upload Column (อัปเดตแก้รูปเบี้ยว) -->
+            <div class="col-md-3 box_imgComp text-center">
+              <label
+                class="form-label text-muted fw-bold d-block mb-2"
+                data-i18n="comp_image"
+                >ภาพอะไหล่</label
+              >
+
+              <div
+                class="upload-box-smp mx-auto"
+                onclick="this.nextElementSibling.click()"
+                style="
+                  height: 140px;
+                  border-style: dashed;
+                  display: flex;
+                  flex-direction: column;
+                  justify-content: center;
+                  align-items: center;
+                  cursor: pointer;
+                "
+              >
+                <span
+                  class="material-symbols-rounded text-muted"
+                  style="font-size: 32px"
+                  >photo_camera</span
+                >
+                <span class="text-muted-sm fw-bold mt-2">แตะเพื่ออัปโหลด</span>
+              </div>
+              <input
+                type="file"
+                class="d-none file-comp-img"
+                accept="image/*"
+                onchange="previewDynamicFile(this)"
+              />
+
+              <!-- รูปพรีวิว (ตอนมีรูป จะซ่อนกล่องด้านบน แล้วโชว์ตัวนี้แทน) -->
+              <img
+                class="preview-img mt-2 shadow-sm border mx-auto w-100"
+                onclick="this.previousElementSibling.click()"
+                style="
+                  height: 140px;
+                  object-fit: contain;
+                  border-radius: 10px;
+                  display: none;
+                  cursor: pointer;
+                  background: white;
+                "
+              />
+            </div>
+
+            <!-- Inputs Column -->
+            <div class="col-md-9">
+              <div class="form-row mb-2">
+                <div class="form-group">
+                  <label
+                    ><span data-i18n="label_comp_name">ชื่อ Component</span>
+                    <span class="required-star">*</span></label
+                  >
+                  <input
+                    type="text"
+                    class="form-control input-compname"
+                    required
+                  />
+                </div>
+                <!-- ช่อง Task ที่ถูกซ่อน -->
+                <div class="form-group d-none">
+                  <input
+                    type="text"
+                    class="form-control input-task"
+                    value="-"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row mb-2">
+                <div class="form-group">
+                  <label>Class</label>
+                  <select class="form-select input-class">
+                    <option value="AA">AA</option>
+                    <option value="A">A</option>
+                    <option value="B">B</option>
+                    <option value="C">C</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label>วิธีการ (Method)</label>
+                  <select class="form-select input-pmstd">
+                    <option value="TBM">TBM (ตามเวลา)</option>
+                    <option value="CBM">CBM (ตามสภาพ)</option>
+                    <option value="BDM">BDM (เมื่อเสีย)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>ความถี่ (Frequency):</label>
+                  <select class="form-select input-frequency">
+                    <option value="1W">1 สัปดาห์ (1W)</option>
+                    <option value="1M">1 เดือน (1M)</option>
+                    <option value="3M">3 เดือน (3M)</option>
+                    <option value="6M">6 เดือน (6M)</option>
+                    <option value="1Y">1 ปี (1Y)</option>
+                  </select>
+                </div>
+
+                <div class="form-group">
+                  <label>Status</label>
+                  <select class="form-select input-status">
+                    <option value="Run">Run</option>
+                    <option value="Stop">Stop</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label data-i18n="label_time_min">เวลา(นาที)</label>
+                  <input
+                    type="number"
+                    class="form-control input-time"
+                    min="1"
+                  />
+                </div>
+              </div>
+
+              <div class="form-row mb-2">
+                <div class="form-group">
+                  <label data-i18n="label_remark">หมายเหตุ (ถ้ามี)</label>
+                  <input
+                    type="text"
+                    class="form-control input-remark"
+                    data-i18n-placeholder="placeholder_remark"
+                    placeholder="ระบุหมายเหตุเพิ่มเติม"
+                  />
+                </div>
+              </div>
+
+              <!-- PPE & Safety -->
+              <div
+                style="
+                  background: #f0fff4;
+                  padding: 15px;
+                  border-radius: 12px;
+                  border: 1px solid #9ae6b4;
+                  margin-top: 10px;
+                "
+              >
+                <div
+                  class="form-check form-switch mb-2 d-flex align-items-center"
+                >
+                  <input
+                    class="form-check-input input-risk"
+                    type="checkbox"
+                    style="
+                      transform: scale(1.3);
+                      margin-top: 0;
+                      cursor: pointer;
+                    "
+                  />
+                  <label
+                    class="form-check-label ms-3 text-danger fw-bold"
+                    style="cursor: pointer; margin: 0"
+                    data-i18n="high_risk"
+                    >เสี่ยงสูง (Work Permit)</label
+                  >
+                </div>
+
+                <label
+                  style="
+                    color: #2f855a;
+                    font-weight: 700;
+                    font-size: 13px;
+                    margin-top: 10px;
+                  "
+                >
+                  <span
+                    class="material-symbols-rounded"
+                    style="vertical-align: bottom; font-size: 18px"
+                    >accessibility_new</span
+                  >
+                  <span data-i18n="ppe_desc"
+                    >อุปกรณ์ PPE ที่จำเป็น (แตะ ❌ หากไม่ใช้)</span
+                  >
+                </label>
+                <div
+                  class="ppe-grid d-flex flex-wrap gap-2 mt-2 justify-content-start"
+                >
+                  <div
+                    class="icon-checkbox"
+                    data-val="ถุงมือ"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_gloves.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_1">ถุงมือ</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="หมวกนิรภัย"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_helmet.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_2">หมวกนิรภัย</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="แว่นตา"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_glasses.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_3">แว่นตา</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="หน้ากาก"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_mask.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_4">หน้ากาก</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="ที่อุดหู"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_headphone.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_5">ที่อุดหู</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="รองเท้า"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_foot.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_6">รองเท้า</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="กันตก"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_harness.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_7">กันตกที่สูง</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="เสื้อสะท้อน"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/ppe_vis_cloth.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_8">สะท้อนแสง</span>
+                  </div>
+                  <div
+                    class="icon-checkbox"
+                    data-val="LOTO"
+                    onclick="this.classList.toggle('not-used')"
+                  >
+                    <img
+                      src="PPE File/icon_loto.png"
+                      class="custom-icon-img"
+                      onerror="this.style.display = 'none'"
+                    /><span class="label" data-i18n="ppe_9">LOTO</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 52-Week Grid Compact -->
+              <div class="mt-3 pt-3 border-top">
+                <div
+                  class="d-flex justify-content-between align-items-center mb-2"
+                >
+                  <label
+                    style="
+                      color: #d69e2e;
+                      font-weight: 700;
+                      margin: 0;
+                      font-size: 14px;
+                    "
+                  >
+                    <span
+                      class="material-symbols-rounded"
+                      style="vertical-align: bottom; font-size: 18px"
+                      >calendar_month</span
+                    >
+                    <span data-i18n="plan_52_weeks">แผน 52 สัปดาห์</span>
+                  </label>
+                  <button
+                    type="button"
+                    style="
+                      background: #fffbeb;
+                      color: #d69e2e;
+                      border: 1px solid #f6e05e;
+                      padding: 4px 12px;
+                      border-radius: 8px;
+                      font-weight: 600;
+                      display: flex;
+                      align-items: center;
+                      gap: 5px;
+                    "
+                    onclick="
+                      openWeekModal(this.parentElement.nextElementSibling)
+                    "
+                  >
+                    <span
+                      class="material-symbols-rounded"
+                      style="font-size: 16px"
+                      >zoom_in</span
+                    >
+                    <span data-i18n="manage">จัดการ</span>
+                  </button>
+                </div>
+                <div
+                  class="week-compact-grid p-2 bg-light border rounded d-flex flex-wrap gap-1"
+                  style="cursor: pointer; min-height: 50px"
+                  onclick="openWeekModal(this)"
+                ></div>
+                <input type="hidden" class="week-data-input" value="[]" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </template>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- Modal จัดการแผน 52 สัปดาห์ (Smart Planner) -->
+    <!-- ========================================== -->
+    <div
+      class="modal fade"
+      id="weekModal"
+      tabindex="-1"
+      aria-hidden="true"
+      data-bs-backdrop="static"
+    >
+      <div
+        class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable"
+      >
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-success text-white">
+            <h5 class="modal-title fw-bold">
+              <span class="material-symbols-rounded align-middle me-2"
+                >calendar_month</span
+              >
+              <span data-i18n="modal_52_title">กำหนดแผนงาน 52 สัปดาห์</span>
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body bg-light">
+            <div class="row">
+              <div class="col-lg-5 border-end">
+                <h6 class="fw-bold text-primary mb-3">
+                  <span
+                    class="material-symbols-rounded align-middle me-1"
+                    style="font-size: 20px"
+                    >add_circle</span
+                  >
+                  <span data-i18n="modal_52_subtitle1"
+                    >กำหนดค่างานรายสัปดาห์</span
+                  >
+                </h6>
+
+                <div class="bg-white p-3 border rounded shadow-sm mb-3">
+                  <!-- 🔴 STEP 1: หน้าตั้งค่างาน (เลือกสีและพิมพ์ข้อความ) -->
+                  <div id="step1_config">
+                    <div class="text-center mb-4">
+                      <label
+                        class="form-label fw-bold text-dark small mb-3"
+                        data-i18n="modal_52_step1"
+                        >1. แตะเลือกประเภทงาน (เลือกได้หลายข้อ)</label
+                      >
+                      <div class="selector-grid">
+                        <div
+                          class="lbl-text lbl-top text-dark fw-bold"
+                          id="lbl-t"
+                          onclick="toggleSmartColor('t')"
+                        >
+                          Planned Maint.<br />Executed
+                        </div>
+                        <div
+                          class="lbl-text lbl-left text-primary fw-bold"
+                          id="lbl-l"
+                          onclick="toggleSmartColor('l')"
+                        >
+                          Unplanned<br />Extra
+                        </div>
+                        <div class="svg-center position-relative">
+                          <svg
+                            viewBox="0 0 100 100"
+                            width="120"
+                            height="120"
+                            style="
+                              filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+                            "
+                          >
+                            <polygon
+                              id="tri-t"
+                              points="0,0 100,0 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('t')"
+                            />
+                            <polygon
+                              id="tri-r"
+                              points="100,0 100,100 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('r')"
+                            />
+                            <polygon
+                              id="tri-b"
+                              points="100,100 0,100 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('b')"
+                            />
+                            <polygon
+                              id="tri-l"
+                              points="0,100 0,0 50,50"
+                              class="smart-tri inactive"
+                              onclick="toggleSmartColor('l')"
+                            />
+                          </svg>
+                        </div>
+                        <div
+                          class="lbl-text lbl-right text-danger fw-bold"
+                          id="lbl-r"
+                          onclick="toggleSmartColor('r')"
+                        >
+                          Breakdown<br />Maint.
+                        </div>
+                        <div
+                          class="lbl-text lbl-bottom text-warning fw-bold"
+                          id="lbl-b"
+                          onclick="toggleSmartColor('b')"
+                        >
+                          Planned<br />Maintenance
+                        </div>
+                      </div>
+                    </div>
+
+                    <!-- กล่องกรอกรายละเอียด (Task/EWO) -->
+                    <div
+                      id="boxTaskDetail"
+                      class="mb-3 d-none p-2 bg-warning bg-opacity-10 border border-warning rounded"
+                    >
+                      <label
+                        class="form-label fw-bold text-warning-emphasis small"
+                      >
+                        <span
+                          class="material-symbols-rounded align-middle me-1"
+                          style="font-size: 16px"
+                          >build</span
+                        >
+                        <span data-i18n="modal_52_task"
+                          >ระบุ Task (งานที่ต้องทำ):</span
+                        >
+                      </label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="inputTaskText"
+                        data-i18n-placeholder="placeholder_task"
+                        placeholder="เช่น Lube, Inspect"
+                      />
+                    </div>
+
+                    <div
+                      id="boxEwoDetail"
+                      class="mb-3 d-none p-2 bg-danger bg-opacity-10 border border-danger rounded"
+                    >
+                      <label
+                        class="form-label fw-bold text-danger-emphasis small"
+                      >
+                        <span
+                          class="material-symbols-rounded align-middle me-1"
+                          style="font-size: 16px"
+                          >warning</span
+                        >
+                        <span data-i18n="modal_52_ewo"
+                          >รหัส EWO (กรณี Breakdown):</span
+                        >
+                      </label>
+                      <input
+                        type="text"
+                        class="form-control form-control-sm"
+                        id="inputEwoText"
+                        data-i18n-placeholder="placeholder_ewo"
+                        placeholder="เช่น EWO-12345"
+                      />
+                    </div>
+
+                    <button
+                      type="button"
+                      class="btn btn-primary btn-sm w-100 fw-bold py-2 mt-2 shadow-sm"
+                      onclick="openGridSelection()"
+                    >
+                      <span
+                        class="material-symbols-rounded align-middle me-1"
+                        style="font-size: 18px"
+                        >event_available</span
+                      >
+                      เพิ่มงานลงในสัปดาห์
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-outline-danger btn-sm w-100 mt-2"
+                      onclick="clearAllPlans()"
+                    >
+                      <span
+                        class="material-symbols-rounded align-middle me-1"
+                        style="font-size: 18px"
+                        >delete</span
+                      >
+                      <span data-i18n="clear_all_52"
+                        >ล้างข้อมูล 52 สัปดาห์ทั้งหมด</span
+                      >
+                    </button>
+                  </div>
+
+                  <!-- 🔴 STEP 2: หน้าต่างเลือกสัปดาห์ (จะแสดงเมื่อกดปุ่มเพิ่มงานด้านบน) -->
+                  <div id="step2_grid" class="d-none">
+                    <div
+                      class="d-flex justify-content-between align-items-center mb-3 border-bottom pb-2"
+                    >
+                      <label class="form-label fw-bold text-primary small mb-0"
+                        >2. แตะเลือกสัปดาห์ (แตะซ้ำเพื่อยกเลิก)</label
+                      >
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-light text-secondary border fw-bold shadow-sm"
+                        onclick="closeGridSelection()"
+                      >
+                        <span
+                          class="material-symbols-rounded align-middle"
+                          style="font-size: 16px"
+                          >arrow_back</span
+                        >
+                        กลับไปตั้งค่า
+                      </button>
+                    </div>
+
+                    <!-- ตาราง 52 สัปดาห์สำหรับกดเลือก -->
+                    <div
+                      id="interactiveWeekGrid"
+                      style="
+                        max-height: 320px;
+                        overflow-y: auto;
+                        padding: 10px;
+                        border: 2px solid #e2e8f0;
+                        border-radius: 10px;
+                        background: #f8fafc;
+                      "
+                    >
+                      <!-- JS จะสร้างตาราง 52 ช่องพร้อมเดือนให้ที่นี่ -->
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="col-lg-7 mt-4 mt-lg-0">
+                <h6 class="fw-bold text-success mb-3">
+                  <span
+                    class="material-symbols-rounded align-middle me-1"
+                    style="font-size: 20px"
+                    >visibility</span
+                  >
+                  <span data-i18n="update_preview"
+                    >อัปเดตผลลัพธ์ (Preview)</span
+                  >
+                </h6>
+                <div
+                  class="week-preview-grid p-2 bg-white border rounded shadow-sm mb-3"
+                  id="weekPreviewGrid"
+                ></div>
+
+                <div class="p-3 bg-white border rounded shadow-sm">
+                  <h6 class="fw-bold text-dark small mb-2">
+                    <span
+                      class="material-symbols-rounded align-middle me-1"
+                      style="font-size: 18px"
+                      >checklist</span
+                    >
+                    <span data-i18n="week_details"
+                      >รายละเอียดงานแต่ละสัปดาห์</span
+                    >
+                  </h6>
+                  <div
+                    id="weekRemarksSummary"
+                    class="small text-dark lh-lg"
+                    style="max-height: 250px; overflow-y: auto"
+                  ></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="modal-footer bg-white border-0">
+            <button
+              type="button"
+              class="btn btn-secondary fw-bold px-4"
+              data-bs-dismiss="modal"
+              data-i18n="close_window"
+            >
+              ปิดหน้าต่าง
+            </button>
+            <button
+              type="button"
+              class="btn btn-success fw-bold px-4"
+              onclick="syncModalToCompact()"
+            >
+              <span
+                class="material-symbols-rounded align-middle me-1"
+                style="font-size: 20px"
+                >check_circle</span
+              >
+              <span data-i18n="save_plan">บันทึกแผนงาน</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="fab-main no-print" onclick="openAddFormContext()">
+      <span class="material-symbols-rounded">add</span>
+    </button>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="script.js"></script>
+
+    <!-- 🟢 Modal แจ้งเตือน -->
+    <div class="modal fade" id="messageModal" tabindex="-1" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header text-white" id="msgModalHeader">
+            <h5
+              class="modal-title fw-bold"
+              id="msgModalTitle"
+              data-i18n="alert_title_warning"
+            >
+              แจ้งเตือน
+            </h5>
+            <button
+              type="button"
+              class="btn-close btn-close-white"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body p-4 text-center">
+            <h6 id="msgModalBody" class="mb-0 text-dark lh-base"></h6>
+          </div>
+          <div class="modal-footer border-0 justify-content-center">
+            <button
+              type="button"
+              class="btn btn-secondary px-4 fw-bold"
+              data-bs-dismiss="modal"
+              data-i18n="alert_btn_ok"
+            >
+              ตกลง (OK)
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🟢 Modal ยืนยันการยกเลิก/ย้อนกลับ (Modern SMP Design) -->
+    <div
+      class="modal fade"
+      id="confirmCancelModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div
+          class="modal-content border-0 shadow-lg"
+          style="border-radius: 20px"
+        >
+          <div class="modal-body p-5 text-center">
+            <div class="mb-4">
+              <div
+                style="
+                  width: 80px;
+                  height: 80px;
+                  background: #fef3c7;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin: 0 auto;
+                "
+              >
+                <span
+                  class="material-symbols-rounded"
+                  style="font-size: 48px; color: #d97706"
+                  >warning</span
+                >
+              </div>
+            </div>
+
+            <h4
+              class="fw-bold mb-3"
+              style="color: #1e293b"
+              data-i18n="confirm_cancel_title"
+            >
+              ยืนยันการย้อนกลับ
+            </h4>
+            <p
+              class="text-muted mb-4"
+              style="font-size: 15px; line-height: 1.6"
+              data-i18n="confirm_cancel_desc"
+            >
+              ข้อมูลที่คุณกำลังกรอกไว้จะไม่ถูกบันทึก<br />คุณต้องการย้อนกลับใช่หรือไม่?
+            </p>
+
+            <div class="d-flex justify-content-center gap-3 mt-2">
+              <button
+                type="button"
+                class="btn fw-bold px-4 py-2"
+                data-bs-dismiss="modal"
+                style="
+                  background: #f1f5f9;
+                  color: #475569;
+                  border-radius: 12px;
+                  transition: 0.2s;
+                "
+                data-i18n="btn_no_continue"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                class="btn fw-bold px-4 py-2"
+                onclick="executeCancelForm()"
+                style="
+                  background: #ef4444;
+                  color: white;
+                  border-radius: 12px;
+                  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+                  transition: 0.2s;
+                "
+                data-i18n="btn_yes_back"
+              >
+                ยืนยัน
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💾 FAB กู้คืนแบบร่าง -->
+    <button
+      id="fabDraftBtn"
+      class="no-print shadow-lg"
+      style="
+        position: fixed;
+        bottom: 30px;
+        left: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #eab308;
+        color: white;
+        border: none;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        cursor: pointer;
+        transition: 0.3s;
+      "
+      title="กู้คืนแบบร่างล่าสุด"
+      onclick="restoreDraftData()"
+    >
+      <span class="material-symbols-rounded fs-3">save_as</span>
+    </button>
+
+    <!-- 🟢 Modal ยืนยันการกระทำทั่วไป (แทน confirm สีดำดั้งเดิม) -->
+    <div
+      class="modal fade"
+      id="genericConfirmModal"
+      tabindex="-1"
+      aria-hidden="true"
+    >
+      <div class="modal-dialog modal-dialog-centered">
+        <div
+          class="modal-content border-0 shadow-lg"
+          style="border-radius: 20px"
+        >
+          <div class="modal-body p-5 text-center">
+            <div class="mb-4">
+              <div
+                style="
+                  width: 80px;
+                  height: 80px;
+                  background: #e0f2fe;
+                  border-radius: 50%;
+                  display: flex;
+                  align-items: center;
+                  justify-content: center;
+                  margin: 0 auto;
+                "
+              >
+                <span
+                  class="material-symbols-rounded"
+                  style="font-size: 48px; color: #0284c7"
+                  >help</span
+                >
+              </div>
+            </div>
+            <h4
+              class="fw-bold mb-3"
+              style="color: #1e293b"
+              id="genericConfirmTitle"
+            >
+              ยืนยัน
+            </h4>
+            <p
+              class="text-muted mb-4"
+              style="font-size: 15px; line-height: 1.6"
+              id="genericConfirmMsg"
+            ></p>
+
+            <div class="d-flex justify-content-center gap-3 mt-2">
+              <button
+                type="button"
+                class="btn fw-bold px-4 py-2"
+                data-bs-dismiss="modal"
+                style="
+                  background: #f1f5f9;
+                  color: #475569;
+                  border-radius: 12px;
+                  transition: 0.2s;
+                "
+                id="genericConfirmCancelBtn"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="button"
+                class="btn btn-primary fw-bold px-4 py-2"
+                style="
+                  border-radius: 12px;
+                  box-shadow: 0 4px 12px rgba(2, 132, 199, 0.2);
+                  transition: 0.2s;
+                "
+                id="genericConfirmOkBtn"
+              >
+                ตกลง
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🟢 FAB ปุ่มทดสอบโหมดส่งงาน (โผล่เฉพาะตอนเข้ามาดูเครื่องจักร) -->
+    <button
+      id="fabTestExecutionBtn"
+      class="no-print shadow-lg"
+      style="
+        position: fixed;
+        bottom: 100px;
+        right: 30px;
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        background: #0dcaf0;
+        color: white;
+        border: none;
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1050;
+        cursor: pointer;
+        transition: 0.3s;
+      "
+      title="ทดสอบหน้าส่งงาน"
+      onclick="testExecutionMode()"
+    >
+      <span class="material-symbols-rounded fs-3">engineering</span>
+    </button>
+
+    <!-- Modal เลือก Line สำหรับ Global Calendar -->
+    <div class="modal fade" id="globalCalendarModal" tabindex="-1">
+      <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow-lg">
+          <div class="modal-header bg-warning text-dark">
+            <h5 class="modal-title fw-bold">
+              <span class="material-symbols-rounded align-middle me-2"
+                >list_alt</span
+              >เลือกไลน์เพื่อแสดง Calendar รวม
+            </h5>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+            ></button>
+          </div>
+          <div class="modal-body bg-light">
+            <p class="text-muted small fw-bold mb-3">
+              เลือกไลน์การผลิตที่คุณต้องการดึงข้อมูลแผน PM มารวมกัน
+              (ออกแบบมาเพื่อรองรับ Desktop เป็นหลัก)
+            </p>
+            <div id="globalLineCheckboxes" class="row g-3">
+              <!-- Checkbox จะถูก Generate ด้วย JS ที่นี่ -->
+            </div>
+          </div>
+          <div class="modal-footer border-0 bg-white">
+            <button
+              type="button"
+              class="btn btn-secondary"
+              onclick="toggleAllGlobalLines(true)"
+            >
+              เลือกทั้งหมด
+            </button>
+            <button
+              type="button"
+              class="btn btn-outline-secondary"
+              onclick="toggleAllGlobalLines(false)"
+            >
+              ล้าง
+            </button>
+            <button
+              type="button"
+              class="btn btn-primary fw-bold px-4"
+              onclick="loadGlobalCalendar()"
+            >
+              <span class="material-symbols-rounded align-middle fs-5 me-1"
+                >sync</span
+              >
+              โหลดข้อมูล
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
